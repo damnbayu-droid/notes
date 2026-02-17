@@ -10,6 +10,8 @@ import './App.css';
 
 // Lazy load SharedNoteView for better initial load performance
 const SharedNoteView = lazy(() => import('@/components/notes/SharedNoteView'));
+const PrivacyPage = lazy(() => import('@/components/legal/PrivacyPage'));
+const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
 
 function MainApp() {
   const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle, signInWithApple } = useAuth();
@@ -144,6 +146,30 @@ function App() {
               </div>
             }>
               <SharedNoteView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <PrivacyPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/term"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <TermsPage />
             </Suspense>
           }
         />
