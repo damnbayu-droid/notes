@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +12,7 @@ import { toast } from 'sonner';
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
-    const { user, changePassword } = useAuth();
+    const { user, changePassword, updateProfile } = useAuth();
     const { isStorageSupported, storageUsage, clearAllData, exportData, importData } = useOfflineStorage();
     const [loading, setLoading] = useState(false);
 
@@ -97,31 +98,120 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                             </div>
                             <div className="space-y-2">
                                 <Label>Profile Picture</Label>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
-                                        onClick={() => {
-                                            toast.success("Profile picture updated to Boy!");
-                                            // In a real app, we'd update Supabase user metadata here.
-                                            // For now, we mock it as immediate feedback.
-                                        }}
-                                    >
-                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-violet-100">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Boy" className="w-full h-full object-cover" />
+                                <div className="flex items-center gap-6">
+                                    <div className="relative group w-20 h-20">
+                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-violet-100 shadow-sm">
+                                            <img
+                                                src={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
-                                        <span className="text-xs font-medium text-gray-600">Boy</span>
+                                        {/* Hidden File Input */}
+                                        <input
+                                            type="file"
+                                            id="avatar-upload"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    toast.error("Image size must be less than 2MB");
+                                                    return;
+                                                }
+
+                                                setLoading(true);
+                                                // Create a toast ID to update progress
+                                                const toastId = toast.loading("Uploading image...");
+
+                                                try {
+                                                    // 1. Upload to Supabase Storage
+                                                    // Generate a unique filename: user_id/timestamp_filename
+                                                    const fileExt = file.name.split('.').pop();
+                                                    const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+
+                                                    const { error: uploadError } = await supabase.storage
+                                                        .from('app-files')
+                                                        .upload(fileName, file, { upsert: true });
+
+                                                    if (uploadError) throw uploadError;
+
+                                                    // 2. Get Public URL
+                                                    const { data: { publicUrl } } = supabase.storage
+                                                        .from('app-files')
+                                                        .getPublicUrl(fileName);
+
+                                                    // 3. Update User Metadata
+                                                    const { error: updateError } = await updateProfile({ avatar: publicUrl });
+                                                    if (updateError) throw new Error(updateError);
+
+                                                    toast.success("Profile picture updated!", { id: toastId });
+                                                } catch (error: any) {
+                                                    console.error("Upload error:", error);
+                                                    toast.error(error.message || "Failed to upload image", { id: toastId });
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                            disabled={loading}
+                                        />
                                     </div>
-                                    <div className="flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
-                                        onClick={() => {
-                                            toast.success("Profile picture updated to Girl!");
-                                        }}
-                                    >
-                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-violet-100">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="Girl" className="w-full h-full object-cover" />
-                                        </div>
-                                        <span className="text-xs font-medium text-gray-600">Girl</span>
+
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={loading}
+                                            onClick={() => document.getElementById('avatar-upload')?.click()}
+                                        >
+                                            {loading ? 'Uploading...' : 'Upload Photo'}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8"
+                                            disabled={loading}
+                                            onClick={async () => {
+                                                if (!confirm("Remove profile picture?")) return;
+                                                setLoading(true);
+                                                try {
+                                                    const { error } = await updateProfile({ avatar: '' }); // Reset to empty to trigger fallback
+                                                    if (error) throw new Error(error);
+                                                    toast.success("Profile picture removed");
+                                                } catch (err: any) {
+                                                    toast.error(err.message);
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                        >
+                                            Remove Photo
+                                        </Button>
                                     </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Click to select a preset avatar.</p>
+                                <div className="flex flex-col gap-1 mt-2">
+                                    <p className="text-xs text-muted-foreground">Recommended: Square JPG, PNG. Max 2MB.</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Or use a preset:
+                                        <span className="ml-2 inline-flex gap-2">
+                                            <button
+                                                className="text-violet-600 hover:underline cursor-pointer"
+                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka' })}
+                                            >
+                                                Girl
+                                            </button>
+                                            <span className="text-gray-300">|</span>
+                                            <button
+                                                className="text-violet-600 hover:underline cursor-pointer"
+                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' })}
+                                            >
+                                                Boy
+                                            </button>
+                                        </span>
+                                    </p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
@@ -411,6 +501,16 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                 </TabsContent>
 
             </Tabs>
+
+            {/* Legal Links (Requested) */}
+            <div className="flex justify-center gap-4 py-8">
+                <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-gray-900" onClick={() => window.open('/privacy', '_blank')}>
+                    Privacy Policy
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-gray-900" onClick={() => window.open('/term', '_blank')}>
+                    Terms & Conditions
+                </Button>
+            </div>
         </div>
     );
 }

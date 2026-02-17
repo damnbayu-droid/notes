@@ -14,10 +14,13 @@ import {
   Moon,
   Sun,
   Book,
+  Cpu,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -79,6 +82,24 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
           <ScrollArea className="flex-1 py-4">
             <div className="px-3 space-y-6">
+              {/* Smart Mode Toggle (Moved here) */}
+              <div className="flex items-center justify-between px-1 py-2 mb-2 bg-violet-50 rounded-lg border border-violet-100">
+                <div className="flex items-center gap-2 px-2">
+                  <Cpu className="w-4 h-4 text-violet-600" />
+                  <span className="text-sm font-medium text-violet-900">Smart Mode</span>
+                </div>
+                <Switch
+                  checked={localStorage.getItem('smart_mode_enabled') === 'true'}
+                  onCheckedChange={(checked) => {
+                    localStorage.setItem('smart_mode_enabled', String(checked));
+                    toast.success(`Smart Mode ${checked ? 'Enabled' : 'Disabled'}`);
+                    // Force update helper
+                    window.dispatchEvent(new Event('storage'));
+                  }}
+                  className="scale-75"
+                />
+              </div>
+
               {/* Create Button */}
               <Button
                 onClick={onCreateNote}

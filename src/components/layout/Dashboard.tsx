@@ -11,8 +11,9 @@ import { EmptyState } from '@/components/notes/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ScannerPage } from '@/components/scanner/ScannerPage';
-import { AdPopup } from '@/components/ads/AdPopup';
+import { AdOverlay } from '@/components/ads/AdOverlay';
 import { SettingsPage } from './SettingsPage';
+import { AdminUserList } from '@/components/admin/AdminUserList';
 import { SchedulePage } from '@/components/schedule/SchedulePage';
 import { lazy, Suspense } from 'react';
 
@@ -24,7 +25,7 @@ interface DashboardProps {
   onSignIn: () => void;
 }
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin';
 
 export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('notes');
@@ -68,6 +69,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     setIsEditorOpen(true);
   };
 
+  /* 
   const handleSaveNote = async (noteData: Partial<Note>) => {
     if (editingNote) {
       await updateNote(editingNote.id, noteData);
@@ -75,6 +77,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       await createNote(noteData);
     }
   };
+  */
 
   const handleChangeColor = async (id: string, color: Note['color']) => {
     await updateNote(id, { color });
@@ -150,14 +153,16 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             {/* Content Switcher */}
             {currentView === 'settings' ? (
               <SettingsPage defaultTab={settingsTab} />
+            ) : currentView === 'scanner' ? (
+              <ScannerPage />
+            ) : currentView === 'schedule' ? (
+              <SchedulePage />
+            ) : currentView === 'admin' ? (
+              <AdminUserList />
             ) : currentView === 'books' ? (
               <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-8 w-8 border-4 border-violet-500 rounded-full border-t-transparent"></div></div>}>
                 <BookLayout />
               </Suspense>
-            ) : currentView === 'schedule' ? (
-              <SchedulePage />
-            ) : currentView === 'scanner' ? (
-              <ScannerPage />
             ) : currentView === 'archive' && archivedNotes.length === 0 ? (
               <EmptyState type="archive" />
             ) : (
@@ -192,15 +197,30 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       {/* Note Editor */}
       <NoteEditor
         note={editingNote}
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
-        onSave={handleSaveNote}
-        onDelete={editingNote ? deleteNote : undefined}
+        isOpen={!!editingNote || isEditorOpen}
+        onClose={() => {
+          setEditingNote(null);
+          setIsEditorOpen(false);
+        }}
+        onSave={async (noteData) => {
+          if (editingNote) {
+            await updateNote(editingNote.id, noteData);
+          } else {
+            await createNote(noteData);
+          }
+          setEditingNote(null);
+          setIsEditorOpen(false);
+        }}
+        onDelete={editingNote ? async (id) => {
+          await deleteNote(id);
+          setEditingNote(null);
+          setIsEditorOpen(false);
+        } : undefined}
         onTogglePin={editingNote ? togglePin : undefined}
         onToggleArchive={editingNote ? toggleArchive : undefined}
       />
 
-      <AdPopup />
+      <AdOverlay />
     </div>
   );
 }

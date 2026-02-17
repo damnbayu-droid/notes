@@ -5,6 +5,7 @@ import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/layout/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
 import { AIAssistant } from '@/components/ai/AIAssistant';
+import { GuestNagModal } from '@/components/auth/GuestNagModal';
 import { useTheme } from '@/hooks/useTheme';
 import './App.css';
 
@@ -14,7 +15,7 @@ const PrivacyPage = lazy(() => import('@/components/legal/PrivacyPage'));
 const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
 
 function MainApp() {
-  const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle, signInWithApple } = useAuth();
+  const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
   // Register Service Worker for offline support
@@ -122,6 +123,7 @@ function MainApp() {
         onSignIn={() => setShowAuth(true)}
       />
       <AIAssistant />
+      <GuestNagModal onSignupClick={() => setShowAuth(true)} />
       <Toaster position="top-center" />
     </>
   );

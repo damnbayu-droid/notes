@@ -32,6 +32,8 @@ import {
   PenTool,
   Share2,
   Mic,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { CanvasEditor } from './CanvasEditor';
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
@@ -74,6 +76,7 @@ export function NoteEditor({
   const [folder, setFolder] = useState('Main');
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const isNewNote = !note;
 
@@ -151,13 +154,24 @@ export function NoteEditor({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSave()}>
       <DialogContent
-        className={`sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 ${colorOption.bg} border ${colorOption.border}`}
+        className={`${isMaximized ? 'max-w-[95vw] h-[95vh]' : 'sm:max-w-2xl max-h-[90vh]'} overflow-y-auto p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300`}
       >
         <DialogHeader className="p-4 pb-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="sr-only">
               {isNewNote ? 'Create Note' : 'Edit Note'}
             </DialogTitle>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-gray-500"
+                onClick={() => setIsMaximized(!isMaximized)}
+                title={isMaximized ? "Exit Full Screen" : "Full Screen"}
+              >
+                {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               {!isNewNote && onTogglePin && (
                 <Button
@@ -389,14 +403,24 @@ export function NoteEditor({
         </div>
 
         {/* Footer */}
-        {!isCanvasOpen && (
-          <div className="p-4 pt-0 flex justify-end">
-            <Button onClick={handleSave} className="gap-2">
-              <Save className="w-4 h-4" />
-              Save
-            </Button>
+        <div className="p-4 pt-0 flex items-center justify-between border-t border-gray-100 mt-auto bg-gray-50/50">
+          <div className="flex flex-col text-[10px] text-gray-400">
+            <span>Created: {note?.created_at ? new Date(note.created_at).toLocaleString('id-ID') : 'New'}</span>
+            <span>Updated: {note?.updated_at ? new Date(note.updated_at).toLocaleString('id-ID') : 'Now'}</span>
           </div>
-        )}
+
+          {!isCanvasOpen && (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                Exit
+              </Button>
+              <Button onClick={handleSave} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600">
+                <Save className="w-4 h-4" />
+                Save
+              </Button>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog >
   );

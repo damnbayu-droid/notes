@@ -15,7 +15,7 @@ interface UseAuthReturn extends AuthState {
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
-  signInWithApple: () => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: { name?: string; avatar?: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -25,43 +25,7 @@ export function useAuth(): UseAuthReturn {
     isAuthenticated: false,
   });
 
-  // Check for existing session on mount and subscribe to changes
-  useEffect(() => {
-    const mapUser = (supabaseUser: any): User | null => {
-      if (!supabaseUser) return null;
-      return {
-        id: supabaseUser.id,
-        email: supabaseUser.email,
-        name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User',
-        avatar: supabaseUser.user_metadata?.avatar || supabaseUser.user_metadata?.avatar_url,
-        created_at: supabaseUser.created_at,
-      };
-    };
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(prev => ({
-        ...prev,
-        user: mapUser(session?.user),
-        isAuthenticated: !!session?.user,
-        isLoading: false,
-      }));
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(prev => ({
-        ...prev,
-        user: mapUser(session?.user),
-        isAuthenticated: !!session?.user,
-        isLoading: false,
-      }));
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // ... (existing useEffects)
 
   // Request Notification Permission on Auth
   useEffect(() => {
@@ -195,24 +159,18 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
-  const signInWithApple = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-    setState(prev => ({ ...prev, isLoading: true }));
+  const updateProfile = useCallback(async (data: { name?: string; avatar?: string }): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
+      const { error } = await supabase.auth.updateUser({
+        data: data
       });
 
       if (error) {
-        setState(prev => ({ ...prev, isLoading: false }));
         return { success: false, error: error.message };
       }
 
       return { success: true };
     } catch (err: any) {
-      setState(prev => ({ ...prev, isLoading: false }));
       return { success: false, error: err.message || 'An unexpected error occurred' };
     }
   }, []);
@@ -225,6 +183,6 @@ export function useAuth(): UseAuthReturn {
     resetPassword,
     changePassword,
     signInWithGoogle,
-    signInWithApple,
+    updateProfile,
   };
 }
