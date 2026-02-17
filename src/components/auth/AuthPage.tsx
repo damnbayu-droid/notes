@@ -9,11 +9,13 @@ interface AuthPageProps {
   onSignIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   onSignUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   onResetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  onGoogleSignIn: () => Promise<{ success: boolean; error?: string }>;
+  onAppleSignIn: () => Promise<{ success: boolean; error?: string }>;
   // onBack is used in the JSX below
   onBack: () => void;
 }
 
-export function AuthPage({ onSignIn, onSignUp, onResetPassword, onBack }: AuthPageProps) {
+export function AuthPage({ onSignIn, onSignUp, onResetPassword, onGoogleSignIn, onAppleSignIn, onBack }: AuthPageProps) {
   const [currentView, setCurrentView] = useState<AuthView>('login');
 
   return (
@@ -39,6 +41,8 @@ export function AuthPage({ onSignIn, onSignUp, onResetPassword, onBack }: AuthPa
             onSubmit={onSignIn}
             onSwitchToSignup={() => setCurrentView('signup')}
             onForgotPassword={() => setCurrentView('forgot-password')}
+            onGoogleSignIn={onGoogleSignIn}
+            onAppleSignIn={onAppleSignIn}
           />
         )}
 
@@ -46,6 +50,8 @@ export function AuthPage({ onSignIn, onSignUp, onResetPassword, onBack }: AuthPa
           <SignupForm
             onSubmit={onSignUp}
             onSwitchToLogin={() => setCurrentView('login')}
+            onGoogleSignIn={onGoogleSignIn}
+            onAppleSignIn={onAppleSignIn}
           />
         )}
 

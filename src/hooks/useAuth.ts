@@ -14,6 +14,8 @@ interface UseAuthReturn extends AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signInWithApple: () => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -151,6 +153,50 @@ export function useAuth(): UseAuthReturn {
     }
   }, [state.user]);
 
+  const signInWithGoogle = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, []);
+
+  const signInWithApple = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, []);
+
   return {
     ...state,
     signUp,
@@ -158,5 +204,7 @@ export function useAuth(): UseAuthReturn {
     signOut,
     resetPassword,
     changePassword,
+    signInWithGoogle,
+    signInWithApple,
   };
 }

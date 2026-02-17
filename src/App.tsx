@@ -7,7 +7,7 @@ import { AIAssistant } from '@/components/ai/AIAssistant';
 import './App.css';
 
 function App() {
-  const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword } = useAuth();
+  const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle, signInWithApple } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
   // Notification Logic
@@ -79,6 +79,16 @@ function App() {
             return result;
           }}
           onResetPassword={resetPassword}
+          onGoogleSignIn={async () => {
+            const result = await signInWithGoogle();
+            if (result.success) setShowAuth(false);
+            return result;
+          }}
+          onAppleSignIn={async () => {
+            const result = await signInWithApple();
+            if (result.success) setShowAuth(false);
+            return result;
+          }}
           onBack={() => setShowAuth(false)}
         />
         <Toaster position="top-center" />
