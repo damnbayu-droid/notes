@@ -4,7 +4,7 @@ type Theme = "dark" | "light" | "system"
 
 export function useTheme() {
     const [theme, setThemeState] = useState<Theme>(
-        () => (localStorage.getItem("vite-ui-theme") as Theme) || "system"
+        () => (localStorage.getItem("vite-ui-theme") as Theme) || "light"
     )
 
     useEffect(() => {

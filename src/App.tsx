@@ -106,11 +106,6 @@ function MainApp() {
             if (result.success) setShowAuth(false);
             return result;
           }}
-          onAppleSignIn={async () => {
-            const result = await signInWithApple();
-            if (result.success) setShowAuth(false);
-            return result;
-          }}
           onBack={() => setShowAuth(false)}
         />
         <Toaster position="top-center" />

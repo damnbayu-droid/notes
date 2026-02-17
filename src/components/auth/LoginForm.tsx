@@ -13,10 +13,9 @@ interface LoginFormProps {
   onSwitchToSignup: () => void;
   onForgotPassword: () => void;
   onGoogleSignIn: () => Promise<{ success: boolean; error?: string }>;
-  onAppleSignIn: () => Promise<{ success: boolean; error?: string }>;
 }
 
-export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoogleSignIn, onAppleSignIn }: LoginFormProps) {
+export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoogleSignIn }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +62,7 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
           </Alert>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <Button
             variant="outline"
             onClick={async () => {
@@ -72,13 +71,15 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
               if (!result.success) {
                 toast.error(result.error);
                 setIsLoading(false);
+              } else {
+                toast.success("Successfully signed in with Google!");
               }
             }}
-            className="w-full h-10 bg-white border-gray-200 hover:bg-gray-50 text-gray-700 font-medium"
+            className="w-full h-10 bg-white border-gray-200 hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-center gap-2"
             type="button"
             disabled={isLoading}
           >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -96,26 +97,7 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
                 fill="#EA4335"
               />
             </svg>
-            Google
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full h-10 bg-white border-gray-200 hover:bg-gray-50 text-gray-700 font-medium"
-            type="button"
-            disabled={isLoading}
-            onClick={async () => {
-              setIsLoading(true);
-              const result = await onAppleSignIn();
-              if (!result.success) {
-                toast.error(result.error);
-                setIsLoading(false);
-              }
-            }}
-          >
-            <svg className="w-5 h-5 mr-2 text-black" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.39-1.09-.52-2.04-.48-3.24 0-1.44.57-2.2.96-3.06.4C6.48 20.26 3.52 14.07 5.86 9.8c1.17-2.13 3.23-2.4 4.41-1.04.59.68 1.49.86 2.4.03 1.29-1.18 3.52-1.33 4.67-.18 2 .98 2.68 2.62 2.76 2.74-.03.02-2.27 1.22-2.31 4.79-.04 3.73 3.19 5.09 3.29 5.09-.03.11-.47 1.57-1.54 3.09-1.02 1.44-2.05 2.48-3.25 2.48-.3 0-.6-.04-.89-.09-1.57 0-2.3 1.05-3.41 1.55zM12.03 7.25c-.14-2.43 1.83-4.68 4.09-4.8 1.16-.06 2.68 1.13 2.5 3.58-.17 2.38-2.2 4.63-4.14 4.54-1.25-.06-2.32-1.29-2.45-3.32z" />
-            </svg>
-            Apple
+            Sign in with Google
           </Button>
         </div>
 
