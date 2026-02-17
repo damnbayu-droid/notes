@@ -2,15 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet"
-import { Sparkles, Send, Bot, User as UserIcon, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sparkles, Send, Bot, User as UserIcon, Loader2, X, Maximize2, Minimize2 } from 'lucide-react';
 import { askAI } from '@/lib/openai';
 import { useNotes } from '@/hooks/useNotes';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,6 +15,7 @@ interface Message {
 
 export function AIAssistant() {
     const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([
         { role: 'ai', content: 'Hi! I can help you organize your notes, draft content, or answer questions. What can I do for you?' }
@@ -37,7 +31,7 @@ export function AIAssistant() {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages]);
+    }, [messages, isOpen]);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -50,7 +44,7 @@ export function AIAssistant() {
         const contextMessages: any[] = [
             {
                 role: 'system',
-                content: `You are the intelligent OS for MyNotes. You can manage notes and schedules directly.
+                content: `You are the intelligent OS for Smart Notes. You can manage notes and schedules directly.
             Current Date: ${new Date().toISOString()}
             
             Tools available:
@@ -116,82 +110,118 @@ export function AIAssistant() {
     };
 
     return (
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
+        <>
+            {/* Chat Window */}
+            {isOpen && (
+                <div
+                    className={`fixed bottom-24 right-6 z-50 flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'w-[90vw] h-[80vh] sm:w-[600px] sm:h-[700px]' : 'w-[350px] h-[500px]'
+                        }`}
+                >
+                    <Card className="flex flex-col h-full shadow-2xl border-violet-100 overflow-hidden ring-1 ring-black/5">
+                        <CardHeader className="p-4 bg-gradient-to-r from-violet-600 to-purple-600 shrink-0">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="flex items-center gap-2 text-white text-base">
+                                    <Bot className="w-5 h-5" />
+                                    AI Assistant
+                                </CardTitle>
+                                <div className="flex items-center gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-white hover:bg-white/20"
+                                        onClick={() => setIsExpanded(!isExpanded)}
+                                    >
+                                        {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-white hover:bg-white/20"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="flex-1 p-0 overflow-hidden bg-slate-50">
+                            <ScrollArea className="h-full px-4 py-4">
+                                <div className="space-y-4 pr-3">
+                                    {messages.map((msg, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            {msg.role === 'ai' && (
+                                                <div className="w-8 h-8 rounded-full bg-white border border-violet-100 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                                                    <Bot className="w-4 h-4 text-violet-600" />
+                                                </div>
+                                            )}
+                                            <div
+                                                className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${msg.role === 'user'
+                                                        ? 'bg-violet-600 text-white rounded-br-none'
+                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
+                                                    }`}
+                                            >
+                                                <pre className="whitespace-pre-wrap font-sans break-words">{msg.content}</pre>
+                                            </div>
+                                            {msg.role === 'user' && (
+                                                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                                                    <UserIcon className="w-4 h-4 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="flex gap-3 justify-start animate-fade-in">
+                                            <div className="w-8 h-8 rounded-full bg-white border border-violet-100 flex items-center justify-center shrink-0 shadow-sm">
+                                                <Bot className="w-4 h-4 text-violet-600" />
+                                            </div>
+                                            <div className="bg-white border border-gray-100 rounded-2xl px-4 py-2 flex items-center shadow-sm">
+                                                <Loader2 className="w-4 h-4 animate-spin text-violet-500" />
+                                                <span className="ml-2 text-xs text-gray-400">Thinking...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={scrollRef} />
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+
+                        <CardFooter className="p-3 bg-white border-t border-gray-100 shrink-0">
+                            <div className="flex w-full gap-2">
+                                <Input
+                                    placeholder="Type a message..."
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                    disabled={isLoading}
+                                    className="flex-1 focus-visible:ring-violet-500"
+                                />
+                                <Button
+                                    onClick={handleSend}
+                                    disabled={isLoading || !input.trim()}
+                                    size="icon"
+                                    className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
+                                >
+                                    <Send className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
+
+            {/* Toggle Button */}
+            {!isOpen && (
                 <Button
-                    className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white shadow-lg shadow-teal-200 z-50 transition-transform hover:scale-105"
+                    onClick={() => setIsOpen(true)}
+                    className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-300 z-40 transition-all hover:scale-105 hover:shadow-xl animate-in fade-in zoom-in duration-300"
                 >
                     <Sparkles className="w-6 h-6" />
                 </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col p-0">
-                <SheetHeader className="p-6 border-b border-gray-100">
-                    <SheetTitle className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-600">
-                        <Bot className="w-5 h-5 text-teal-500" />
-                        AI Assistant
-                    </SheetTitle>
-                    <SheetDescription>
-                        Powered by OpenAI
-                    </SheetDescription>
-                </SheetHeader>
-
-                <ScrollArea className="flex-1 p-6">
-                    <div className="space-y-4">
-                        {messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                {msg.role === 'ai' && (
-                                    <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                                        <Bot className="w-4 h-4 text-teal-600" />
-                                    </div>
-                                )}
-                                <div
-                                    className={`rounded-2xl px-4 py-2 max-w-[80%] text-sm ${msg.role === 'user'
-                                            ? 'bg-violet-600 text-white'
-                                            : 'bg-gray-100 text-gray-800'
-                                        }`}
-                                >
-                                    <pre className="whitespace-pre-wrap font-sans">{msg.content}</pre>
-                                </div>
-                                {msg.role === 'user' && (
-                                    <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                                        <UserIcon className="w-4 h-4 text-violet-600" />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        {isLoading && (
-                            <div className="flex gap-3 justify-start">
-                                <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                                    <Bot className="w-4 h-4 text-teal-600" />
-                                </div>
-                                <div className="bg-gray-100 rounded-2xl px-4 py-2 flex items-center">
-                                    <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
-                                </div>
-                            </div>
-                        )}
-                        <div ref={scrollRef} />
-                    </div>
-                </ScrollArea>
-
-                <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Ask me anything..."
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                            disabled={isLoading}
-                            className="bg-white"
-                        />
-                        <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="bg-violet-600 hover:bg-violet-700">
-                            <Send className="w-4 h-4" />
-                        </Button>
-                    </div>
-                </div>
-            </SheetContent>
-        </Sheet>
+            )}
+        </>
     );
 }
