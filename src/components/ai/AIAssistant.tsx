@@ -7,6 +7,8 @@ import { Sparkles, Send, Bot, User as UserIcon, Loader2, X, Maximize2, Minimize2
 import { askAI } from '@/lib/openai';
 import { useNotes } from '@/hooks/useNotes';
 import { useAuth } from '@/hooks/useAuth';
+import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
+import { toast } from 'sonner';
 
 interface Message {
     role: 'user' | 'ai';
@@ -206,7 +208,17 @@ export function AIAssistant() {
                         </CardContent>
 
                         <CardFooter className="p-3 bg-white border-t border-gray-100 shrink-0">
-                            <div className="flex w-full gap-2">
+                            <div className="flex w-full gap-2 items-center">
+                                <VoiceRecorder
+                                    onTranscriptionComplete={(text) => {
+                                        setInput(prev => prev + text);
+                                    }}
+                                    onRecordingComplete={() => {
+                                        // Just transcription for now
+                                        toast.success("Voice command captured");
+                                    }}
+                                    className="shrink-0"
+                                />
                                 <Input
                                     placeholder="Type a message..."
                                     value={input}

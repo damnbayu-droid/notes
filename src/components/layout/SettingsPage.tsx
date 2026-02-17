@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Lock, Mail, Shield, Bell } from 'lucide-react';
+import { User, Lock, Mail, Shield, Bell, Bot, Cpu, Key } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
 export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
@@ -60,6 +61,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                     <TabsTrigger value="notifications" className="flex items-center gap-2">
                         <Bell className="w-4 h-4" />
                         Notifications
+                    </TabsTrigger>
+                    <TabsTrigger value="ai" className="flex items-center gap-2">
+                        <Bot className="w-4 h-4" />
+                        Note Ai
                     </TabsTrigger>
                 </TabsList>
 
@@ -196,6 +201,88 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     {Notification.permission === 'granted' ? 'Enabled' : 'Enable'}
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* AI Settings Tab */}
+                <TabsContent value="ai">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Bot className="w-5 h-5 text-violet-600" />
+                                Note Ai Settings
+                            </CardTitle>
+                            <CardDescription>Configure your intelligent assistant preferences.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+
+                            {/* Smart Mode Toggle */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-violet-50/50 border-violet-100">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base font-medium flex items-center gap-2">
+                                        <Cpu className="w-4 h-4 text-violet-600" />
+                                        Smart Mode
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">Enable advanced AI features including voice commands and auto-organization.</p>
+                                </div>
+                                <Switch
+                                    checked={localStorage.getItem('smart_mode_enabled') === 'true'}
+                                    onCheckedChange={(checked) => {
+                                        localStorage.setItem('smart_mode_enabled', String(checked));
+                                        toast.success(`Smart Mode ${checked ? 'Enabled' : 'Disabled'}`);
+                                        // Force re-render would be better, but for now this persists
+                                    }}
+                                />
+                            </div>
+
+                            {/* API Key Management */}
+                            <div className="space-y-3">
+                                <Label className="flex items-center gap-2">
+                                    <Key className="w-4 h-4 text-gray-500" />
+                                    OpenAI API Key
+                                </Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="password"
+                                        placeholder="sk-..."
+                                        defaultValue={localStorage.getItem('openai_api_key') || ''}
+                                        onChange={(e) => localStorage.setItem('openai_api_key', e.target.value)}
+                                        className="font-mono text-sm"
+                                    />
+                                    <Button onClick={() => {
+                                        // The onChange handles saving to ref/state, but let's confirm saving
+                                        toast.success("API Key saved securely locally");
+                                    }}>Save</Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Your key is stored locally on your device. Leave empty to use the system default key if available.
+                                </p>
+                            </div>
+
+                            {/* Voice Integration */}
+                            <div className="space-y-3">
+                                <Label className="flex items-center gap-2">
+                                    <div className="w-4 h-4 flex items-center justify-center">
+                                        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                    </div>
+                                    Voice Integration
+                                </Label>
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="space-y-0.5">
+                                        <span className="text-sm font-medium">Voice Commands & Dictation</span>
+                                        <p className="text-xs text-muted-foreground">Allow Note Ai to access your microphone for voice notes.</p>
+                                    </div>
+                                    <Button variant="outline" size="sm" onClick={() => {
+                                        navigator.mediaDevices.getUserMedia({ audio: true })
+                                            .then(() => toast.success("Microphone access granted"))
+                                            .catch(() => toast.error("Microphone access denied"));
+                                    }}>
+                                        Test Access
+                                    </Button>
+                                </div>
+                            </div>
+
                         </CardContent>
                     </Card>
                 </TabsContent>

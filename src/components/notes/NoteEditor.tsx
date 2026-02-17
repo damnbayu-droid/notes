@@ -31,8 +31,11 @@ import {
   Folder,
   PenTool,
   Share2,
+  Mic,
 } from 'lucide-react';
 import { CanvasEditor } from './CanvasEditor';
+import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -70,6 +73,7 @@ export function NoteEditor({
   const [reminderDate, setReminderDate] = useState('');
   const [folder, setFolder] = useState('Main');
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
 
   const isNewNote = !note;
 
@@ -212,6 +216,18 @@ export function NoteEditor({
               >
                 <PenTool className="w-4 h-4" />
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 ${isVoiceOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500'}`}
+                onClick={() => {
+                  setIsVoiceOpen(!isVoiceOpen);
+                  setIsCanvasOpen(false); // Close canvas if open
+                }}
+                title="Add Voice Note"
+              >
+                <Mic className="w-4 h-4" />
+              </Button>
 
               {!isNewNote && (
                 <Button
@@ -259,6 +275,33 @@ export function NoteEditor({
             </div>
           ) : (
             <>
+              {/* Voice Recorder Section */}
+              {isVoiceOpen && (
+                <div className="mb-4 p-4 border border-violet-100 rounded-lg bg-violet-50/30 flex flex-col gap-2 items-center justify-center">
+                  <span className="text-xs font-medium text-violet-600 mb-1">
+                    Voice Note active - Speaking will auto-transcribe
+                  </span>
+                  <VoiceRecorder
+                    onRecordingComplete={(blob) => {
+                      console.log('Audio recorded:', blob.size);
+                      toast.success("Voice note recorded (Transcription added)");
+                      setIsVoiceOpen(false);
+                    }}
+                    onTranscriptionComplete={(text) => {
+                      setContent(prev => prev + text);
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsVoiceOpen(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700 mt-2"
+                  >
+                    Close Voice Recorder
+                  </Button>
+                </div>
+              )}
+
               <Input
                 placeholder="Title"
                 value={title}
@@ -355,6 +398,6 @@ export function NoteEditor({
           </div>
         )}
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

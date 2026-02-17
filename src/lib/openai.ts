@@ -1,15 +1,10 @@
 import OpenAI from 'openai';
 
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-let openai: OpenAI | null = null;
 
-if (apiKey) {
-    openai = new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true // Client-side specific
-    });
-}
+
+
+
 
 // Tool Definitions
 export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -65,13 +60,25 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 export async function askAI(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 ): Promise<OpenAI.Chat.Completions.ChatCompletionMessage> {
-    if (!openai) {
+
+    // Check for API key in localStorage (Smart Mode) or env
+    const localApiKey = localStorage.getItem('openai_api_key');
+    const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const finalApiKey = localApiKey || envApiKey;
+
+    if (!finalApiKey) {
         return {
             role: 'assistant',
-            content: "OpenAI API Key is missing. Please add VITE_OPENAI_API_KEY to your .env file.",
+            content: "OpenAI API Key is missing. Please add it in Settings > AI or in your .env file.",
             refusal: null
         };
     }
+
+    // Initialize OpenAI client dynamically
+    const openai = new OpenAI({
+        apiKey: finalApiKey,
+        dangerouslyAllowBrowser: true
+    });
 
     try {
         const completion = await openai.chat.completions.create({
