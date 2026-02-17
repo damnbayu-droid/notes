@@ -1,0 +1,131 @@
+import { useState, useCallback, useEffect } from 'react';
+import type { User } from '@/types';
+import { supabase } from '@/lib/supabase';
+
+interface AuthState {
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+interface UseAuthReturn extends AuthState {
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+}
+
+export function useAuth(): UseAuthReturn {
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    isLoading: true,
+    isAuthenticated: false,
+  });
+
+  // Check for existing session on mount and subscribe to changes
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setState(prev => ({
+        ...prev,
+        user: session?.user as unknown as User | null,
+        isAuthenticated: !!session?.user,
+        isLoading: false,
+      }));
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setState(prev => ({
+        ...prev,
+        user: session?.user as unknown as User | null,
+        isAuthenticated: !!session?.user,
+        isLoading: false,
+      }));
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signUp = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+          },
+        },
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return { success: false, error: error.message };
+      }
+
+      // If email confirmation is required, user might be null here
+      if (data.user && !data.session) {
+        return { success: true, error: 'Please check your email for confirmation link.' };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, []);
+
+  const signIn = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, []);
+
+  const signOut = useCallback(async (): Promise<void> => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    await supabase.auth.signOut();
+  }, []);
+
+  const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, []);
+
+  return {
+    ...state,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+  };
+}
