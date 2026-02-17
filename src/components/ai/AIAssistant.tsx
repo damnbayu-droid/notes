@@ -59,7 +59,7 @@ export function AIAssistant() {
         const contextMessages: any[] = [
             {
                 role: 'system',
-                content: `You are N-Ai, the intelligent OS for Smart Notes. You can manage notes and schedules directly.
+                content: `You are Note Ai, the intelligent OS for Smart Notes. You can manage notes and schedules directly.
             Current Date: ${new Date().toISOString()}
             
             Tools available:
@@ -138,7 +138,7 @@ export function AIAssistant() {
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2 text-white text-base">
                                     <Bot className="w-5 h-5" />
-                                    N-Ai
+                                    Note Ai
                                 </CardTitle>
                                 <div className="flex items-center gap-1">
                                     <Button
