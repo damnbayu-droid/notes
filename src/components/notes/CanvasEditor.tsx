@@ -1,17 +1,30 @@
 import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Save, X, RotateCcw, PenTool } from 'lucide-react';
+import { Save, X, RotateCcw, PenTool, Download, Share2, FileImage } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+    DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 
 interface CanvasEditorProps {
     onSave: (dataUrl: string) => void;
     onCancel: () => void;
+    signatureMode?: boolean;
 }
 
-export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
+export function CanvasEditor({ onSave, onCancel, signatureMode = false }: CanvasEditorProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [color, setColor] = useState('black');
-    const [lineWidth] = useState(2);
+    const [color, setColor] = useState(signatureMode ? 'black' : 'black');
+    const [lineWidth] = useState(signatureMode ? 3 : 2);
+    const [hasBackground, setHasBackground] = useState(true);
     const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
     // Initialize Canvas
@@ -35,11 +48,16 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
             ctx.lineJoin = 'round';
             ctx.strokeStyle = color;
             ctx.lineWidth = lineWidth;
+
+            // Fill background if enabled
+            if (hasBackground) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
             contextRef.current = ctx;
         }
-
-        // Handle resize slightly? For now fixed on mount is okay for modal
-    }, []);
+    }, [hasBackground]);
 
     useEffect(() => {
         if (contextRef.current) {
@@ -71,7 +89,6 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
     };
 
     const getCoordinates = (event: MouseEvent | TouchEvent) => {
-        // Handle touch events
         if ('touches' in event) {
             const touch = event.touches[0];
             const canvas = canvasRef.current;
@@ -83,7 +100,6 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
                 };
             }
         }
-        // Handle mouse events
         return {
             offsetX: (event as MouseEvent).offsetX,
             offsetY: (event as MouseEvent).offsetY
@@ -95,18 +111,82 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
         const ctx = contextRef.current;
         if (canvas && ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (hasBackground) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         }
     };
 
     const save = () => {
         const canvas = canvasRef.current;
         if (canvas) {
-            // Create a white background context copy if needed, 
-            // but for now transparent is fine or we can composite.
-            // Let's composite white background for better visibility in dark mode notes?
-            // Or just transparent.
             const dataUrl = canvas.toDataURL('image/png');
             onSave(dataUrl);
+        }
+    };
+
+    const exportAs = (format: 'png' | 'jpg' | 'pdf') => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        try {
+            if (format === 'pdf') {
+                // Export as PDF
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [canvas.width / 2, canvas.height / 2]
+                });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+                pdf.save(`sketch-${Date.now()}.pdf`);
+                toast.success('Sketch exported as PDF');
+            } else {
+                // Export as PNG or JPG
+                const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+                const dataUrl = canvas.toDataURL(mimeType, 0.95);
+                const link = document.createElement('a');
+                link.download = `sketch-${Date.now()}.${format}`;
+                link.href = dataUrl;
+                link.click();
+                toast.success(`Sketch exported as ${format.toUpperCase()}`);
+            }
+        } catch (error) {
+            toast.error('Failed to export sketch');
+            console.error('Export error:', error);
+        }
+    };
+
+    const shareSketch = async () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        try {
+            const blob = await new Promise<Blob>((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                }, 'image/png');
+            });
+
+            const file = new File([blob], `sketch-${Date.now()}.png`, { type: 'image/png' });
+
+            if (navigator.share && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: signatureMode ? 'My Signature' : 'My Sketch',
+                    text: signatureMode ? 'Check out my signature' : 'Check out my sketch',
+                });
+                toast.success('Sketch shared successfully');
+            } else {
+                // Fallback: copy to clipboard
+                const item = new ClipboardItem({ 'image/png': blob });
+                await navigator.clipboard.write([item]);
+                toast.success('Sketch copied to clipboard');
+            }
+        } catch (error) {
+            toast.error('Failed to share sketch');
+            console.error('Share error:', error);
         }
     };
 
@@ -115,7 +195,7 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
             <div className="flex items-center justify-between p-2 border-b">
                 <div className="flex gap-2 items-center">
                     <PenTool className="w-4 h-4 text-gray-500 mr-2" />
-                    {['black', '#ef4444', '#3b82f6', '#22c55e'].map(c => (
+                    {!signatureMode && ['black', '#ef4444', '#3b82f6', '#22c55e'].map(c => (
                         <button
                             key={c}
                             onClick={() => setColor(c)}
@@ -123,11 +203,51 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
                             style={{ backgroundColor: c }}
                         />
                     ))}
+                    <div className="flex items-center gap-2 ml-4">
+                        <Checkbox
+                            id="background"
+                            checked={hasBackground}
+                            onCheckedChange={(checked) => setHasBackground(checked as boolean)}
+                        />
+                        <label htmlFor="background" className="text-xs text-gray-600 cursor-pointer">
+                            Background
+                        </label>
+                    </div>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="ghost" size="sm" onClick={clear} title="Clear">
                         <RotateCcw className="w-4 h-4" />
                     </Button>
+
+                    {/* Export Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" title="Export">
+                                <Download className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Export as</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => exportAs('png')}>
+                                <FileImage className="w-4 h-4 mr-2" />
+                                PNG
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportAs('jpg')}>
+                                <FileImage className="w-4 h-4 mr-2" />
+                                JPG
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => exportAs('pdf')}>
+                                <FileImage className="w-4 h-4 mr-2" />
+                                PDF
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button variant="ghost" size="sm" onClick={shareSketch} title="Share">
+                        <Share2 className="w-4 h-4" />
+                    </Button>
+
                     <Button variant="ghost" size="sm" onClick={onCancel} title="Cancel">
                         <X className="w-4 h-4" />
                     </Button>
@@ -138,7 +258,7 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
                 </div>
             </div>
 
-            <div className="flex-1 bg-white relative touch-none cursor-crosshair">
+            <div className={`flex-1 relative touch-none cursor-crosshair ${hasBackground ? 'bg-white' : 'bg-gray-50'}`}>
                 <canvas
                     ref={canvasRef}
                     onMouseDown={startDrawing}
@@ -152,7 +272,7 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
                 />
             </div>
             <p className="text-xs text-center text-gray-400 py-1">
-                Draw above. Works with touch and mouse.
+                {signatureMode ? 'Sign above. Works with touch and mouse.' : 'Draw above. Works with touch and mouse.'}
             </p>
         </div>
     );

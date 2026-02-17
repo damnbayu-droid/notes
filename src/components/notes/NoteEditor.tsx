@@ -270,7 +270,8 @@ export function NoteEditor({
                 placeholder="Take a note..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="min-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
+                className="min-h-[200px] max-h-none resize-y border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
+                rows={10}
               />
 
               {/* Tags */}

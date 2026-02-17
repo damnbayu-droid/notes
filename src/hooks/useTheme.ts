@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 type Theme = "dark" | "light" | "system"
 
 export function useTheme() {
-    const [theme, setTheme] = useState<Theme>(
+    const [theme, setThemeState] = useState<Theme>(
         () => (localStorage.getItem("vite-ui-theme") as Theme) || "system"
     )
 
@@ -25,13 +25,13 @@ export function useTheme() {
         root.classList.add(theme)
     }, [theme])
 
-    const value = {
-        theme,
-        setTheme: (theme: Theme) => {
-            localStorage.setItem("vite-ui-theme", theme)
-            setTheme(theme)
-        },
-    }
+    const setTheme = useCallback((newTheme: Theme) => {
+        localStorage.setItem("vite-ui-theme", newTheme)
+        setThemeState(newTheme)
+    }, [])
 
-    return value
+    return {
+        theme,
+        setTheme,
+    }
 }
