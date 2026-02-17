@@ -1,6 +1,6 @@
 {
-    "name": "MyNotes - Catatan & Productivity",
-    "short_name": "MyNotes",
+    "name": "Smart Notes",
+    "short_name": "Smart Notes",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
