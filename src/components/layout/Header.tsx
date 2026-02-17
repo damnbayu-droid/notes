@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   Sparkles,
 } from 'lucide-react';
+import { BaliTimeClock } from '@/components/time/BaliTimeClock';
 
 interface HeaderProps {
   user: User | null;
@@ -28,7 +29,7 @@ interface HeaderProps {
 export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border">
-      <div className="flex items-center justify-between h-16 px-4 lg:px-6">
+      <div className="flex items-center justify-between h-16 px-4 lg:px-6 gap-4">
         {/* Left side */}
         <div className="flex items-center gap-4">
           <Button
@@ -48,6 +49,11 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               Smart Notes
             </span>
           </div>
+        </div>
+
+        {/* Center - Bali Time Clock (hidden on small screens) */}
+        <div className="hidden lg:block">
+          <BaliTimeClock />
         </div>
 
         {/* Right side */}
