@@ -13,10 +13,11 @@ import {
   Calendar,
   Moon,
   Sun,
+  Book,
 } from 'lucide-react';
 
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -39,6 +40,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
+    { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
     { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },

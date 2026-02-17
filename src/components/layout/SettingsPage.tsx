@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Lock, Mail, Shield, Bell, Bot, Cpu, Key } from 'lucide-react';
+import { User, Lock, Mail, Shield, Bell, Bot, Cpu, Key, Database } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
     const { user, changePassword } = useAuth();
+    const { isStorageSupported, storageUsage, clearAllData, exportData, importData } = useOfflineStorage();
     const [loading, setLoading] = useState(false);
 
     // Password State
@@ -65,6 +67,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                     <TabsTrigger value="ai" className="flex items-center gap-2">
                         <Bot className="w-4 h-4" />
                         Note Ai
+                    </TabsTrigger>
+                    <TabsTrigger value="storage" className="flex items-center gap-2">
+                        <Database className="w-4 h-4" />
+                        Storage
                     </TabsTrigger>
                 </TabsList>
 
@@ -283,6 +289,123 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                 </div>
                             </div>
 
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Storage Tab */}
+                <TabsContent value="storage">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Database className="w-5 h-5 text-violet-600" />
+                                Storage & Data
+                            </CardTitle>
+                            <CardDescription>Manage your local data and offline storage.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <h3 className="text-sm font-medium">Storage Status</h3>
+                                <div className="p-4 border rounded-lg bg-gray-50 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Offline Support:</span>
+                                        <span className={isStorageSupported ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
+                                            {isStorageSupported ? "Available" : "Not Supported"}
+                                        </span>
+                                    </div>
+                                    {storageUsage && (
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-600">Used Space:</span>
+                                                <span className="font-medium">{(storageUsage.usage / 1024 / 1024).toFixed(2)} MB</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-violet-600 h-2 rounded-full"
+                                                    style={{ width: `${Math.min((storageUsage.usage / storageUsage.quota) * 100, 100)}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-muted-foreground text-right">
+                                                of {(storageUsage.quota / 1024 / 1024).toFixed(0)} MB available
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t">
+                                <h3 className="text-sm font-medium">Data Management</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <span className="text-sm font-medium">Export Data</span>
+                                            <p className="text-xs text-muted-foreground">Download a backup of all your notes and books.</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={async () => {
+                                            const success = await exportData();
+                                            if (success) toast.success("Data exported successfully");
+                                            else toast.error("Failed to export data");
+                                        }}>
+                                            Export JSON
+                                        </Button>
+                                    </div>
+                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <span className="text-sm font-medium">Import Data</span>
+                                            <p className="text-xs text-muted-foreground">Restore from a backup file. Current data will be merged.</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="file"
+                                                accept=".json"
+                                                className="hidden"
+                                                id="import-file"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    const success = await importData(file);
+                                                    if (success) {
+                                                        toast.success("Data imported successfully");
+                                                        window.location.reload();
+                                                    } else {
+                                                        toast.error("Failed to import data");
+                                                    }
+                                                }}
+                                            />
+                                            <Button variant="outline" size="sm" className="w-full" onClick={() => document.getElementById('import-file')?.click()}>
+                                                Import JSON
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 pt-4 border-t">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
+                                        <p className="text-xs text-muted-foreground">Irreversible actions.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50/50">
+                                    <div className="space-y-0.5">
+                                        <span className="text-sm font-medium text-red-900">Clear All Local Data</span>
+                                        <p className="text-xs text-red-700/80">Deletes all notes, books, and settings stored on this device.</p>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (confirm("Are you sure? This will delete all your local notes and cannot be undone.")) {
+                                                clearAllData();
+                                            }
+                                        }}
+                                    >
+                                        Clear Data
+                                    </Button>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

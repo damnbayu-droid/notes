@@ -14,6 +14,9 @@ import { ScannerPage } from '@/components/scanner/ScannerPage';
 import { AdPopup } from '@/components/ads/AdPopup';
 import { SettingsPage } from './SettingsPage';
 import { SchedulePage } from '@/components/schedule/SchedulePage';
+import { lazy, Suspense } from 'react';
+
+const BookLayout = lazy(() => import('@/components/books/BookLayout').then(module => ({ default: module.BookLayout })));
 
 interface DashboardProps {
   user: User | null;
@@ -21,7 +24,7 @@ interface DashboardProps {
   onSignIn: () => void;
 }
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books';
 
 export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('notes');
@@ -147,6 +150,10 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             {/* Content Switcher */}
             {currentView === 'settings' ? (
               <SettingsPage defaultTab={settingsTab} />
+            ) : currentView === 'books' ? (
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-8 w-8 border-4 border-violet-500 rounded-full border-t-transparent"></div></div>}>
+                <BookLayout />
+              </Suspense>
             ) : currentView === 'schedule' ? (
               <SchedulePage />
             ) : currentView === 'scanner' ? (
