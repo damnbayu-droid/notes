@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
 import { Header } from './Header';
@@ -12,6 +13,7 @@ import { Plus } from 'lucide-react';
 import { ScannerPage } from '@/components/scanner/ScannerPage';
 import { AdPopup } from '@/components/ads/AdPopup';
 import { SettingsPage } from './SettingsPage';
+import { SchedulePage } from '@/components/schedule/SchedulePage';
 
 interface DashboardProps {
   user: User | null;
@@ -19,7 +21,7 @@ interface DashboardProps {
   onSignIn: () => void;
 }
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule';
 
 export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('notes');
@@ -103,6 +105,21 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
           activeFolder={activeFolder}
           onSelectFolder={setActiveFolder}
           onOpenSettings={() => setCurrentView('settings')}
+          onAddFolder={() => {
+            const folderName = prompt("Enter folder name:");
+            if (folderName && folderName.trim()) {
+              setActiveFolder(folderName.trim());
+              // Optionally create an empty note to 'persist' it immediately? 
+              // Or just let the user create a note in it.
+              // For better UX, let's create a welcome note.
+              createNote({
+                title: `Welcome to ${folderName}`,
+                content: 'Start adding notes to this folder!',
+                folder: folderName.trim()
+              });
+              toast.success(`Folder "${folderName}" created`);
+            }
+          }}
         />
 
         <main className="flex-1 min-w-0">
@@ -126,6 +143,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             {/* Content Switcher */}
             {currentView === 'settings' ? (
               <SettingsPage />
+            ) : currentView === 'schedule' ? (
+              <SchedulePage />
             ) : currentView === 'scanner' ? (
               <ScannerPage />
             ) : currentView === 'archive' && archivedNotes.length === 0 ? (

@@ -9,10 +9,11 @@ import {
   Plus,
   X,
   Scan,
+  Calendar,
 } from 'lucide-react';
 
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -24,15 +25,17 @@ interface SidebarProps {
   activeFolder: string;
   onSelectFolder: (folder: string) => void;
   onOpenSettings: () => void;
+  onAddFolder: () => void;
 }
 
-export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings, onAddFolder }: SidebarProps) {
   const tags: string[] = []; // Removed mock tags
   const activeNotesCount = 0; // Removed mock count
   const archivedNotesCount = 0; // Removed mock count
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
+    { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
     { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },
   ];
@@ -112,9 +115,18 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
               {/* Folders */}
               <div className="space-y-1">
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Folders
-                </p>
+                <div className="flex items-center justify-between px-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Folders
+                  </p>
+                  <button
+                    onClick={onAddFolder}
+                    className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    title="Add Folder"
+                  >
+                    <Plus className="w-3 h-3 text-gray-500" />
+                  </button>
+                </div>
                 <div className="space-y-0.5">
                   {folders.map(folder => (
                     <button
@@ -131,6 +143,13 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                       <span className="truncate">{folder}</span>
                     </button>
                   ))}
+                  <button
+                    onClick={onAddFolder}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-violet-600 hover:bg-gray-50 transition-all border border-dashed border-transparent hover:border-violet-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="truncate">Add Folder</span>
+                  </button>
                 </div>
               </div>
 
@@ -169,8 +188,8 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 onClose();
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${currentView === 'settings'
-                  ? 'bg-violet-50 text-violet-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-violet-50 text-violet-700 font-medium'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-violet-600' : 'text-gray-400'}`} />

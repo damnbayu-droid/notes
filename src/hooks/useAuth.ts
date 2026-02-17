@@ -52,6 +52,15 @@ export function useAuth(): UseAuthReturn {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Request Notification Permission on Auth
+  useEffect(() => {
+    if (state.isAuthenticated && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, [state.isAuthenticated]);
+
   const signUp = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     setState(prev => ({ ...prev, isLoading: true }));
 
