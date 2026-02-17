@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Mail, Shield, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function SettingsPage() {
+export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
     const { user, changePassword } = useAuth();
     const [loading, setLoading] = useState(false);
 
@@ -47,7 +47,7 @@ export function SettingsPage() {
                 <p className="text-muted-foreground">Manage your account settings and preferences.</p>
             </div>
 
-            <Tabs defaultValue="profile" className="space-y-4">
+            <Tabs defaultValue={defaultTab} className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="profile" className="flex items-center gap-2">
                         <User className="w-4 h-4" />
@@ -83,6 +83,34 @@ export function SettingsPage() {
                                 <Label>Full Name</Label>
                                 <Input value={user?.name || ''} disabled className="max-w-sm" />
                                 <p className="text-xs text-muted-foreground">Managed via Supabase Auth.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Profile Picture</Label>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
+                                        onClick={() => {
+                                            toast.success("Profile picture updated to Boy!");
+                                            // In a real app, we'd update Supabase user metadata here.
+                                            // For now, we mock it as immediate feedback.
+                                        }}
+                                    >
+                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-violet-100">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Boy" className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-600">Boy</span>
+                                    </div>
+                                    <div className="flex flex-col items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all"
+                                        onClick={() => {
+                                            toast.success("Profile picture updated to Girl!");
+                                        }}
+                                    >
+                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-violet-100">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka" alt="Girl" className="w-full h-full object-cover" />
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-600">Girl</span>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Click to select a preset avatar.</p>
                             </div>
                         </CardContent>
                     </Card>

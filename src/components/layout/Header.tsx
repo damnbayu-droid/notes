@@ -21,13 +21,13 @@ interface HeaderProps {
   user: User | null;
   onSignOut: () => void;
   onToggleSidebar: () => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (tab?: string) => void;
   onSignIn: () => void;
 }
 
 export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-gray-200">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
         {/* Left side */}
         <div className="flex items-center gap-4">
@@ -73,11 +73,11 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onOpenSettings('profile')}>
                   <UserIcon className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onOpenSettings}>
+                <DropdownMenuItem onClick={() => onOpenSettings('security')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>

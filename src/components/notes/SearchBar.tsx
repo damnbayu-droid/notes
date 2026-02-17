@@ -61,23 +61,21 @@ export function SearchBar({
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
-            isFocused ? 'text-violet-500' : 'text-gray-400'
-          }`} />
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${isFocused ? 'text-primary' : 'text-muted-foreground'
+            }`} />
           <Input
             placeholder="Search notes..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            className={`pl-11 pr-10 h-12 bg-white border-gray-200 transition-all ${
-              isFocused ? 'border-violet-500 ring-2 ring-violet-500/20' : ''
-            }`}
+            className={`pl-11 pr-10 h-12 bg-background border-border transition-all ${isFocused ? 'border-primary ring-2 ring-primary/20' : ''
+              }`}
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -127,7 +125,7 @@ export function SearchBar({
               <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {availableTags.length === 0 ? (
-                <div className="px-2 py-4 text-center text-sm text-gray-500">
+                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
                   No tags available
                 </div>
               ) : (

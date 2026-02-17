@@ -56,7 +56,7 @@ export function AdPopup() {
                 <div className="flex flex-col gap-4 py-4">
                     <div className="p-4 bg-violet-50 rounded-lg border border-violet-100">
                         <p className="text-sm text-violet-800 font-medium">
-                            Click the button below to continue working on your notes.
+                            Click Link for continue, its free
                         </p>
                     </div>
                     <Button

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/layout/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
 import { AIAssistant } from '@/components/ai/AIAssistant';
+import { SharedNoteView } from '@/components/notes/SharedNoteView';
+import { useTheme } from '@/hooks/useTheme';
 import './App.css';
 
-function App() {
+function MainApp() {
   const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle, signInWithApple } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
 
@@ -96,8 +99,6 @@ function App() {
     );
   }
 
-
-
   // Show dashboard (Authenticated OR Guest)
   return (
     <>
@@ -109,6 +110,18 @@ function App() {
       <AIAssistant />
       <Toaster position="top-center" />
     </>
+  );
+}
+
+function App() {
+  const { theme } = useTheme(); // Initialize theme logic and ensure it is used
+  return (
+    <div className={theme}>
+      <Routes>
+        <Route path="/share/:id" element={<SharedNoteView />} />
+        <Route path="/*" element={<MainApp />} />
+      </Routes>
+    </div>
   );
 }
 

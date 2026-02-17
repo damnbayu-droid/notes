@@ -45,9 +45,9 @@ export function NoteCard({
   onChangeColor,
 }: NoteCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const colorOption = NOTE_COLORS.find(c => c.value === note.color) || NOTE_COLORS[0];
-  
+
   const truncateContent = (content: string, maxLength: number = 150) => {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength).trim() + '...';
@@ -74,13 +74,13 @@ export function NoteCard({
       <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
         {/* Title */}
         {note.title && (
-          <h3 className="font-semibold text-gray-900 mb-2 pr-6 line-clamp-2">
+          <h3 className="font-semibold text-foreground mb-2 pr-6 line-clamp-2">
             {note.title}
           </h3>
         )}
 
         {/* Content */}
-        <p className={`text-gray-600 text-sm whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-6' : 'line-clamp-2'}`}>
+        <p className={`text-muted-foreground text-sm whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-6' : 'line-clamp-2'}`}>
           {truncateContent(note.content)}
         </p>
 
@@ -90,14 +90,14 @@ export function NoteCard({
             {note.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black/5 text-gray-600"
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground"
               >
                 <Tag className="w-3 h-3 mr-1" />
                 {tag}
               </span>
             ))}
             {note.tags.length > 3 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-black/5 text-gray-600">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground">
                 +{note.tags.length - 3}
               </span>
             )}
@@ -105,17 +105,16 @@ export function NoteCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-black/5">
-          <div className="flex items-center text-xs text-gray-400">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+          <div className="flex items-center text-xs text-muted-foreground">
             <Clock className="w-3 h-3 mr-1" />
             {formatDistanceToNow(note.updated_at)}
           </div>
 
           {/* Actions */}
-          <div 
-            className={`flex items-center gap-1 transition-opacity duration-200 ${
-              isHovered ? 'opacity-100' : 'opacity-0'
-            }`}
+          <div
+            className={`flex items-center gap-1 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
             onClick={(e) => e.stopPropagation()}
           >
             <Button
@@ -153,9 +152,9 @@ export function NoteCard({
                   <Copy className="w-4 h-4 mr-2" />
                   Duplicate
                 </DropdownMenuItem>
-                
+
                 <DropdownMenuSeparator />
-                
+
                 <div className="px-2 py-2">
                   <p className="text-xs text-gray-500 mb-2">Change color</p>
                   <div className="flex flex-wrap gap-1">
@@ -163,20 +162,19 @@ export function NoteCard({
                       <button
                         key={color.value}
                         onClick={() => onChangeColor(note.id, color.value)}
-                        className={`w-6 h-6 rounded-full border-2 transition-all ${
-                          note.color === color.value 
-                            ? 'border-violet-500 scale-110' 
+                        className={`w-6 h-6 rounded-full border-2 transition-all ${note.color === color.value
+                            ? 'border-violet-500 scale-110'
                             : 'border-transparent hover:scale-105'
-                        } ${color.bg} ${color.border} border`}
+                          } ${color.bg} ${color.border} border`}
                         title={color.label}
                       />
                     ))}
                   </div>
                 </div>
-                
+
                 <DropdownMenuSeparator />
-                
-                <DropdownMenuItem 
+
+                <DropdownMenuItem
                   onClick={() => onDelete(note.id)}
                   className="text-red-600 focus:text-red-600 focus:bg-red-50"
                 >

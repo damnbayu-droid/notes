@@ -36,11 +36,11 @@ export function PDFTools() {
     };
 
     return (
-        <div className="space-y-4 p-4 border rounded-lg bg-white shadow-sm">
-            <h3 className="font-semibold text-lg">PDF Tools (Offline)</h3>
+        <div className="space-y-4 p-4 border border-border rounded-lg bg-card shadow-sm text-foreground">
+            <h3 className="font-semibold text-lg text-foreground">PDF Tools (Offline)</h3>
 
             <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Merge PDFs</label>
+                <label className="block text-sm font-medium text-muted-foreground">Merge PDFs</label>
                 <div className="flex gap-2">
                     <Input
                         type="file"

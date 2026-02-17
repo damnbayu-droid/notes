@@ -29,7 +29,10 @@ import {
   Trash2,
   Calendar,
   Folder,
+  PenTool,
+  Share2,
 } from 'lucide-react';
+import { CanvasEditor } from './CanvasEditor';
 import {
   Select,
   SelectContent,
@@ -66,6 +69,7 @@ export function NoteEditor({
   const [newTag, setNewTag] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [folder, setFolder] = useState('Main');
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false);
 
   const isNewNote = !note;
 
@@ -90,7 +94,14 @@ export function NoteEditor({
       setFolder('Main');
     }
     setNewTag('');
+    setIsCanvasOpen(false);
   }, [note, isOpen]);
+
+  const handleSaveSketch = (dataUrl: string) => {
+    const imageMarkdown = `\n![Sketch](${dataUrl})\n`;
+    setContent(prev => prev + imageMarkdown);
+    setIsCanvasOpen(false);
+  };
 
   const handleSave = useCallback(() => {
     if (!title.trim() && !content.trim()) {
@@ -192,6 +203,35 @@ export function NoteEditor({
                   </div>
                 </PopoverContent>
               </Popover>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 ${isCanvasOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500'}`}
+                onClick={() => setIsCanvasOpen(!isCanvasOpen)}
+                title="Add Sketch"
+              >
+                <PenTool className="w-4 h-4" />
+              </Button>
+
+              {!isNewNote && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                  onClick={() => {
+                    const url = `${window.location.origin}/share/${note.id}`;
+                    navigator.clipboard.writeText(url);
+                    // Ideally show a toast here
+                    alert('Link copied to clipboard!');
+                    // I should use toast from sonner if available, but I don't have access to toast hook here easily without importing. 
+                    // Actually App.tsx has Toaster. I can import { toast } from 'sonner'.
+                  }}
+                  title="Share Note"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              )}
+
               {!isNewNote && onDelete && (
                 <Button
                   variant="ghost"
@@ -210,95 +250,109 @@ export function NoteEditor({
         </DialogHeader>
 
         <div className="p-4 space-y-4">
-          <Input
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-xl font-semibold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
-          />
-
-          <Textarea
-            placeholder="Take a note..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
-          />
-
-          {/* Tags */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-500">Tags</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {tags.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-red-100 transition-colors"
-                  onClick={() => handleRemoveTag(tag)}
-                >
-                  {tag}
-                  <X className="w-3 h-3 ml-1" />
-                </Badge>
-              ))}
-              <div className="flex items-center gap-1">
-                <Input
-                  placeholder="Add tag..."
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-32 h-8 text-sm"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleAddTag}
-                  disabled={!newTag.trim()}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Metadata Controls */}
-          <div className="flex items-center gap-4">
-            {/* Folder Select */}
-            <div className="flex items-center gap-2">
-              <Folder className="w-4 h-4 text-gray-400" />
-              <Select value={folder} onValueChange={setFolder}>
-                <SelectTrigger className="w-[140px] h-8 text-sm">
-                  <SelectValue placeholder="Select folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Main">Main</SelectItem>
-                  <SelectItem value="Google Notes">Google Notes</SelectItem>
-                  <SelectItem value="iCloud Notes">iCloud Notes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Date Picker (Simple Native Input for now) */}
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
-              <Input
-                type="datetime-local"
-                value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setReminderDate(new Date(e.target.value).toISOString())}
-                className="w-auto h-8 text-sm"
+          {isCanvasOpen ? (
+            <div className="h-[400px] border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner flex flex-col">
+              <CanvasEditor
+                onSave={handleSaveSketch}
+                onCancel={() => setIsCanvasOpen(false)}
               />
             </div>
-          </div>
+          ) : (
+            <>
+              <Input
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="text-xl font-semibold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
+              />
+
+              <Textarea
+                placeholder="Take a note..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="min-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
+              />
+
+              {/* Tags */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-500">Tags</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-red-100 transition-colors"
+                      onClick={() => handleRemoveTag(tag)}
+                    >
+                      {tag}
+                      <X className="w-3 h-3 ml-1" />
+                    </Badge>
+                  ))}
+                  <div className="flex items-center gap-1">
+                    <Input
+                      placeholder="Add tag..."
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="w-32 h-8 text-sm"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleAddTag}
+                      disabled={!newTag.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Metadata Controls */}
+              <div className="flex items-center gap-4">
+                {/* Folder Select */}
+                <div className="flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-gray-400" />
+                  <Select value={folder} onValueChange={setFolder}>
+                    <SelectTrigger className="w-[140px] h-8 text-sm">
+                      <SelectValue placeholder="Select folder" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Main">Main</SelectItem>
+                      <SelectItem value="Google Notes">Google Notes</SelectItem>
+                      <SelectItem value="iCloud Notes">iCloud Notes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Date Picker (Simple Native Input for now) */}
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <Input
+                    type="datetime-local"
+                    value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''}
+                    onChange={(e) => setReminderDate(new Date(e.target.value).toISOString())}
+                    className="w-auto h-8 text-sm"
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="p-4 pt-0 flex justify-end">
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="w-4 h-4" />
-            Save
-          </Button>
-        </div>
+        {/* Footer */}
+        {!isCanvasOpen && (
+          <div className="p-4 pt-0 flex justify-end">
+            <Button onClick={handleSave} className="gap-2">
+              <Save className="w-4 h-4" />
+              Save
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

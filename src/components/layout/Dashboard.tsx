@@ -25,6 +25,7 @@ type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedu
 
 export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('notes');
+  const [settingsTab, setSettingsTab] = useState('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -85,12 +86,15 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const displayPinnedNotes = currentView === 'archive' ? [] : pinnedNotes;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header
         user={user}
         onSignOut={onSignOut}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        onOpenSettings={() => setCurrentView('settings')}
+        onOpenSettings={(tab = 'profile') => {
+          setSettingsTab(tab);
+          setCurrentView('settings');
+        }}
         onSignIn={onSignIn}
       />
 
@@ -142,7 +146,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
 
             {/* Content Switcher */}
             {currentView === 'settings' ? (
-              <SettingsPage />
+              <SettingsPage defaultTab={settingsTab} />
             ) : currentView === 'schedule' ? (
               <SchedulePage />
             ) : currentView === 'scanner' ? (

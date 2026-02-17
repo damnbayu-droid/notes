@@ -25,6 +25,7 @@ export function AIAssistant() {
     const { user } = useAuth();
     const { createNote } = useNotes(user);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -32,6 +33,20 @@ export function AIAssistant() {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, isOpen]);
+
+    // Handle click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node) && isOpen) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -44,7 +59,7 @@ export function AIAssistant() {
         const contextMessages: any[] = [
             {
                 role: 'system',
-                content: `You are the intelligent OS for Smart Notes. You can manage notes and schedules directly.
+                content: `You are N-Ai, the intelligent OS for Smart Notes. You can manage notes and schedules directly.
             Current Date: ${new Date().toISOString()}
             
             Tools available:
@@ -114,6 +129,7 @@ export function AIAssistant() {
             {/* Chat Window */}
             {isOpen && (
                 <div
+                    ref={containerRef}
                     className={`fixed bottom-24 right-6 z-50 flex flex-col transition-all duration-300 ease-in-out ${isExpanded ? 'w-[90vw] h-[80vh] sm:w-[600px] sm:h-[700px]' : 'w-[350px] h-[500px]'
                         }`}
                 >
@@ -122,7 +138,7 @@ export function AIAssistant() {
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2 text-white text-base">
                                     <Bot className="w-5 h-5" />
-                                    AI Assistant
+                                    N-Ai
                                 </CardTitle>
                                 <div className="flex items-center gap-1">
                                     <Button
@@ -160,8 +176,8 @@ export function AIAssistant() {
                                             )}
                                             <div
                                                 className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${msg.role === 'user'
-                                                        ? 'bg-violet-600 text-white rounded-br-none'
-                                                        : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
+                                                    ? 'bg-violet-600 text-white rounded-br-none'
+                                                    : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
                                                     }`}
                                             >
                                                 <pre className="whitespace-pre-wrap font-sans break-words">{msg.content}</pre>

@@ -27,11 +27,22 @@ export function useAuth(): UseAuthReturn {
 
   // Check for existing session on mount and subscribe to changes
   useEffect(() => {
+    const mapUser = (supabaseUser: any): User | null => {
+      if (!supabaseUser) return null;
+      return {
+        id: supabaseUser.id,
+        email: supabaseUser.email,
+        name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || 'User',
+        avatar: supabaseUser.user_metadata?.avatar || supabaseUser.user_metadata?.avatar_url,
+        created_at: supabaseUser.created_at,
+      };
+    };
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setState(prev => ({
         ...prev,
-        user: session?.user as unknown as User | null,
+        user: mapUser(session?.user),
         isAuthenticated: !!session?.user,
         isLoading: false,
       }));
@@ -43,7 +54,7 @@ export function useAuth(): UseAuthReturn {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setState(prev => ({
         ...prev,
-        user: session?.user as unknown as User | null,
+        user: mapUser(session?.user),
         isAuthenticated: !!session?.user,
         isLoading: false,
       }));

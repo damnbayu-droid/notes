@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { useTheme } from '@/hooks/useTheme';
 import {
   LayoutGrid,
   Archive,
@@ -10,6 +11,8 @@ import {
   X,
   Scan,
   Calendar,
+  Moon,
+  Sun,
 } from 'lucide-react';
 
 
@@ -29,6 +32,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings, onAddFolder }: SidebarProps) {
+  const { theme, setTheme } = useTheme();
   const tags: string[] = []; // Removed mock tags
   const activeNotesCount = 0; // Removed mock count
   const archivedNotesCount = 0; // Removed mock count
@@ -53,13 +57,13 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
       {/* Sidebar */}
       <aside className={`
         fixed lg:sticky top-0 left-0 z-50 h-screen
-        w-64 bg-white border-r border-gray-200
+        w-64 bg-background border-r border-border
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-4 border-b border-border">
             <div className="flex items-center gap-2 lg:hidden">
               {/* Logo removed for desktop as it's in Header */}
               <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
@@ -84,7 +88,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
               {/* Navigation */}
               <div className="space-y-1">
-                <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Menu
                 </p>
                 {navItems.map((item) => (
@@ -95,12 +99,12 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                       onClose();
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === item.id
-                      ? 'bg-violet-50 text-violet-700'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-violet-600' : 'text-gray-400'
+                      <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-primary' : 'text-muted-foreground'
                         }`} />
                       {item.label}
                     </div>
@@ -116,15 +120,15 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
               {/* Folders */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between px-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Folders
                   </p>
                   <button
                     onClick={onAddFolder}
-                    className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                    className="p-1 hover:bg-accent rounded-md transition-colors"
                     title="Add Folder"
                   >
-                    <Plus className="w-3 h-3 text-gray-500" />
+                    <Plus className="w-3 h-3 text-muted-foreground" />
                   </button>
                 </div>
                 <div className="space-y-0.5">
@@ -136,8 +140,8 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                         onClose();
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeFolder === folder
-                        ? 'bg-violet-50 text-violet-700'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         }`}
                     >
                       <span className="truncate">{folder}</span>
@@ -145,7 +149,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                   ))}
                   <button
                     onClick={onAddFolder}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-violet-600 hover:bg-gray-50 transition-all border border-dashed border-transparent hover:border-violet-200"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent transition-all border border-dashed border-transparent hover:border-primary/20"
                   >
                     <Plus className="w-4 h-4" />
                     <span className="truncate">Add Folder</span>
@@ -156,21 +160,21 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
               {/* Tags */}
               {tags.length > 0 && (
                 <div className="space-y-1">
-                  <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Tags
                   </p>
                   <div className="space-y-0.5">
                     {tags.slice(0, 8).map((tag) => (
                       <button
                         key={tag}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent transition-colors"
                       >
-                        <Tag className="w-4 h-4 text-gray-400" />
+                        <Tag className="w-4 h-4 text-muted-foreground" />
                         <span className="capitalize">{tag}</span>
                       </button>
                     ))}
                     {tags.length > 8 && (
-                      <button className="w-full text-left px-3 py-2 text-sm text-violet-600 hover:text-violet-700 font-medium">
+                      <button className="w-full text-left px-3 py-2 text-sm text-primary hover:text-primary/80 font-medium">
                         +{tags.length - 8} more
                       </button>
                     )}
@@ -181,18 +185,34 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
           </ScrollArea>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-border space-y-2">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-5 h-5" />
+                  Light Mode
+                </>
+              ) : (
+                <>
+                  <Moon className="w-5 h-5" />
+                  Dark Mode
+                </>
+              )}
+            </button>
             <button
               onClick={() => {
                 onOpenSettings();
                 onClose();
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${currentView === 'settings'
-                ? 'bg-violet-50 text-violet-700 font-medium'
-                : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-accent text-accent-foreground font-medium'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}
             >
-              <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-violet-600' : 'text-gray-400'}`} />
+              <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-primary' : 'text-muted-foreground'}`} />
               Settings
             </button>
           </div>

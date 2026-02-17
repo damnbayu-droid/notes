@@ -28,7 +28,10 @@ export function CameraView({ onCapture }: CameraViewProps) {
                 audio={false}
                 ref={webcamRef}
                 screenshotFormat="image/jpeg"
-                videoConstraints={{ facingMode }}
+                videoConstraints={{
+                    facingMode,
+                    aspectRatio: 1.333333, // 4:3 aspect ratio to avoid wide-angle/fisheye
+                }}
                 className="absolute inset-0 w-full h-full object-cover"
             />
 

@@ -40,15 +40,15 @@ export interface NoteColorOption {
 }
 
 export const NOTE_COLORS: NoteColorOption[] = [
-  { value: 'default', label: 'Default', bg: 'bg-white', border: 'border-gray-200' },
-  { value: 'red', label: 'Red', bg: 'bg-red-50', border: 'border-red-200' },
-  { value: 'orange', label: 'Orange', bg: 'bg-orange-50', border: 'border-orange-200' },
-  { value: 'yellow', label: 'Yellow', bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  { value: 'green', label: 'Green', bg: 'bg-green-50', border: 'border-green-200' },
-  { value: 'teal', label: 'Teal', bg: 'bg-teal-50', border: 'border-teal-200' },
-  { value: 'blue', label: 'Blue', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { value: 'purple', label: 'Purple', bg: 'bg-purple-50', border: 'border-purple-200' },
-  { value: 'pink', label: 'Pink', bg: 'bg-pink-50', border: 'border-pink-200' },
+  { value: 'default', label: 'Default', bg: 'bg-card', border: 'border-border' },
+  { value: 'red', label: 'Red', bg: 'bg-red-50 dark:bg-red-950/20', border: 'border-red-200 dark:border-red-900/50' },
+  { value: 'orange', label: 'Orange', bg: 'bg-orange-50 dark:bg-orange-950/20', border: 'border-orange-200 dark:border-orange-900/50' },
+  { value: 'yellow', label: 'Yellow', bg: 'bg-yellow-50 dark:bg-yellow-950/20', border: 'border-yellow-200 dark:border-yellow-900/50' },
+  { value: 'green', label: 'Green', bg: 'bg-green-50 dark:bg-green-950/20', border: 'border-green-200 dark:border-green-900/50' },
+  { value: 'teal', label: 'Teal', bg: 'bg-teal-50 dark:bg-teal-950/20', border: 'border-teal-200 dark:border-teal-900/50' },
+  { value: 'blue', label: 'Blue', bg: 'bg-blue-50 dark:bg-blue-950/20', border: 'border-blue-200 dark:border-blue-900/50' },
+  { value: 'purple', label: 'Purple', bg: 'bg-purple-50 dark:bg-purple-950/20', border: 'border-purple-200 dark:border-purple-900/50' },
+  { value: 'pink', label: 'Pink', bg: 'bg-pink-50 dark:bg-pink-950/20', border: 'border-pink-200 dark:border-pink-900/50' },
 ];
 
 export type ViewMode = 'grid' | 'list';
