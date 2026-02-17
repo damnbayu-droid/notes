@@ -1,17 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { Dashboard } from '@/components/layout/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
 import { AIAssistant } from '@/components/ai/AIAssistant';
-import { SharedNoteView } from '@/components/notes/SharedNoteView';
 import { useTheme } from '@/hooks/useTheme';
 import './App.css';
+
+// Lazy load SharedNoteView for better initial load performance
+const SharedNoteView = lazy(() => import('@/components/notes/SharedNoteView'));
 
 function MainApp() {
   const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle, signInWithApple } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+
+  // Register Service Worker for offline support
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered:', registration);
+          })
+          .catch((error) => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+  }, []);
 
   // Notification Logic
   useEffect(() => {
@@ -118,7 +135,18 @@ function App() {
   return (
     <div className={theme}>
       <Routes>
-        <Route path="/share/:id" element={<SharedNoteView />} />
+        <Route
+          path="/share/:id"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <SharedNoteView />
+            </Suspense>
+          }
+        />
         <Route path="/*" element={<MainApp />} />
       </Routes>
     </div>

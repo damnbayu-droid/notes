@@ -5,7 +5,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
-export function SharedNoteView() {
+export default function SharedNoteView() {
     // In a real app, this would fetch from a public API endpoint without auth
     // For this demo, we'll try to find it in local storage or mock data
     const { id } = useParams();
