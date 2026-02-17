@@ -11,7 +11,7 @@ export function CanvasEditor({ onSave, onCancel }: CanvasEditorProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [color, setColor] = useState('black');
-    const [lineWidth, setLineWidth] = useState(2);
+    const [lineWidth] = useState(2);
     const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
     // Initialize Canvas
