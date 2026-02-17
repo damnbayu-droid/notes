@@ -13,6 +13,7 @@ interface UseAuthReturn extends AuthState {
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -121,11 +122,41 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    if (!state.user?.email) return { success: false, error: 'No user logged in' };
+
+    try {
+      // 1. Verify current password by signing in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: state.user.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        return { success: false, error: 'Incorrect current password' };
+      }
+
+      // 2. Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'An unexpected error occurred' };
+    }
+  }, [state.user]);
+
   return {
     ...state,
     signUp,
     signIn,
     signOut,
     resetPassword,
+    changePassword,
   };
 }

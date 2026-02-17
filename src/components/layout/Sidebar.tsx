@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings';
 
 interface SidebarProps {
   currentView: ViewType;
@@ -23,9 +23,10 @@ interface SidebarProps {
   folders: string[];
   activeFolder: string;
   onSelectFolder: (folder: string) => void;
+  onOpenSettings: () => void;
 }
 
-export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder }: SidebarProps) {
+export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings }: SidebarProps) {
   const tags: string[] = []; // Removed mock tags
   const activeNotesCount = 0; // Removed mock count
   const archivedNotesCount = 0; // Removed mock count
@@ -162,8 +163,17 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors">
-              <Settings className="w-5 h-5 text-gray-400" />
+            <button
+              onClick={() => {
+                onOpenSettings();
+                onClose();
+              }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${currentView === 'settings'
+                  ? 'bg-violet-50 text-violet-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+                }`}
+            >
+              <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-violet-600' : 'text-gray-400'}`} />
               Settings
             </button>
           </div>
