@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { toast } from 'sonner';
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
@@ -10,13 +10,13 @@ import { NoteEditor } from '@/components/notes/NoteEditor';
 import { EmptyState } from '@/components/notes/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { ScannerPage } from '@/components/scanner/ScannerPage';
 import { AdOverlay } from '@/components/ads/AdOverlay';
-import { SettingsPage } from './SettingsPage';
-import { AdminUserList } from '@/components/admin/AdminUserList';
-import { SchedulePage } from '@/components/schedule/SchedulePage';
-import { lazy, Suspense } from 'react';
 
+// Lazy load heavy components
+const ScannerPage = lazy(() => import('@/components/scanner/ScannerPage').then(module => ({ default: module.ScannerPage })));
+const SettingsPage = lazy(() => import('./SettingsPage').then(module => ({ default: module.SettingsPage })));
+const AdminUserList = lazy(() => import('@/components/admin/AdminUserList').then(module => ({ default: module.AdminUserList })));
+const SchedulePage = lazy(() => import('@/components/schedule/SchedulePage').then(module => ({ default: module.SchedulePage })));
 const BookLayout = lazy(() => import('@/components/books/BookLayout').then(module => ({ default: module.BookLayout })));
 
 interface DashboardProps {
@@ -91,6 +91,12 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const displayNotes = currentView === 'archive' ? archivedNotes : activeNotes;
   const displayPinnedNotes = currentView === 'archive' ? [] : pinnedNotes;
 
+  const PageLoader = () => (
+    <div className="flex items-center justify-center h-full min-h-[50vh]">
+      <div className="animate-spin h-8 w-8 border-4 border-violet-500 rounded-full border-t-transparent"></div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header
@@ -151,35 +157,35 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             )}
 
             {/* Content Switcher */}
-            {currentView === 'settings' ? (
-              <SettingsPage defaultTab={settingsTab} />
-            ) : currentView === 'scanner' ? (
-              <ScannerPage />
-            ) : currentView === 'schedule' ? (
-              <SchedulePage />
-            ) : currentView === 'admin' ? (
-              <AdminUserList />
-            ) : currentView === 'books' ? (
-              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin h-8 w-8 border-4 border-violet-500 rounded-full border-t-transparent"></div></div>}>
+            <Suspense fallback={<PageLoader />}>
+              {currentView === 'settings' ? (
+                <SettingsPage defaultTab={settingsTab} />
+              ) : currentView === 'scanner' ? (
+                <ScannerPage />
+              ) : currentView === 'schedule' ? (
+                <SchedulePage />
+              ) : currentView === 'admin' ? (
+                <AdminUserList />
+              ) : currentView === 'books' ? (
                 <BookLayout />
-              </Suspense>
-            ) : currentView === 'archive' && archivedNotes.length === 0 ? (
-              <EmptyState type="archive" />
-            ) : (
-              <NotesGrid
-                notes={displayNotes}
-                pinnedNotes={displayPinnedNotes}
-                viewMode={viewMode}
-                searchQuery={searchQuery}
-                onEdit={handleEditNote}
-                onCreate={handleCreateNote}
-                onTogglePin={togglePin}
-                onToggleArchive={toggleArchive}
-                onDuplicate={duplicateNote}
-                onDelete={deleteNote}
-                onChangeColor={handleChangeColor}
-              />
-            )}
+              ) : currentView === 'archive' && archivedNotes.length === 0 ? (
+                <EmptyState type="archive" />
+              ) : (
+                <NotesGrid
+                  notes={displayNotes}
+                  pinnedNotes={displayPinnedNotes}
+                  viewMode={viewMode}
+                  searchQuery={searchQuery}
+                  onEdit={handleEditNote}
+                  onCreate={handleCreateNote}
+                  onTogglePin={togglePin}
+                  onToggleArchive={toggleArchive}
+                  onDuplicate={duplicateNote}
+                  onDelete={deleteNote}
+                  onChangeColor={handleChangeColor}
+                />
+              )}
+            </Suspense>
           </div>
         </main>
       </div>

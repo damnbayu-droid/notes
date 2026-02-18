@@ -1,16 +1,18 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AuthPage } from '@/components/auth/AuthPage';
-import { Dashboard } from '@/components/layout/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
-import { AIAssistant } from '@/components/ai/AIAssistant';
-import { GuestNagModal } from '@/components/auth/GuestNagModal';
 import { useNotes } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
 import './App.css';
 
-// Lazy load SharedNoteView for better initial load performance
+// Lazy load all major components
+const Dashboard = lazy(() => import('@/components/layout/Dashboard').then(module => ({ default: module.Dashboard })));
+const AuthPage = lazy(() => import('@/components/auth/AuthPage').then(module => ({ default: module.AuthPage })));
+const AIAssistant = lazy(() => import('@/components/ai/AIAssistant').then(module => ({ default: module.AIAssistant })));
+const GuestNagModal = lazy(() => import('@/components/auth/GuestNagModal').then(module => ({ default: module.GuestNagModal })));
+
+// Lazy load Secondary Pages
 const SharedNoteView = lazy(() => import('@/components/notes/SharedNoteView'));
 const PrivacyPage = lazy(() => import('@/components/legal/PrivacyPage'));
 const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
@@ -20,6 +22,7 @@ function MainApp() {
   const { createNote } = useNotes(user);
   const [showAuth, setShowAuth] = useState(false);
 
+  // ... (Effects remain same) ...
   // Listen for Voice Note creation events
   useEffect(() => {
     const handleCreateNote = async (event: CustomEvent) => {
@@ -94,8 +97,6 @@ function MainApp() {
   // Show loading state - Optimized to be less intrusive
   if (isLoading) {
     return (
-      // Minimal skeleton or just blank to correspond to "no loading page" request
-      // Rendering nothing is faster than rendering a heavy spinner layout
       <div className="min-h-screen bg-background" />
     );
   }
@@ -103,7 +104,7 @@ function MainApp() {
   // Show auth page if not authenticated AND auth view is requested
   if (!isAuthenticated && showAuth) {
     return (
-      <>
+      <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <AuthPage
           onSignIn={async (email, password) => {
             const result = await signIn(email, password);
@@ -124,13 +125,13 @@ function MainApp() {
           onBack={() => setShowAuth(false)}
         />
         <Toaster position="top-center" />
-      </>
+      </Suspense>
     );
   }
 
   // Show dashboard (Authenticated OR Guest)
   return (
-    <>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <Dashboard
         user={user}
         onSignOut={signOut}
@@ -139,7 +140,7 @@ function MainApp() {
       <AIAssistant />
       <GuestNagModal onSignupClick={() => setShowAuth(true)} />
       <Toaster position="top-center" />
-    </>
+    </Suspense>
   );
 }
 
