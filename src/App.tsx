@@ -6,6 +6,7 @@ import { Dashboard } from '@/components/layout/Dashboard';
 import { Toaster } from '@/components/ui/sonner';
 import { AIAssistant } from '@/components/ai/AIAssistant';
 import { GuestNagModal } from '@/components/auth/GuestNagModal';
+import { useNotes } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
 import './App.css';
 
@@ -16,7 +17,23 @@ const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
 
 function MainApp() {
   const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle } = useAuth();
+  const { createNote } = useNotes(user);
   const [showAuth, setShowAuth] = useState(false);
+
+  // Listen for Voice Note creation events
+  useEffect(() => {
+    const handleCreateNote = async (event: CustomEvent) => {
+      if (event.detail && event.detail.title && event.detail.content) {
+        await createNote({
+          title: event.detail.title,
+          content: event.detail.content,
+          folder: 'Main' // Default folder
+        });
+      }
+    };
+    window.addEventListener('create-new-note' as any, handleCreateNote);
+    return () => window.removeEventListener('create-new-note' as any, handleCreateNote);
+  }, [createNote]);
 
   // Register Service Worker for offline support
   useEffect(() => {
@@ -74,15 +91,12 @@ function MainApp() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Show loading state
+  // Show loading state - Optimized to be less intrusive
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-          <p className="text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
+      // Minimal skeleton or just blank to correspond to "no loading page" request
+      // Rendering nothing is faster than rendering a heavy spinner layout
+      <div className="min-h-screen bg-background" />
     );
   }
 

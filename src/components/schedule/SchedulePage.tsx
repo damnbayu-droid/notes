@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Loader2, Pencil, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { useNotes } from '@/hooks/useNotes';
 import { useAuth } from '@/hooks/useAuth';
 import { askAI } from '@/lib/openai';
@@ -15,6 +19,13 @@ export function SchedulePage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isScheduling, setIsScheduling] = useState(false);
+
+    // Edit Dialog State
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editingNote, setEditingNote] = useState<any>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editContent, setEditContent] = useState('');
+    const [editTime, setEditTime] = useState('');
 
     // Get notes with reminders
     const scheduledNotes = useMemo(() => {
@@ -114,14 +125,60 @@ export function SchedulePage() {
         // Default time: 9 AM
         const date = new Date(selectedDate);
         date.setHours(9, 0, 0, 0);
+        const isoDate = date.toISOString();
 
-        await createNote({
+        const newNote = await createNote({
             title: 'New Event',
             content: '',
-            reminder_date: date.toISOString(),
+            reminder_date: isoDate,
             folder: 'Schedule'
         });
-        toast.success("Event created!");
+
+        if (newNote) {
+            // Open edit dialog immediately
+            openEditDialog({ ...newNote, title: 'New Event', content: '', reminder_date: isoDate });
+            toast.success("Event created! You can edit it now.");
+        }
+    };
+
+    const openEditDialog = (note: any) => {
+        setEditingNote(note);
+        setEditTitle(note.title);
+        setEditContent(note.content || '');
+        // Convert ISO to datetime-local format (YYYY-MM-DDTHH:mm)
+        // Taking into account local timezone offset for the input, or getting raw string
+        // We'll use a simple conversion
+        if (note.reminder_date) {
+            const d = new Date(note.reminder_date);
+            // Pad to 2 digits
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            const localIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            setEditTime(localIso);
+        } else {
+            setEditTime('');
+        }
+        setIsEditOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingNote) return;
+
+        try {
+            // Convert local time back to ISO
+            const date = new Date(editTime);
+            const isoDate = date.toISOString();
+
+            await updateNote(editingNote.id, {
+                title: editTitle,
+                content: editContent,
+                reminder_date: isoDate
+            });
+            toast.success("Event updated");
+            setIsEditOpen(false);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to update event");
+        }
     };
 
     return (
@@ -158,10 +215,6 @@ export function SchedulePage() {
                                 const isSelected = isSameDay(day, selectedDate);
                                 const isTodayDate = isToday(day);
                                 const hasEvents = scheduledNotes.some(n => n.reminder_date && isSameDay(new Date(n.reminder_date), day));
-
-                                // Placeholder for correct grid alignment if starting mid-week?
-                                // Date-fns `eachDayOfInterval` returns exact days. We might need padding.
-                                // simpler to just map.
 
                                 return (
                                     <button
@@ -212,12 +265,20 @@ export function SchedulePage() {
                                 </div>
                             ) : (
                                 notesForSelectedDate.map(note => (
-                                    <div key={note.id} className="group flex flex-col gap-1 p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-violet-100 cursor-pointer">
+                                    <div key={note.id} className="group flex flex-col gap-1 p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-violet-100 relative">
                                         <div className="flex items-center justify-between">
                                             <span className="font-medium text-gray-800 line-clamp-1">{note.title || 'Untitled'}</span>
-                                            <span className="text-xs text-gray-500 font-mono">
-                                                {note.reminder_date && format(new Date(note.reminder_date), 'h:mm a')}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500 font-mono">
+                                                    {note.reminder_date && format(new Date(note.reminder_date), 'h:mm a')}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openEditDialog(note); }}
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-violet-100 rounded text-violet-600 transition-all"
+                                                >
+                                                    <Pencil className="w-3 h-3" />
+                                                </button>
+                                            </div>
                                         </div>
                                         {note.content && (
                                             <p className="text-xs text-gray-500 line-clamp-2">{note.content}</p>
@@ -245,6 +306,49 @@ export function SchedulePage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Edit Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Event</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label>Event Title</Label>
+                            <Input
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="Meeting with..."
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Time</Label>
+                            <Input
+                                type="datetime-local"
+                                value={editTime}
+                                onChange={(e) => setEditTime(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                placeholder="Add specific details..."
+                                className="min-h-[100px]"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveEdit} className="bg-violet-600 text-white hover:bg-violet-700">
+                            <Save className="w-4 h-4 mr-2" />
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

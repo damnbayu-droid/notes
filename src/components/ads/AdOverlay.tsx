@@ -53,17 +53,33 @@ export function AdOverlay() {
             // 1. 5 minutes (300000 ms) passed since last ad
             // 2. OR 2nd open (persistentOpenCount % 2 === 0)
 
-            const timeElapsed = now - lastAdShown > 300000; // 5 mins
+            // Check Book Mode
+            const isBookMode = window.location.pathname.includes('/book');
+            const interval = isBookMode ? 600000 : 300000; // 10 mins vs 5 mins
+
+            const timeElapsed = now - lastAdShown > interval;
             const isEverySecondOpen = persistentOpenCount > 0 && persistentOpenCount % 2 === 0;
 
             if (timeElapsed || isEverySecondOpen) {
-                setIsOpen(true);
-                // We don't update last_ad_shown here, we update it when they unlock? 
-                // Or when it's shown? Usually when shown.
-                localStorage.setItem('last_ad_shown', now.toString());
+                // Delay showing the ad by 15 seconds as requested
+                const timer = setTimeout(() => {
+                    setIsOpen(true);
+                    // Reset interval check by strictly updating last_ad_shown only when shown? 
+                    // Actually we should probably update last_ad_shown when it OPENS.
+                    // But here we rely on the component mount logic. 
+                    // Let's ensure we track it when it actually opens.
+                }, 15000);
+                return () => clearTimeout(timer);
             }
         }
     }, [user, isLoading, isUnlocked]);
+
+    // When ad opens, update last_ad_shown
+    useEffect(() => {
+        if (isOpen) {
+            localStorage.setItem('last_ad_shown', Date.now().toString());
+        }
+    }, [isOpen]);
 
     // Track app opens
     useEffect(() => {

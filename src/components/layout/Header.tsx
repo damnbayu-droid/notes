@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+import { BaliTimeClock } from '@/components/time/BaliTimeClock';
 import type { User } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,9 +16,13 @@ import {
   LogOut,
   Settings,
   User as UserIcon,
-  Sparkles,
+  Moon,
+  Sun,
+  Mic,
+  Scan,
+  Bell
 } from 'lucide-react';
-import { BaliTimeClock } from '@/components/time/BaliTimeClock';
+import { useTheme } from '@/hooks/useTheme';
 
 interface HeaderProps {
   user: User | null;
@@ -27,10 +33,25 @@ interface HeaderProps {
 }
 
 export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn }: HeaderProps) {
+  const { theme, toggleTheme } = useTheme();
+  const [dynamicStatus, setDynamicStatus] = useState<{ icon: any, text: string, type: 'info' | 'record' | 'scan' } | null>(null);
+
+  // Listen for global events to update dynamic island
+  useEffect(() => {
+    const handleStatus = (e: CustomEvent) => {
+      setDynamicStatus(e.detail);
+      if (e.detail?.duration) {
+        setTimeout(() => setDynamicStatus(null), e.detail.duration);
+      }
+    };
+    window.addEventListener('dynamic-status' as any, handleStatus);
+    return () => window.removeEventListener('dynamic-status' as any, handleStatus);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border transition-all duration-300">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6 gap-4">
-        {/* Left side */}
+        {/* Left: Mobile Menu & Logo */}
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -41,29 +62,49 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             <Menu className="w-5 h-5" />
           </Button>
 
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
-              Smart Notes
-            </span>
+          <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-purple-600 hidden sm:block">
+            Smart Notes
+          </span>
+        </div>
+
+        {/* Center: Dynamic Island & Clock */}
+        <div className="flex-1 flex justify-center relative h-10 items-center">
+          {/* Dynamic Island Status */}
+          <div className={`
+                absolute z-20 flex items-center justify-center gap-3 px-4 py-2 rounded-full transition-all duration-500 ease-spring
+                ${dynamicStatus
+              ? 'bg-black text-white w-auto min-w-[200px] scale-100 shadow-xl opacity-100 translate-y-0'
+              : 'bg-transparent w-auto scale-90 opacity-0 pointer-events-none -translate-y-2'
+            }
+            `}>
+            {dynamicStatus && (
+              <>
+                {dynamicStatus.type === 'record' && <Mic className="w-4 h-4 text-red-500 animate-pulse" />}
+                {dynamicStatus.type === 'scan' && <Scan className="w-4 h-4 text-blue-400" />}
+                {dynamicStatus.type === 'info' && <Bell className="w-4 h-4 text-yellow-400" />}
+                <span className="text-sm font-medium whitespace-nowrap">{dynamicStatus.text}</span>
+              </>
+            )}
+          </div>
+
+          {/* Default: Bali Time Clock */}
+          <div className={`transition-all duration-300 ease-in-out transform ${dynamicStatus ? 'opacity-0 scale-90 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
+            <BaliTimeClock />
           </div>
         </div>
 
-        {/* Center - Bali Time Clock (hidden on small screens) */}
-        <div className="hidden lg:block">
-          <BaliTimeClock />
-        </div>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Smart Mode / Theme Toggle */}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </Button>
 
-        {/* Right side */}
-        <div className="flex items-center gap-3">
           {user ? (
-            /* User Menu */
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                  <Avatar className="h-10 w-10 ring-2 ring-violet-100">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-violet-100 dark:ring-violet-900">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={user?.avatar} alt={user?.name} />
                     <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white">
                       {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -95,10 +136,10 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            /* Guest CTA */
             <Button
               onClick={onSignIn}
-              className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-200"
+              size="sm"
+              className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6"
             >
               Sign In
             </Button>

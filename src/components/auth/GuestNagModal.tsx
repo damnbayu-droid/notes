@@ -1,70 +1,62 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Lock, Clock } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 
 interface GuestNagModalProps {
     onSignupClick: () => void;
 }
 
 export function GuestNagModal({ onSignupClick }: GuestNagModalProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [reason, setReason] = useState<'time' | 'usage'>('time');
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        // Check usage count
-        const openCount = parseInt(localStorage.getItem('guest_open_count') || '0');
-        const newCount = openCount + 1;
-        localStorage.setItem('guest_open_count', newCount.toString());
+        // Check cooldown
+        const lastShown = parseInt(localStorage.getItem('last_guest_nag') || '0');
+        const now = Date.now();
+        const cooldown = 15 * 60 * 1000; // 15 mins
 
-        if (newCount % 2 === 0) { // Every 2 opens
-            setReason('usage');
-            setIsOpen(true);
+        if (now - lastShown < cooldown) {
             return;
         }
 
-        // Timer for 15 minutes
         const timer = setTimeout(() => {
-            setReason('time');
-            setIsOpen(true);
-        }, 15 * 60 * 1000); // 15 minutes
+            setIsVisible(true);
+            localStorage.setItem('last_guest_nag', Date.now().toString());
+        }, 10000); // 10 seconds delay
 
         return () => clearTimeout(timer);
     }, []);
 
-    const handleContinueGuest = () => {
-        setIsOpen(false);
-    };
+    if (!isVisible) return null;
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-violet-600">
-                        {reason === 'time' ? <Clock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-                        {reason === 'time' ? "Time to Sync?" : "Secure Your Notes"}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {reason === 'time'
-                            ? "You've been using Smart Notes for a while. Sign up to sync your notes across devices and ensure you never lose your data."
-                            : "You've opened the app a few times as a guest. Create an account to enable cloud backup and advanced AI features."
-                        }
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col gap-4 py-4">
-                    <div className="p-4 bg-violet-50 rounded-lg border border-violet-100 text-sm text-violet-800">
-                        Guest data is stored locally on this device. Clearing your browser cache will delete your notes.
-                    </div>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-500">
+            <div className="bg-white/90 backdrop-blur-xl shadow-2xl border border-violet-100 rounded-full px-5 py-3 flex items-center gap-4 max-w-[90vw] md:max-w-md">
+                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4 text-violet-600" />
                 </div>
-                <DialogFooter className="flex-col sm:flex-col gap-2">
-                    <Button onClick={onSignupClick} className="w-full bg-gradient-to-r from-violet-600 to-purple-600">
-                        Create Free Account
+
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">Secure Your Notes</p>
+                    <p className="text-xs text-gray-500 truncate">Create an account to backup data.</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                        size="sm"
+                        onClick={onSignupClick}
+                        className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-full px-4"
+                    >
+                        Sign Up
                     </Button>
-                    <Button variant="ghost" onClick={handleContinueGuest} className="w-full">
-                        Continue as Guest
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <button
+                        onClick={() => setIsVisible(false)}
+                        className="p-1 hover:bg-gray-100 rounded-full text-gray-400 transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }

@@ -50,34 +50,75 @@ export function AIAssistant() {
         };
     }, [isOpen]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
+    // TTS Function (Disabled)
+    // const speakMessage = (text: string) => {
+    //     if ('speechSynthesis' in window) {
+    //         const utterance = new SpeechSynthesisUtterance(text);
+    //         // Try to find a good voice
+    //         const voices = window.speechSynthesis.getVoices();
+    //         const preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices[0];
+    //         if (preferredVoice) utterance.voice = preferredVoice;
+    //         window.speechSynthesis.speak(utterance);
+    //     }
+    // };
 
-        const userMsg: Message = { role: 'user', content: input };
+    // Listen for custom AI events from Sidebar
+    useEffect(() => {
+        const handleCustomMessage = (event: CustomEvent) => {
+            if (event.detail) {
+                setIsOpen(true);
+                setInput(event.detail);
+                // Slight delay to allow state update or just call handleSend directly if input was just state
+                // But handleSend uses 'input' state. Let's just set input and auto-send?
+                // Better: Reuse logic.
+                handleSend(event.detail);
+            }
+        };
+
+        window.addEventListener('ai-message' as any, handleCustomMessage);
+        return () => {
+            window.removeEventListener('ai-message' as any, handleCustomMessage);
+        };
+    }, []);
+
+    const handleSend = async (overrideInput?: string) => {
+        const textToSend = overrideInput || input;
+        if (!textToSend.trim()) return;
+
+        const userMsg: Message = { role: 'user', content: textToSend };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
+
+        // Get Bali Time (Asia/Makassar)
+        const baliTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar', hour12: true });
+        const baliDate = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Makassar', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
         const contextMessages: any[] = [
             {
                 role: 'system',
                 content: `You are Note Ai, the intelligent OS for Smart Notes. You can manage notes and schedules directly.
-            Current Date: ${new Date().toISOString()}
+            
+            Current Time (Bali/WITA): ${baliDate}, ${baliTime}
             
             Tools available:
             - create_note(title, content, folder): Create a new note.
             - schedule_reminder(task, datetime_iso): Schedule a reminder.
             
             scheduling_rules:
-            - If user says "tomorrow", calculate date = now + 1 day.
-            - If user says "1 day before [date]", parse [date] and subtract 1 day.
+            - You MUST use the provided Bali Time as "now".
+            - If user says "tomorrow", add 1 day to the Bali date.
+            - If user says "at 5 PM", use 5:00 PM Bali time.
             - Always prefer ISO 8601 format for dates.
             - "on device" means simple notification.
             
-            Always try to use tools when the user asks to perform an action.`
+            Personality:
+            - You are honest, truthful, and helpful.
+            - Speak naturally like a human.
+            - Keep responses concise unless asked to elaborate.`
             },
             ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content })),
-            { role: 'user', content: input }
+            { role: 'user', content: textToSend }
         ];
 
         try {
@@ -118,6 +159,7 @@ export function AIAssistant() {
             }
 
             setMessages(prev => [...prev, { role: 'ai', content: content || "Done!" }]);
+            // speakMessage(content || "Done"); // Disabled by user request (Text only)
         } catch (error: any) {
             console.error("AIAssistant Error:", error);
             setMessages(prev => [...prev, { role: 'ai', content: `Sorry, I encountered an error: ${error.message || "Unknown error"}. Please checks your API key or connection.` }]);
@@ -140,7 +182,7 @@ export function AIAssistant() {
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2 text-white text-base">
                                     <Bot className="w-5 h-5" />
-                                    Note Ai
+                                    Note Ai Assistant
                                 </CardTitle>
                                 <div className="flex items-center gap-1">
                                     <Button
@@ -228,7 +270,7 @@ export function AIAssistant() {
                                     className="flex-1 focus-visible:ring-violet-500"
                                 />
                                 <Button
-                                    onClick={handleSend}
+                                    onClick={() => handleSend()}
                                     disabled={isLoading || !input.trim()}
                                     size="icon"
                                     className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"

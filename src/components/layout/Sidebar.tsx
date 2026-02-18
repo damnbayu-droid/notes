@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/hooks/useTheme';
+import { AdvancedVoiceDialog } from '@/components/voice/AdvancedVoiceDialog';
+import { AlarmDialog } from '@/components/time/AlarmDialog';
 import {
   LayoutGrid,
   Archive,
@@ -14,11 +17,10 @@ import {
   Moon,
   Sun,
   Book,
-  Cpu,
+  Bell,
+  Mic,
+  Cloud,
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
-
 
 type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin';
 
@@ -37,16 +39,20 @@ interface SidebarProps {
 
 export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings, onAddFolder }: SidebarProps) {
   const { theme, setTheme } = useTheme();
-  const tags: string[] = []; // Removed mock tags
-  const activeNotesCount = 0; // Removed mock count
-  const archivedNotesCount = 0; // Removed mock count
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [isAlarmOpen, setIsAlarmOpen] = useState(false);
+  const tags: string[] = [];
+  const activeNotesCount = 0;
+  const archivedNotesCount = 0;
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
+    { id: 'alarm' as any, label: 'Set Alarm', icon: Bell, count: 0, onClick: () => setIsAlarmOpen(true) }, // Added Alarm
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
     { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },
+    { id: 'voice-note' as any, label: 'Voice Note', icon: Mic, count: 0, onClick: () => setIsVoiceOpen(true) },
   ];
 
   return (
@@ -66,11 +72,11 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
+        {/* ... existing sidebar content ... */}
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-border">
             <div className="flex items-center gap-2 lg:hidden">
-              {/* Logo removed for desktop as it's in Header */}
               <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                 Smart Notes
               </span>
@@ -82,23 +88,31 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
           <ScrollArea className="flex-1 py-4">
             <div className="px-3 space-y-6">
-              {/* Smart Mode Toggle (Moved here) */}
-              <div className="flex items-center justify-between px-1 py-2 mb-2 bg-violet-50 rounded-lg border border-violet-100">
-                <div className="flex items-center gap-2 px-2">
-                  <Cpu className="w-4 h-4 text-violet-600" />
-                  <span className="text-sm font-medium text-violet-900">Smart Mode</span>
+              {/* Theme Toggle (Moved to Top) */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-100 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  {theme === 'dark' ? (
+                    <Moon className="w-5 h-5 text-violet-600 group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <Sun className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" />
+                  )}
+                  <span className="font-medium text-violet-900">
+                    {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                  </span>
                 </div>
-                <Switch
-                  checked={localStorage.getItem('smart_mode_enabled') === 'true'}
-                  onCheckedChange={(checked) => {
-                    localStorage.setItem('smart_mode_enabled', String(checked));
-                    toast.success(`Smart Mode ${checked ? 'Enabled' : 'Disabled'}`);
-                    // Force update helper
-                    window.dispatchEvent(new Event('storage'));
-                  }}
-                  className="scale-75"
-                />
-              </div>
+                <div className={`
+                  w-10 h-5 rounded-full relative transition-colors duration-300
+                  ${theme === 'dark' ? 'bg-violet-600' : 'bg-gray-300'}
+                `}>
+                  <div className={`
+                    absolute top-1 w-3 h-3 rounded-full bg-white transition-transform duration-300
+                    ${theme === 'dark' ? 'left-6' : 'left-1'}
+                  `} />
+                </div>
+              </button>
 
               {/* Create Button */}
               <Button
@@ -114,11 +128,15 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Menu
                 </p>
-                {navItems.map((item) => (
+                {navItems.map((item: any) => (
                   <button
                     key={item.id}
                     onClick={() => {
-                      onViewChange(item.id);
+                      if (item.onClick) {
+                        item.onClick();
+                      } else {
+                        onViewChange(item.id);
+                      }
                       onClose();
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === item.id
@@ -146,13 +164,9 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Folders
                   </p>
-                  <button
-                    onClick={onAddFolder}
-                    className="p-1 hover:bg-accent rounded-md transition-colors"
-                    title="Add Folder"
-                  >
-                    <Plus className="w-3 h-3 text-muted-foreground" />
-                  </button>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Folders
+                  </p>
                 </div>
                 <div className="space-y-0.5">
                   {folders.map(folder => (
@@ -209,22 +223,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
           {/* Footer */}
           <div className="p-4 border-t border-border space-y-2">
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-5 h-5" />
-                  Light Mode
-                </>
-              ) : (
-                <>
-                  <Moon className="w-5 h-5" />
-                  Dark Mode
-                </>
-              )}
-            </button>
+
             <button
               onClick={() => {
                 onOpenSettings();
@@ -238,9 +237,45 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
               <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-primary' : 'text-muted-foreground'}`} />
               Settings
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  const { googleDrive } = await import('@/lib/googleDrive');
+                  await googleDrive.loadScripts();
+                  await googleDrive.connect();
+                  localStorage.setItem('google_drive_connected', 'true');
+                  window.dispatchEvent(new Event('storage')); // Update sidebar
+                  // Create folder
+                  const folderId = await googleDrive.createFolder('Smart Notes Backup');
+                  localStorage.setItem('google_drive_folder_id', folderId);
+                  // toast.success("Connected to Google Drive!");
+                } catch (e) {
+                  console.error(e);
+                  // toast.error("Failed to connect. Check Client ID.");
+                }
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Cloud className="w-5 h-5" />
+              Sync Drive
+            </button>
           </div>
         </div>
       </aside>
+
+      <AdvancedVoiceDialog
+        isOpen={isVoiceOpen}
+        onClose={() => setIsVoiceOpen(false)}
+        onSendToAI={(text) => {
+          // Dispatch event to open AI and send message
+          window.dispatchEvent(new CustomEvent('ai-message', { detail: text }));
+        }}
+      />
+
+      <AlarmDialog
+        isOpen={isAlarmOpen}
+        onClose={() => setIsAlarmOpen(false)}
+      />
     </>
   );
 }

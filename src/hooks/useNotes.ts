@@ -341,13 +341,36 @@ export function useNotes(user: User | null): UseNotesReturn {
     return Array.from(tags).sort();
   }, [notes]);
 
+  // Listen for Google Drive connection
+  const [isGoogleConnected, setIsGoogleConnected] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('google_drive_connected') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setIsGoogleConnected(localStorage.getItem('google_drive_connected') === 'true');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const folders = useMemo(() => {
-    const folderSet = new Set<string>(['Main', 'Google Notes', 'iCloud Notes']); // Defaults
+    const folderSet = new Set<string>(['Main']);
+
+    // Add default connected folders
+    if (isGoogleConnected) {
+      folderSet.add('Google Drive');
+    }
+
+    // Add folders from notes
     notes.forEach(note => {
       if (note.folder) folderSet.add(note.folder);
     });
     return Array.from(folderSet).sort();
-  }, [notes]);
+  }, [notes, isGoogleConnected]);
 
   const toggleTag = useCallback((tag: string) => {
     setSelectedTags(prev =>

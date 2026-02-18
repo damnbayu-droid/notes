@@ -4,7 +4,7 @@ type Theme = "dark" | "light" | "system"
 
 export function useTheme() {
     const [theme, setThemeState] = useState<Theme>(
-        () => (localStorage.getItem("vite-ui-theme") as Theme) || "light"
+        () => (localStorage.getItem("vite-ui-theme") as Theme) || "dark"
     )
 
     useEffect(() => {
@@ -30,8 +30,17 @@ export function useTheme() {
         setThemeState(newTheme)
     }, [])
 
+    const toggleTheme = useCallback(() => {
+        setThemeState(prev => {
+            const newTheme = prev === 'dark' ? 'light' : 'dark';
+            localStorage.setItem("vite-ui-theme", newTheme);
+            return newTheme;
+        });
+    }, []);
+
     return {
         theme,
         setTheme,
+        toggleTheme,
     }
 }

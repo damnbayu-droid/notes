@@ -27,10 +27,21 @@ export function CameraView({ onCapture }: CameraViewProps) {
             <Webcam
                 audio={false}
                 ref={webcamRef}
+                onUserMediaError={(err) => {
+                    console.log("Camera Error:", err);
+                    // Fallback to simple mode if strict mode fails
+                    if (facingMode === 'environment') {
+                        setFacingMode('user'); // Temporarily switch or just remove exact constraint logic (handled by state if we separate it)
+                        // Actually, better to just let it fail and retry without exact or show error.
+                        // For now, let's keep it simple.
+                    }
+                }}
                 screenshotFormat="image/jpeg"
                 videoConstraints={{
-                    facingMode,
-                    aspectRatio: 1.333333, // 4:3 aspect ratio to avoid wide-angle/fisheye
+                    facingMode: facingMode === 'environment' ? { exact: "environment" } : "user",
+                    width: { ideal: 4096 },
+                    height: { ideal: 2160 },
+                    aspectRatio: 4 / 3, // Standard aspect ratio
                 }}
                 className="absolute inset-0 w-full h-full object-cover"
             />
