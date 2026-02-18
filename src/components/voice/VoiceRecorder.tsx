@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, RefreshCcw } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 interface VoiceRecorderProps {
     onRecordingComplete: (audioBlob: Blob) => void;
@@ -43,7 +43,9 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, cl
             recognitionRef.current.onerror = (event: any) => {
                 console.error('Speech recognition error', event.error);
                 if (event.error === 'not-allowed') {
-                    toast.error('Microphone access denied for transcription');
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                        detail: { title: 'Microphone Error', message: 'Access denied for transcription', type: 'error' }
+                    }));
                 }
             };
         }
@@ -96,7 +98,9 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, cl
             setIsRecording(true);
         } catch (error) {
             console.error('Error starting recording:', error);
-            toast.error('Could not access microphone');
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Microphone Error', message: 'Could not access microphone', type: 'error' }
+            }));
         }
     };
 

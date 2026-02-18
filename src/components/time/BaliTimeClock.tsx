@@ -4,7 +4,11 @@ import { Clock } from 'lucide-react';
 
 const BALI_TIMEZONE = 'Asia/Makassar'; // UTC+8 (Bali/WITA)
 
-export function BaliTimeClock() {
+interface BaliTimeClockProps {
+    headless?: boolean;
+}
+
+export function BaliTimeClock({ headless = false }: BaliTimeClockProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
@@ -40,17 +44,27 @@ export function BaliTimeClock() {
         'EEEE, dd MMMM yyyy'
     );
 
-    return (
-        <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-lg border border-violet-200 dark:border-violet-800 shadow-sm">
-            <Clock className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+    const content = (
+        <>
+            <Clock className={`w-5 h-5 ${headless ? 'text-inherit' : 'text-violet-600 dark:text-violet-400'}`} />
             <div className="flex flex-col">
-                <div className="text-2xl font-bold text-violet-900 dark:text-violet-100 tabular-nums">
+                <div className={`text-2xl font-bold tabular-nums ${headless ? 'text-inherit' : 'text-violet-900 dark:text-violet-100'}`}>
                     {formattedTime}
                 </div>
-                <div className="text-xs text-violet-600 dark:text-violet-400">
+                <div className={`text-xs ${headless ? 'text-inherit opacity-80' : 'text-violet-600 dark:text-violet-400'}`}>
                     {formattedDate} (Bali Time)
                 </div>
             </div>
+        </>
+    );
+
+    if (headless) {
+        return content;
+    }
+
+    return (
+        <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-lg border border-violet-200 dark:border-violet-800 shadow-sm">
+            {content}
         </div>
     );
 }

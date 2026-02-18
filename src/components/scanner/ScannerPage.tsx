@@ -13,7 +13,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { toast } from 'sonner';
+
 
 export function ScannerPage() {
     const [capturedImages, setCapturedImages] = useState<string[]>([]);
@@ -111,7 +111,9 @@ export function ScannerPage() {
             a.click();
         } catch (error) {
             console.error('Error generating PDF:', error);
-            toast.error("Failed to generate PDF");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Failed to generate PDF', type: 'error' }
+            }));
         }
     };
 
@@ -129,11 +131,15 @@ export function ScannerPage() {
                     text: 'Here is my scanned document from Smart Notes.',
                 });
             } else {
-                toast.error("Sharing not supported on this device/browser.");
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Error', message: 'Sharing not supported on this device/browser.', type: 'error' }
+                }));
             }
         } catch (error) {
             console.error("Share error:", error);
-            toast.error("Failed to share");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Failed to share', type: 'error' }
+            }));
         }
     };
 

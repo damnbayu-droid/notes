@@ -11,7 +11,7 @@ import {
     DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import { jsPDF } from 'jspdf';
-import { toast } from 'sonner';
+
 
 interface CanvasEditorProps {
     onSave: (dataUrl: string) => void;
@@ -141,7 +141,9 @@ export function CanvasEditor({ onSave, onCancel, signatureMode = false }: Canvas
                 });
                 pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
                 pdf.save(`sketch-${Date.now()}.pdf`);
-                toast.success('Sketch exported as PDF');
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Success', message: 'Sketch exported as PDF', type: 'success' }
+                }));
             } else {
                 // Export as PNG or JPG
                 const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
@@ -150,10 +152,14 @@ export function CanvasEditor({ onSave, onCancel, signatureMode = false }: Canvas
                 link.download = `sketch-${Date.now()}.${format}`;
                 link.href = dataUrl;
                 link.click();
-                toast.success(`Sketch exported as ${format.toUpperCase()}`);
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Success', message: `Sketch exported as ${format.toUpperCase()}`, type: 'success' }
+                }));
             }
         } catch (error) {
-            toast.error('Failed to export sketch');
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Failed to export sketch', type: 'error' }
+            }));
             console.error('Export error:', error);
         }
     };
@@ -177,15 +183,21 @@ export function CanvasEditor({ onSave, onCancel, signatureMode = false }: Canvas
                     title: signatureMode ? 'My Signature' : 'My Sketch',
                     text: signatureMode ? 'Check out my signature' : 'Check out my sketch',
                 });
-                toast.success('Sketch shared successfully');
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Success', message: 'Sketch shared successfully', type: 'success' }
+                }));
             } else {
                 // Fallback: copy to clipboard
                 const item = new ClipboardItem({ 'image/png': blob });
                 await navigator.clipboard.write([item]);
-                toast.success('Sketch copied to clipboard');
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Success', message: 'Sketch copied to clipboard', type: 'success' }
+                }));
             }
         } catch (error) {
-            toast.error('Failed to share sketch');
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Failed to share sketch', type: 'error' }
+            }));
             console.error('Share error:', error);
         }
     };

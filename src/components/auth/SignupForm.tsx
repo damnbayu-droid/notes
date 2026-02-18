@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +34,9 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('Passwords do not match');
-      toast.error('Passwords do not match');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Error', message: 'Passwords do not match', type: 'error' }
+      }));
       return;
     }
 
@@ -45,12 +47,18 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
 
     if (!result.success) {
       setError(result.error || 'Failed to sign up');
-      toast.error(result.error || 'Failed to sign up');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Error', message: result.error || 'Failed to sign up', type: 'error' }
+      }));
     } else {
-      toast.success('Account created! Please check your email to confirm your account.');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Account Created', message: 'Please check your email to confirm your account.', type: 'success' }
+      }));
       // Check if we need to show a specific message for email confirmation
       if (result.error && result.error.includes('email')) {
-        toast.info(result.error);
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+          detail: { title: 'Info', message: result.error, type: 'info' }
+        }));
       }
     }
 
@@ -86,10 +94,14 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
               setIsLoading(true);
               const result = await onGoogleSignIn();
               if (!result.success) {
-                toast.error(result.error);
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                  detail: { title: 'Error', message: result.error, type: 'error' }
+                }));
                 setIsLoading(false);
               } else {
-                toast.success("Successfully signed in with Google!");
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                  detail: { title: 'Success', message: 'Successfully signed in with Google!', type: 'success' }
+                }));
               }
             }}
             className="w-full h-10 bg-white border-gray-200 hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-center gap-2"

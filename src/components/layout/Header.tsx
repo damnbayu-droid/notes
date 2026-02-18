@@ -20,7 +20,9 @@ import {
   Sun,
   Mic,
   Scan,
-  Bell
+  Bell,
+  XCircle,
+  CheckCircle2
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -30,13 +32,17 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onOpenSettings: (tab?: string) => void;
   onSignIn: () => void;
+  onOpenAlarm: () => void;
 }
 
-export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn }: HeaderProps) {
+export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  // dynamicStatus = Active modes like Mic/Scan (Replaces Clock)
   const [dynamicStatus, setDynamicStatus] = useState<{ icon: any, text: string, type: 'info' | 'record' | 'scan' } | null>(null);
+  // notification = Transient messages (Stacks below Clock)
+  const [notification, setNotification] = useState<{ title: string, message?: string, type?: 'success' | 'error' | 'info' } | null>(null);
 
-  // Listen for global events to update dynamic island
+  // Listen for global events
   useEffect(() => {
     const handleStatus = (e: CustomEvent) => {
       setDynamicStatus(e.detail);
@@ -44,9 +50,25 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         setTimeout(() => setDynamicStatus(null), e.detail.duration);
       }
     };
+
+    const handleNotification = (e: CustomEvent) => {
+      setNotification(e.detail);
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    };
+
     window.addEventListener('dynamic-status' as any, handleStatus);
-    return () => window.removeEventListener('dynamic-status' as any, handleStatus);
+    window.addEventListener('dcpi-notification' as any, handleNotification);
+
+    return () => {
+      window.removeEventListener('dynamic-status' as any, handleStatus);
+      window.removeEventListener('dcpi-notification' as any, handleNotification);
+    };
   }, []);
+
+  // Determine container state
+  const isActive = !!dynamicStatus || !!notification;
+  const isStacked = !!notification && !dynamicStatus; // Stack only if not in active mode (mic/scan)
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border transition-all duration-300">
@@ -68,29 +90,68 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </span>
         </div>
 
-        {/* Center: Dynamic Island & Clock */}
-        <div className="flex-1 flex justify-center relative h-10 items-center">
-          {/* Dynamic Island Status */}
-          <div className={`
-                absolute z-20 flex items-center justify-center gap-3 px-4 py-2 rounded-full transition-all duration-500 ease-spring
-                ${dynamicStatus
-              ? 'bg-black text-white w-auto min-w-[200px] max-w-full scale-100 shadow-xl opacity-100 translate-y-0'
-              : 'bg-transparent w-auto scale-90 opacity-0 pointer-events-none -translate-y-2'
-            }
-            `}>
+        {/* Center: Dynamic Island (Unified) */}
+        <div className="flex-1 flex justify-center relative h-14 items-center">
+          <div
+            className={`
+                relative z-20 flex flex-col items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-xl overflow-hidden
+                ${isActive
+                ? 'bg-black text-white' // Active State (Black Pill)
+                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100' // Default State
+              }
+                ${isStacked
+                ? 'rounded-3xl px-6 py-3 gap-2 min-w-[300px] max-w-[90vw]' // Stacked (Taller)
+                : 'rounded-full px-6 py-2 gap-3 min-w-[240px] max-w-[90vw]' // Single Row (Pill)
+              }
+              `}
+          >
+            {/* 
+                Content Management:
+                1. Dynamic Status (Mic/Scan) -> Replaces everything, Single Row.
+                2. Notification -> Stacks below Clock.
+                3. Default -> Clock only.
+             */}
+
+            {/* Case 1: Dynamic Status (Mic/Scan) overrides everything */}
             {dynamicStatus && (
-              <>
+              <div className="flex items-center gap-3 animate-in fade-in zoom-in duration-300">
                 {dynamicStatus.type === 'record' && <Mic className="w-4 h-4 text-red-500 animate-pulse" />}
                 {dynamicStatus.type === 'scan' && <Scan className="w-4 h-4 text-blue-400" />}
                 {dynamicStatus.type === 'info' && <Bell className="w-4 h-4 text-yellow-400" />}
                 <span className="text-sm font-medium whitespace-nowrap">{dynamicStatus.text}</span>
+              </div>
+            )}
+
+            {/* Case 2 & 3: Clock + Optional Notification */}
+            {!dynamicStatus && (
+              <>
+                {/* Clock Row */}
+                <div className={`flex items-center gap-3 transition-all duration-300`}>
+                  <BaliTimeClock headless />
+                  <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
+                  <button
+                    onClick={onOpenAlarm}
+                    className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-violet-600 dark:text-violet-300"
+                    aria-label="Set Alarm"
+                  >
+                    <Bell className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Notification Row (Stacked) */}
+                {notification && (
+                  <div className="flex items-center gap-2 animate-in slide-in-from-top-2 fade-in duration-300 mt-1 pb-1">
+                    {notification.type === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+                    {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                    {(!notification.type || notification.type === 'info') && <Bell className="w-4 h-4 text-blue-400" />}
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm font-semibold leading-tight">{notification.title}</span>
+                      {notification.message && <span className="text-xs opacity-80 leading-tight">{notification.message}</span>}
+                    </div>
+                  </div>
+                )}
               </>
             )}
-          </div>
-
-          {/* Default: Bali Time Clock */}
-          <div className={`transition-all duration-300 ease-in-out transform ${dynamicStatus ? 'opacity-0 scale-90 blur-sm pointer-events-none' : 'opacity-100 scale-100 blur-0'}`}>
-            <BaliTimeClock />
           </div>
         </div>
 

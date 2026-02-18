@@ -4,6 +4,7 @@ import { defineConfig } from "vite"
 import { inspectAttr } from 'kimi-plugin-inspect-react'
 
 // https://vite.dev/config/
+// Config updated to trigger restart for new dependencies
 export default defineConfig({
   base: './',
   plugins: [

@@ -28,6 +28,13 @@ interface UseNotesReturn {
   folders: string[];
   activeFolder: string;
   setActiveFolder: (folder: string) => void;
+  renameFolder: (oldName: string, newName: string) => Promise<{ success: boolean; error?: string }>;
+  deleteFolder: (folderName: string) => Promise<{ success: boolean; error?: string }>;
+  pinnedFolders: string[];
+  togglePinFolder: (folderName: string) => void;
+  createFolder: (name: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
+  restoreNote: (id: string) => Promise<{ success: boolean; error?: string }>;
+  deleteForever: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 type SyncAction =
@@ -62,6 +69,18 @@ export function useNotes(user: User | null): UseNotesReturn {
     }
     return [];
   });
+
+  const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('pinnedFolders');
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pinnedFolders', JSON.stringify(pinnedFolders));
+  }, [pinnedFolders]);
 
   // Persist notes and queue to local storage
   useEffect(() => {
@@ -242,6 +261,41 @@ export function useNotes(user: User | null): UseNotesReturn {
   }, [isOffline]);
 
   const deleteNote = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+    const note = notes.find(n => n.id === id);
+    if (!note) return { success: false, error: 'Note not found' };
+
+    // If already in Trash, delete forever
+    if (note.folder === 'Trash') {
+      return deleteForever(id);
+    }
+
+    // Otherwise move to Trash
+    // Optimistic
+    setNotes(prev => prev.map(n => n.id === id ? { ...n, folder: 'Trash', is_pinned: false, updated_at: new Date().toISOString() } : n));
+
+    const action: SyncAction = {
+      type: 'UPDATE',
+      payload: {
+        id,
+        updates: { folder: 'Trash', is_pinned: false, updated_at: new Date().toISOString() }
+      }
+    };
+
+    if (isOffline) {
+      setSyncQueue(prev => [...prev, action]);
+      return { success: true };
+    }
+
+    const { error } = await supabase.from('notes').update(action.payload.updates).eq('id', id);
+    if (error) {
+      setSyncQueue(prev => [...prev, action]);
+      console.error('Move to trash failed, queued:', error);
+    }
+
+    return { success: true };
+  }, [notes, isOffline]);
+
+  const deleteForever = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     // Optimistic
     setNotes(prev => prev.filter(note => note.id !== id));
 
@@ -255,7 +309,7 @@ export function useNotes(user: User | null): UseNotesReturn {
     const { error } = await supabase.from('notes').delete().eq('id', id);
     if (error) {
       setSyncQueue(prev => [...prev, action]);
-      console.error('Delete failed, queued:', error);
+      console.error('Delete forever failed, queued:', error);
     }
 
     return { success: true };
@@ -286,6 +340,80 @@ export function useNotes(user: User | null): UseNotesReturn {
       is_pinned: false,
     });
   }, [notes, createNote]);
+
+  const renameFolder = useCallback(async (oldName: string, newName: string) => {
+    if (!oldName || !newName) return { success: false, error: 'Invalid names' };
+
+    // Find notes in this folder
+    const notesInFolder = notes.filter(n => n.folder === oldName);
+
+    // Optimistic Update
+    setNotes(prev => prev.map(n => n.folder === oldName ? { ...n, folder: newName, updated_at: new Date().toISOString() } : n));
+
+    const timestamp = new Date().toISOString();
+    const updates = notesInFolder.map(note => ({
+      id: note.id,
+      updates: { folder: newName, updated_at: timestamp }
+    }));
+
+    if (isOffline) {
+      setSyncQueue(prev => [
+        ...prev,
+        ...updates.map(u => ({ type: 'UPDATE' as const, payload: u }))
+      ]);
+      return { success: true };
+    }
+
+    const { error } = await supabase.from('notes').update({ folder: newName, updated_at: timestamp }).eq('folder', oldName).eq('user_id', user?.id);
+
+    if (error) {
+      console.error('Rename folder failed:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (pinnedFolders.includes(oldName)) {
+      setPinnedFolders(prev => prev.map(f => f === oldName ? newName : f));
+    }
+
+    return { success: true };
+  }, [notes, isOffline, user, pinnedFolders]);
+
+  const deleteFolder = useCallback(async (folderName: string) => {
+    if (!folderName) return { success: false };
+    if (['Main', 'Trash', 'Archive'].includes(folderName)) return { success: false, error: 'Cannot delete system folder' };
+
+    // Optimistic
+    setNotes(prev => prev.map(n => n.folder === folderName ? { ...n, folder: 'Trash', updated_at: new Date().toISOString() } : n));
+
+    const timestamp = new Date().toISOString();
+
+    if (isOffline) {
+      const notesInFolder = notes.filter(n => n.folder === folderName);
+      const updates = notesInFolder.map(n => ({
+        type: 'UPDATE' as const,
+        payload: { id: n.id, updates: { folder: 'Trash', updated_at: timestamp } }
+      }));
+      setSyncQueue(prev => [...prev, ...updates]);
+    } else {
+      const { error } = await supabase.from('notes').update({ folder: 'Trash', updated_at: timestamp }).eq('folder', folderName).eq('user_id', user?.id);
+      if (error) console.error("Delete folder failed", error);
+    }
+
+    setPinnedFolders(prev => prev.filter(f => f !== folderName));
+    if (activeFolder === folderName) setActiveFolder('Main');
+
+    return { success: true };
+  }, [notes, isOffline, user, activeFolder, pinnedFolders]);
+
+  const togglePinFolder = useCallback((folderName: string) => {
+    setPinnedFolders(prev =>
+      prev.includes(folderName)
+        ? prev.filter(f => f !== folderName)
+        : [...prev, folderName]
+    );
+  }, []);
+
+
 
   // Derived State (Filtering/Sorting)
   // Same as before
@@ -406,5 +534,40 @@ export function useNotes(user: User | null): UseNotesReturn {
     folders,
     activeFolder,
     setActiveFolder,
+    renameFolder,
+    deleteFolder,
+    pinnedFolders,
+    togglePinFolder,
+    createFolder: async (name: string) => {
+      // Create a welcome note to initialize the folder
+      return createNote({
+        title: `Welcome to ${name}`,
+        content: `This is the start of your new folder "${name}".`,
+        folder: name
+      });
+    },
+    restoreNote: async (id: string) => {
+      const note = notes.find(n => n.id === id);
+      if (!note) return { success: false, error: 'Note not found' };
+      return updateNote(id, { folder: 'Main', is_archived: false, is_pinned: false });
+    },
+    deleteForever: async (id: string) => {
+      // Optimistic delete
+      setNotes(prev => prev.filter(note => note.id !== id));
+
+      const action: SyncAction = { type: 'DELETE', payload: { id } };
+
+      if (isOffline) {
+        setSyncQueue(prev => [...prev, action]);
+        return { success: true };
+      }
+
+      const { error } = await supabase.from('notes').delete().eq('id', id);
+      if (error) {
+        setSyncQueue(prev => [...prev, action]);
+        console.error('Delete forever failed, queued:', error);
+      }
+      return { success: true };
+    }
   };
 }

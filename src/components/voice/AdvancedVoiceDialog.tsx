@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mic, Square, Send, RefreshCcw, Globe, Download, FileText, File, FilePenLine } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -75,7 +75,9 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
             recognitionRef.current.onerror = (event: any) => {
                 console.error('Speech recognition error', event.error);
                 if (event.error === 'not-allowed') {
-                    toast.error('Microphone access denied');
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                        detail: { title: 'Microphone Error', message: 'Access denied', type: 'error' }
+                    }));
                     stopRecording();
                 }
             };
@@ -118,7 +120,9 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
             }, 1000);
         } catch (e) {
             console.error(e);
-            toast.error("Could not start recording");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Could not start recording", type: 'error' }
+            }));
         }
     };
 
@@ -138,12 +142,16 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
 
     const handleSend = () => {
         if (!transcript.trim()) {
-            toast.error("Please record something first");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Please record something first", type: 'error' }
+            }));
             return;
         }
         onSendToAI(transcript);
         handleClose();
-        toast.success("Sent to AI Assistant");
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Success', message: "Sent to AI Assistant", type: 'success' }
+        }));
     };
 
     const formatTime = (seconds: number) => {
@@ -303,7 +311,9 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
                                             detail: { title: 'Voice Note', content: transcript }
                                         }));
                                         handleClose();
-                                        toast.success("Note Created!");
+                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                            detail: { title: 'Success', message: 'Note Created!', type: 'success' }
+                                        }));
                                     }}
                                     disabled={!transcript}
                                     variant="secondary"

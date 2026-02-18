@@ -1,9 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Toaster } from '@/components/ui/sonner';
+
 import { useNotes } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
+import { SEO } from '@/components/seo/SEO';
 import './App.css';
 
 // Lazy load all major components
@@ -81,10 +82,13 @@ function MainApp() {
           const diff = now.getTime() - reminderTime.getTime();
           // Check if due within the last 30 seconds to catch it once
           if (diff > 0 && diff < 30000) {
-            new Notification(`Reminder: ${note.title}`, {
-              body: note.content.substring(0, 50) || 'You have a note reminder.',
-              icon: '/vite.svg'
-            });
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+              detail: {
+                title: `Reminder: ${note.title}`,
+                message: note.content.substring(0, 50) || 'You have a note reminder.',
+                type: 'info'
+              }
+            }));
           }
         }
       });
@@ -124,7 +128,7 @@ function MainApp() {
           }}
           onBack={() => setShowAuth(false)}
         />
-        <Toaster position="top-center" />
+
       </Suspense>
     );
   }
@@ -139,7 +143,7 @@ function MainApp() {
       />
       <AIAssistant />
       <GuestNagModal onSignupClick={() => setShowAuth(true)} />
-      <Toaster position="top-center" />
+
     </Suspense>
   );
 }
@@ -148,6 +152,7 @@ function App() {
   const { theme } = useTheme(); // Initialize theme logic and ensure it is used
   return (
     <div className={theme}>
+      <SEO />
       <Routes>
         <Route
           path="/share/:id"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,9 +32,13 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
 
     if (!result.success) {
       setError(result.error || 'Failed to sign in');
-      toast.error(result.error || 'Failed to sign in');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Error', message: result.error || 'Failed to sign in', type: 'error' }
+      }));
     } else {
-      toast.success('Welcome back!');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Success', message: 'Welcome back!', type: 'success' }
+      }));
     }
 
     setIsLoading(false);
@@ -69,10 +73,14 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
               setIsLoading(true);
               const result = await onGoogleSignIn();
               if (!result.success) {
-                toast.error(result.error);
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                  detail: { title: 'Error', message: result.error, type: 'error' }
+                }));
                 setIsLoading(false);
               } else {
-                toast.success("Successfully signed in with Google!");
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                  detail: { title: 'Success', message: 'Successfully signed in with Google!', type: 'success' }
+                }));
               }
             }}
             className="w-full h-10 bg-white border-gray-200 hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-center gap-2"

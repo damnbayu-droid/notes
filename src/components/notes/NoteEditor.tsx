@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { CanvasEditor } from './CanvasEditor';
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
-import { toast } from 'sonner';
+
 import {
   Select,
   SelectContent,
@@ -50,20 +50,24 @@ interface NoteEditorProps {
   note: Note | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (note: Partial<Note>) => void;
+  onUpdate: (note: Partial<Note>) => void;
   onDelete?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onToggleArchive?: (id: string) => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export function NoteEditor({
   note,
   isOpen,
   onClose,
-  onSave,
+  onUpdate,
   onDelete,
   onTogglePin,
   onToggleArchive,
+  isExpanded = false,
+  onToggleExpand,
 }: NoteEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -76,7 +80,11 @@ export function NoteEditor({
   const [folder, setFolder] = useState('Main');
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
+  // Internal state fallback if prop not provided (though Dashboard provides it)
+  const [internalExpanded, setInternalExpanded] = useState(false);
+
+  const isMaximized = onToggleExpand ? isExpanded : internalExpanded;
+  const toggleMaximized = onToggleExpand || (() => setInternalExpanded(!internalExpanded));
 
   const isNewNote = !note;
 
@@ -116,7 +124,7 @@ export function NoteEditor({
       return;
     }
 
-    onSave({
+    onUpdate({
       title: title.trim() || 'Untitled Note',
       content: content.trim(),
       color,
@@ -128,7 +136,7 @@ export function NoteEditor({
       folder,
     });
     onClose();
-  }, [title, content, color, isPinned, isArchived, tags, onSave, onClose]);
+  }, [title, content, color, isPinned, isArchived, tags, onUpdate, onClose]);
 
   const handleAddTag = () => {
     const trimmedTag = newTag.trim().toLowerCase();
@@ -166,7 +174,7 @@ export function NoteEditor({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-gray-500"
-                onClick={() => setIsMaximized(!isMaximized)}
+                onClick={toggleMaximized}
                 title={isMaximized ? "Exit Full Screen" : "Full Screen"}
               >
                 {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -251,10 +259,9 @@ export function NoteEditor({
                   onClick={() => {
                     const url = `${window.location.origin}/share/${note.id}`;
                     navigator.clipboard.writeText(url);
-                    // Ideally show a toast here
-                    alert('Link copied to clipboard!');
-                    // I should use toast from sonner if available, but I don't have access to toast hook here easily without importing. 
-                    // Actually App.tsx has Toaster. I can import { toast } from 'sonner'.
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                      detail: { title: 'Link Copied', message: 'Share link copied to clipboard!', type: 'success' }
+                    }));
                   }}
                   title="Share Note"
                 >
@@ -298,7 +305,9 @@ export function NoteEditor({
                   <VoiceRecorder
                     onRecordingComplete={(blob) => {
                       console.log('Audio recorded:', blob.size);
-                      toast.success("Voice note recorded (Transcription added)");
+                      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                        detail: { title: 'Voice Note Saved', message: 'Transcription added to note', type: 'success' }
+                      }));
                       setIsVoiceOpen(false);
                     }}
                     onTranscriptionComplete={(text) => {

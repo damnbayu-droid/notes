@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useNotes } from '@/hooks/useNotes';
 import { useAuth } from '@/hooks/useAuth';
 import { askAI } from '@/lib/openai';
-import { toast } from 'sonner';
+
 
 export function SchedulePage() {
     const { user } = useAuth();
@@ -55,7 +55,9 @@ export function SchedulePage() {
             // 1. Identify tasks needing schedule (no reminder)
             const backlog = notes.filter(n => !n.reminder_date && !n.is_archived);
             if (backlog.length === 0) {
-                toast.info("No unscheduled tasks found.");
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Info', message: "No unscheduled tasks found.", type: 'info' }
+                }));
                 return;
             }
 
@@ -111,10 +113,14 @@ export function SchedulePage() {
                 }
             }
 
-            toast.success(`Automatically scheduled ${count} tasks!`);
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: `Automatically scheduled ${count} tasks!`, type: 'success' }
+            }));
         } catch (error) {
             console.error(error);
-            toast.error("Failed to auto-schedule. Try again.");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to auto-schedule. Try again.", type: 'error' }
+            }));
         } finally {
             setIsScheduling(false);
         }
@@ -137,7 +143,9 @@ export function SchedulePage() {
         if (newNote) {
             // Open edit dialog immediately
             openEditDialog({ ...newNote, title: 'New Event', content: '', reminder_date: isoDate });
-            toast.success("Event created! You can edit it now.");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: "Event created! You can edit it now.", type: 'success' }
+            }));
         }
     };
 
@@ -173,11 +181,15 @@ export function SchedulePage() {
                 content: editContent,
                 reminder_date: isoDate
             });
-            toast.success("Event updated");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: "Event updated", type: 'success' }
+            }));
             setIsEditOpen(false);
         } catch (e) {
             console.error(e);
-            toast.error("Failed to update event");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to update event", type: 'error' }
+            }));
         }
     };
 
@@ -252,29 +264,40 @@ export function SchedulePage() {
                                 <Clock className="w-5 h-5 text-violet-500" />
                                 {isToday(selectedDate) ? 'Today' : format(selectedDate, 'EEEE, MMM d')}
                             </CardTitle>
-                            <Button size="sm" onClick={handleAddEvent} className="h-8 w-8 p-0 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700">
-                                <Plus className="w-4 h-4" />
+                            <Button size="sm" onClick={handleAddEvent} className="bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-200 transition-all hover:scale-105">
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add Event
                             </Button>
                         </div>
                     </CardHeader>
                     <ScrollArea className="flex-1">
                         <div className="p-4 space-y-3">
                             {notesForSelectedDate.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-sm">
-                                    No events scheduled
+                                <div className="text-center py-8 flex flex-col items-center gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                                        <Clock className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-gray-400 text-sm">No events scheduled</p>
+                                    <Button variant="outline" size="sm" onClick={handleAddEvent} className="mt-2 text-violet-600 border-violet-200 hover:bg-violet-50">
+                                        Create First Event
+                                    </Button>
                                 </div>
                             ) : (
                                 notesForSelectedDate.map(note => (
-                                    <div key={note.id} className="group flex flex-col gap-1 p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-violet-100 relative">
+                                    <div
+                                        key={note.id}
+                                        onClick={() => openEditDialog(note)}
+                                        className="group flex flex-col gap-1 p-3 rounded-xl bg-gray-50 hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-violet-100 relative cursor-pointer"
+                                    >
                                         <div className="flex items-center justify-between">
                                             <span className="font-medium text-gray-800 line-clamp-1">{note.title || 'Untitled'}</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs text-gray-500 font-mono">
+                                                <span className="text-xs text-gray-500 font-mono bg-white px-1.5 py-0.5 rounded border border-gray-100">
                                                     {note.reminder_date && format(new Date(note.reminder_date), 'h:mm a')}
                                                 </span>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); openEditDialog(note); }}
-                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-violet-100 rounded text-violet-600 transition-all"
+                                                    className="p-1 hover:bg-violet-100 rounded text-violet-600 transition-all"
                                                 >
                                                     <Pencil className="w-3 h-3" />
                                                 </button>

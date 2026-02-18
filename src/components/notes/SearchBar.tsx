@@ -23,15 +23,15 @@ import type { SortOption } from '@/types';
 
 interface SearchBarProps {
   searchQuery: string;
-  onSearchChange: (query: string) => void;
+  setSearchQuery: (query: string) => void;
   selectedTags: string[];
   availableTags: string[];
   onTagToggle: (tag: string) => void;
   onClearFilters: () => void;
   sortBy: SortOption;
-  onSortChange: (sort: SortOption) => void;
+  setSortBy: (sort: SortOption) => void;
   viewMode: 'grid' | 'list';
-  onViewModeChange: (mode: 'grid' | 'list') => void;
+  setViewMode: (mode: 'grid' | 'list') => void;
 }
 
 const sortOptions: { value: SortOption; label: string }[] = [
@@ -42,15 +42,15 @@ const sortOptions: { value: SortOption; label: string }[] = [
 
 export function SearchBar({
   searchQuery,
-  onSearchChange,
+  setSearchQuery,
   selectedTags,
   availableTags,
   onTagToggle,
   onClearFilters,
   sortBy,
-  onSortChange,
+  setSortBy,
   viewMode,
-  onViewModeChange,
+  setViewMode,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -66,7 +66,7 @@ export function SearchBar({
           <Input
             placeholder="Search notes..."
             value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={`pl-11 pr-10 h-12 bg-background border-border transition-all ${isFocused ? 'border-primary ring-2 ring-primary/20' : ''
@@ -74,7 +74,7 @@ export function SearchBar({
           />
           {searchQuery && (
             <button
-              onClick={() => onSearchChange('')}
+              onClick={() => setSearchQuery('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
@@ -100,7 +100,7 @@ export function SearchBar({
               {sortOptions.map((option) => (
                 <DropdownMenuItem
                   key={option.value}
-                  onClick={() => onSortChange(option.value)}
+                  onClick={() => setSortBy(option.value)}
                 >
                   <Check className={`w-4 h-4 mr-2 ${sortBy === option.value ? 'opacity-100' : 'opacity-0'}`} />
                   {option.label}
@@ -148,7 +148,7 @@ export function SearchBar({
               variant={viewMode === 'grid' ? 'default' : 'ghost'}
               size="icon"
               className="h-12 w-12 rounded-none"
-              onClick={() => onViewModeChange('grid')}
+              onClick={() => setViewMode('grid')}
             >
               <Grid3X3 className="w-4 h-4" />
             </Button>
@@ -156,7 +156,7 @@ export function SearchBar({
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="icon"
               className="h-12 w-12 rounded-none"
-              onClick={() => onViewModeChange('list')}
+              onClick={() => setViewMode('list')}
             >
               <List className="w-4 h-4" />
             </Button>
@@ -170,7 +170,7 @@ export function SearchBar({
           {searchQuery && (
             <Badge variant="secondary" className="gap-1">
               Search: {searchQuery}
-              <button onClick={() => onSearchChange('')}>
+              <button onClick={() => setSearchQuery('')}>
                 <X className="w-3 h-3" />
               </button>
             </Badge>

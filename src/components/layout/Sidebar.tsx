@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/hooks/useTheme';
 import { AdvancedVoiceDialog } from '@/components/voice/AdvancedVoiceDialog';
-import { AlarmDialog } from '@/components/time/AlarmDialog';
 import {
   LayoutGrid,
   Archive,
-  Tag,
-  Settings,
   Plus,
   X,
   Scan,
@@ -17,10 +14,21 @@ import {
   Moon,
   Sun,
   Book,
-  Bell,
   Mic,
+  Pin,
+  Tag,
+  Settings,
   Cloud,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin';
 
@@ -35,12 +43,30 @@ interface SidebarProps {
   onSelectFolder: (folder: string) => void;
   onOpenSettings: () => void;
   onAddFolder: () => void;
+  renameFolder: (oldName: string, newName: string) => Promise<{ success: boolean; error?: string }>;
+  deleteFolder: (folderName: string) => Promise<{ success: boolean; error?: string }>;
+  togglePinFolder: (folderName: string) => void;
+  pinnedFolders: string[];
 }
 
-export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClose, folders, activeFolder, onSelectFolder, onOpenSettings, onAddFolder }: SidebarProps) {
+export function Sidebar({
+  currentView,
+  onViewChange,
+  onCreateNote,
+  isOpen,
+  onClose,
+  folders,
+  activeFolder,
+  onSelectFolder,
+  onOpenSettings,
+  onAddFolder,
+  renameFolder,
+  deleteFolder,
+  pinnedFolders,
+  togglePinFolder
+}: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [isAlarmOpen, setIsAlarmOpen] = useState(false);
   const tags: string[] = [];
   const activeNotesCount = 0;
   const archivedNotesCount = 0;
@@ -49,11 +75,20 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
     { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
-    { id: 'alarm' as any, label: 'Set Alarm', icon: Bell, count: 0, onClick: () => setIsAlarmOpen(true) }, // Added Alarm
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
     { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },
     { id: 'voice-note' as any, label: 'Voice Note', icon: Mic, count: 0, onClick: () => setIsVoiceOpen(true) },
   ];
+
+  const sortedFolders = useMemo(() => {
+    return [...folders].sort((a, b) => {
+      const aPinned = pinnedFolders.includes(a);
+      const bPinned = pinnedFolders.includes(b);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return a.localeCompare(b);
+    });
+  }, [folders, pinnedFolders]);
 
   return (
     <>
@@ -72,7 +107,6 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
         transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* ... existing sidebar content ... */}
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-border">
@@ -88,7 +122,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
 
           <ScrollArea className="flex-1 py-4">
             <div className="px-3 space-y-6">
-              {/* Theme Toggle (Moved to Top) */}
+              {/* Theme Toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-100 transition-all group"
@@ -167,25 +201,99 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Folders
                   </p>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Folders
-                  </p>
                 </div>
                 <div className="space-y-0.5">
-                  {folders.map(folder => (
-                    <button
-                      key={folder}
-                      onClick={() => {
-                        onSelectFolder(folder);
-                        onClose();
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeFolder === folder
-                        ? 'bg-accent text-accent-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                    >
-                      <span className="truncate">{folder}</span>
-                    </button>
+                  {sortedFolders.map(folder => (
+                    <div key={folder} className="group flex items-center justify-between pr-2 rounded-lg hover:bg-accent transition-colors">
+                      <button
+                        onClick={() => {
+                          onSelectFolder(folder);
+                          onClose();
+                        }}
+                        className={`flex-1 flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${activeFolder === folder
+                          ? 'text-accent-foreground font-semibold'
+                          : 'text-muted-foreground'
+                          }`}
+                      >
+                        <div className="flex items-center gap-3 truncate">
+                          {pinnedFolders.includes(folder) && <Pin className="w-3 h-3 text-primary fill-primary rotate-45" />}
+                          <span className="truncate">{folder}</span>
+                        </div>
+                      </button>
+
+                      {/* Folder Actions */}
+                      {folder !== 'Main' && folder !== 'Google Drive' && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-label={`Options for ${folder}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              setTimeout(async () => {
+                                const newName = prompt("Rename folder to:", folder);
+                                if (newName && newName !== folder) {
+                                  const res = await renameFolder(folder, newName);
+                                  if (res.error) {
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                      detail: { title: 'Error', message: res.error, type: 'error' }
+                                    }));
+                                  } else {
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                      detail: { title: 'Folder Renamed', type: 'success' }
+                                    }));
+                                  }
+                                }
+                              }, 100);
+                            }}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinFolder(folder);
+                              window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                detail: {
+                                  title: pinnedFolders.includes(folder) ? 'Folder Unpinned' : 'Folder Pinned',
+                                  type: 'info'
+                                }
+                              }));
+                            }}>
+                              <div className={`w-4 h-4 mr-2 border rounded-full ${pinnedFolders.includes(folder) ? 'bg-primary border-primary' : 'border-muted-foreground'}`} />
+                              {pinnedFolders.includes(folder) ? 'Unpin Folder' : 'Pin Folder'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={(e) => {
+                              e.stopPropagation();
+                              setTimeout(async () => {
+                                if (confirm(`Delete folder "${folder}"? Notes will be moved to Trash.`)) {
+                                  const res = await deleteFolder(folder);
+                                  if (res.error) {
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                      detail: { title: 'Error', message: res.error, type: 'error' }
+                                    }));
+                                  } else {
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                      detail: { title: 'Folder Deleted', type: 'success' }
+                                    }));
+                                  }
+                                }
+                              }, 100);
+                            }}>
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   ))}
                   <button
                     onClick={onAddFolder}
@@ -245,10 +353,8 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 try {
                   const { googleDrive } = await import('@/lib/googleDrive');
                   await googleDrive.loadScripts();
-                  // toast.success("Connected to Google Drive!");
                 } catch (e) {
                   console.error(e);
-                  // toast.error("Failed to connect. Check Client ID.");
                 }
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -265,14 +371,8 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
         isOpen={isVoiceOpen}
         onClose={() => setIsVoiceOpen(false)}
         onSendToAI={(text) => {
-          // Dispatch event to open AI and send message
           window.dispatchEvent(new CustomEvent('ai-message', { detail: text }));
         }}
-      />
-
-      <AlarmDialog
-        isOpen={isAlarmOpen}
-        onClose={() => setIsAlarmOpen(false)}
       />
     </>
   );

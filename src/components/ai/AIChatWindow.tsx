@@ -8,7 +8,7 @@ import { askAI } from '@/lib/openai';
 import { useNotes } from '@/hooks/useNotes';
 import { useAuth } from '@/hooks/useAuth';
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
-import { toast } from 'sonner';
+
 
 interface Message {
     role: 'user' | 'ai';
@@ -161,7 +161,7 @@ export default function AIChatWindow({ onClose, initialMessage, onClearInitialMe
                     <div className="flex items-center justify-between">
                         <CardTitle className="flex items-center gap-2 text-white text-base">
                             <Bot className="w-5 h-5" />
-                            Note-Ai
+                            NoteAi
                         </CardTitle>
                         <div className="flex items-center gap-1">
                             <Button
@@ -237,7 +237,9 @@ export default function AIChatWindow({ onClose, initialMessage, onClearInitialMe
                                 setInput(prev => prev + text);
                             }}
                             onRecordingComplete={() => {
-                                toast.success("Voice command captured");
+                                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                    detail: { title: 'Success', message: "Voice command captured", type: 'success' }
+                                }));
                             }}
                             className="shrink-0"
                         />

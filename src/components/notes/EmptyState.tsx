@@ -2,11 +2,12 @@ import { FileSearch, Archive, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
-  type: 'search' | 'archive' | 'notes';
+  type: 'search' | 'archive' | 'notes' | 'trash';
   onAction?: () => void;
+  onClearFilters?: () => void;
 }
 
-export function EmptyState({ type, onAction }: EmptyStateProps) {
+export function EmptyState({ type, onAction, onClearFilters }: EmptyStateProps) {
   const configs = {
     search: {
       icon: FileSearch,
@@ -29,6 +30,12 @@ export function EmptyState({ type, onAction }: EmptyStateProps) {
         onClick: onAction,
       },
     },
+    trash: {
+      icon: Archive,
+      title: 'Trash is empty',
+      description: 'Notes in trash are deleted after 30 days.',
+      action: null,
+    },
   };
 
   const config = configs[type];
@@ -49,6 +56,11 @@ export function EmptyState({ type, onAction }: EmptyStateProps) {
         <Button onClick={config.action.onClick} className="gap-2">
           <Icon className="w-4 h-4" />
           {config.action.label}
+        </Button>
+      )}
+      {type === 'search' && onClearFilters && (
+        <Button variant="ghost" onClick={onClearFilters} className="mt-4">
+          Clear filters
         </Button>
       )}
     </div>

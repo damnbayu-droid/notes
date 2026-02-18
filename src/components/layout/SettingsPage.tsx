@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Mail, Shield, Bell, Bot, Cpu, Key, Database } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
@@ -24,7 +24,9 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            toast.error("New passwords don't match");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "New passwords don't match", type: 'error' }
+            }));
             return;
         }
 
@@ -33,12 +35,16 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
             const { error } = await changePassword(currentPassword, newPassword);
             if (error) throw new Error(error);
 
-            toast.success("Password updated successfully");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: "Password updated successfully", type: 'success' }
+            }));
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (err: any) {
-            toast.error(err.message);
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: err.message, type: 'error' }
+            }));
         } finally {
             setLoading(false);
         }
@@ -118,13 +124,16 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 if (!file) return;
 
                                                 if (file.size > 2 * 1024 * 1024) {
-                                                    toast.error("Image size must be less than 2MB");
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Error', message: "Image size must be less than 2MB", type: 'error' }
+                                                    }));
                                                     return;
                                                 }
 
                                                 setLoading(true);
                                                 // Create a toast ID to update progress
-                                                const toastId = toast.loading("Uploading image...");
+                                                // const toastId = toast.loading("Uploading image...");
+
 
                                                 try {
                                                     // 1. Upload to Supabase Storage
@@ -147,10 +156,14 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                     const { error: updateError } = await updateProfile({ avatar: publicUrl });
                                                     if (updateError) throw new Error(updateError);
 
-                                                    toast.success("Profile picture updated!", { id: toastId });
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Success', message: "Profile picture updated!", type: 'success' }
+                                                    }));
                                                 } catch (error: any) {
                                                     console.error("Upload error:", error);
-                                                    toast.error(error.message || "Failed to upload image", { id: toastId });
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Error', message: error.message || "Failed to upload image", type: 'error' }
+                                                    }));
                                                 } finally {
                                                     setLoading(false);
                                                 }
@@ -179,9 +192,13 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 try {
                                                     const { error } = await updateProfile({ avatar: '' }); // Reset to empty to trigger fallback
                                                     if (error) throw new Error(error);
-                                                    toast.success("Profile picture removed");
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Success', message: "Profile picture removed", type: 'success' }
+                                                    }));
                                                 } catch (err: any) {
-                                                    toast.error(err.message);
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Error', message: err.message, type: 'error' }
+                                                    }));
                                                 } finally {
                                                     setLoading(false);
                                                 }
@@ -326,7 +343,9 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     checked={localStorage.getItem('smart_mode_enabled') === 'true'}
                                     onCheckedChange={(checked) => {
                                         localStorage.setItem('smart_mode_enabled', String(checked));
-                                        toast.success(`Smart Mode ${checked ? 'Enabled' : 'Disabled'}`);
+                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                            detail: { title: 'Smart Mode', message: `Smart Mode ${checked ? 'Enabled' : 'Disabled'}`, type: 'info' }
+                                        }));
                                         // Force re-render would be better, but for now this persists
                                     }}
                                 />
@@ -348,7 +367,9 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     />
                                     <Button onClick={() => {
                                         // The onChange handles saving to ref/state, but let's confirm saving
-                                        toast.success("API Key saved securely locally");
+                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                            detail: { title: 'Success', message: "API Key saved securely locally", type: 'success' }
+                                        }));
                                     }}>Save</Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -371,8 +392,12 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     </div>
                                     <Button variant="outline" size="sm" onClick={() => {
                                         navigator.mediaDevices.getUserMedia({ audio: true })
-                                            .then(() => toast.success("Microphone access granted"))
-                                            .catch(() => toast.error("Microphone access denied"));
+                                            .then(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Success', message: "Microphone access granted", type: 'success' }
+                                            })))
+                                            .catch(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Error', message: "Microphone access denied", type: 'error' }
+                                            })));
                                     }}>
                                         Test Access
                                     </Button>
@@ -435,8 +460,12 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         </div>
                                         <Button variant="outline" size="sm" onClick={async () => {
                                             const success = await exportData();
-                                            if (success) toast.success("Data exported successfully");
-                                            else toast.error("Failed to export data");
+                                            if (success) window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Success', message: "Data exported successfully", type: 'success' }
+                                            }));
+                                            else window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Error', message: "Failed to export data", type: 'error' }
+                                            }));
                                         }}>
                                             Export JSON
                                         </Button>
@@ -454,7 +483,9 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         <Button variant="outline" size="sm" className="w-full bg-white hover:bg-blue-50 text-blue-700 border-blue-200" onClick={() => {
                                             localStorage.setItem('google_drive_connected', 'true');
                                             window.dispatchEvent(new Event('storage')); // Notify hooks
-                                            toast.success("Google Drive connected (Simulated)");
+                                            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Success', message: "Google Drive connected (Simulated)", type: 'success' }
+                                            }));
                                         }}>
                                             Connect Folder
                                         </Button>
@@ -476,10 +507,14 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
 
                                                     const success = await importData(file);
                                                     if (success) {
-                                                        toast.success("Data imported successfully");
+                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                            detail: { title: 'Success', message: "Data imported successfully", type: 'success' }
+                                                        }));
                                                         window.location.reload();
                                                     } else {
-                                                        toast.error("Failed to import data");
+                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                            detail: { title: 'Error', message: "Failed to import data", type: 'error' }
+                                                        }));
                                                     }
                                                 }}
                                             />
@@ -547,15 +582,21 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                     const { error } = await supabase.auth.signOut();
                                                     if (error) throw error;
 
-                                                    toast.success("Account deleted (simulated) and data cleared.");
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Account Deleted', message: "Account deleted (simulated) and data cleared.", type: 'success' }
+                                                    }));
                                                     window.location.reload();
                                                 } catch (err: any) {
-                                                    toast.error(err.message);
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Error', message: err.message, type: 'error' }
+                                                    }));
                                                 } finally {
                                                     setLoading(false);
                                                 }
                                             } else {
-                                                if (userInput !== null) toast.error("Incorrect confirmation code.");
+                                                if (userInput !== null) window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                    detail: { title: 'Error', message: "Incorrect confirmation code.", type: 'error' }
+                                                }));
                                             }
                                         }}
                                     >

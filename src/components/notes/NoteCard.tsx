@@ -31,6 +31,7 @@ interface NoteCardProps {
   onToggleArchive: (id: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
+  onRestore?: (id: string) => void;
   onChangeColor: (id: string, color: Note['color']) => void;
 }
 
@@ -42,6 +43,7 @@ export function NoteCard({
   onToggleArchive,
   onDuplicate,
   onDelete,
+  onRestore,
   onChangeColor,
 }: NoteCardProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -123,6 +125,7 @@ export function NoteCard({
               className="h-8 w-8 text-gray-500 hover:text-violet-600 hover:bg-violet-50"
               onClick={() => onTogglePin(note.id)}
               title={note.is_pinned ? 'Unpin' : 'Pin'}
+              aria-label={note.is_pinned ? 'Unpin note' : 'Pin note'}
             >
               {note.is_pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
             </Button>
@@ -133,9 +136,26 @@ export function NoteCard({
               className="h-8 w-8 text-gray-500 hover:text-violet-600 hover:bg-violet-50"
               onClick={() => onToggleArchive(note.id)}
               title={note.is_archived ? 'Unarchive' : 'Archive'}
+              aria-label={note.is_archived ? 'Unarchive note' : 'Archive note'}
             >
               {note.is_archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
             </Button>
+
+            {note.folder === 'Trash' && onRestore && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRestore(note.id);
+                }}
+                title="Restore"
+                aria-label="Restore note"
+              >
+                <ArchiveRestore className="w-4 h-4" />
+              </Button>
+            )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -143,6 +163,7 @@ export function NoteCard({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-gray-500 hover:text-violet-600 hover:bg-violet-50"
+                  aria-label="More options"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
@@ -163,8 +184,8 @@ export function NoteCard({
                         key={color.value}
                         onClick={() => onChangeColor(note.id, color.value)}
                         className={`w-6 h-6 rounded-full border-2 transition-all ${note.color === color.value
-                            ? 'border-violet-500 scale-110'
-                            : 'border-transparent hover:scale-105'
+                          ? 'border-violet-500 scale-110'
+                          : 'border-transparent hover:scale-105'
                           } ${color.bg} ${color.border} border`}
                         title={color.label}
                       />

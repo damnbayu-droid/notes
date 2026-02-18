@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, CheckCircle, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { toast } from 'sonner';
+
 
 interface AdminUser {
     id: string;
@@ -43,7 +43,9 @@ export function AdminUserList() {
         setUsers(users.map(user => {
             if (user.id === userId) {
                 const newStatus = !user.verified;
-                toast.success(`User ${user.email} is now ${newStatus ? 'Verified' : 'Unverified'}`);
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'User Updated', message: `User ${user.email} is now ${newStatus ? 'Verified' : 'Unverified'}`, type: 'success' }
+                }));
                 return { ...user, verified: newStatus };
             }
             return user;

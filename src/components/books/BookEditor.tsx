@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChevronLeft, FileText, Plus, Trash2, Bot, Sparkles, Send, X, Loader2, Menu } from 'lucide-react';
 import type { Book, Chapter } from './types';
-import { toast } from 'sonner';
+
 import { askAI } from '@/lib/openai';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
@@ -86,12 +86,16 @@ export function BookEditor({ book: initialBook, onSave, onBack }: BookEditorProp
             chapters: [...prev.chapters, newChapter]
         }));
         setActiveChapterId(newChapter.id);
-        toast.success("Chapter added");
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Success', message: 'Chapter added', type: 'success' }
+        }));
     };
 
     const handleDeleteChapter = (chapterId: string) => {
         if (book.chapters.length <= 1) {
-            toast.error("Cannot delete the last chapter");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Cannot delete the last chapter', type: 'error' }
+            }));
             return;
         }
 
@@ -103,7 +107,9 @@ export function BookEditor({ book: initialBook, onSave, onBack }: BookEditorProp
         if (activeChapterId === chapterId) {
             setActiveChapterId(book.chapters.find(c => c.id !== chapterId)?.id || '');
         }
-        toast.success("Chapter deleted");
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Success', message: 'Chapter deleted', type: 'success' }
+        }));
     };
 
     const handleAskAI = async () => {

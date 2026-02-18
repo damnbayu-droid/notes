@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
-import { toast } from 'sonner';
+
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
 import { Header } from './Header';
@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/notes/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { AdOverlay } from '@/components/ads/AdOverlay';
+import { SEO } from '@/components/seo/SEO';
 
 // Lazy load heavy components
 const ScannerPage = lazy(() => import('@/components/scanner/ScannerPage').then(module => ({ default: module.ScannerPage })));
@@ -18,6 +19,7 @@ const SettingsPage = lazy(() => import('./SettingsPage').then(module => ({ defau
 const AdminUserList = lazy(() => import('@/components/admin/AdminUserList').then(module => ({ default: module.AdminUserList })));
 const SchedulePage = lazy(() => import('@/components/schedule/SchedulePage').then(module => ({ default: module.SchedulePage })));
 const BookLayout = lazy(() => import('@/components/books/BookLayout').then(module => ({ default: module.BookLayout })));
+const AlarmDialog = lazy(() => import('@/components/time/AlarmDialog').then(module => ({ default: module.AlarmDialog })));
 
 interface DashboardProps {
   user: User | null;
@@ -33,11 +35,11 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isAlarmOpen, setIsAlarmOpen] = useState(false);
 
   const {
     pinnedNotes,
     activeNotes,
-    archivedNotes,
     allTags,
     searchQuery,
     selectedTags,
@@ -57,6 +59,13 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     folders,
     activeFolder,
     setActiveFolder,
+    renameFolder,
+    deleteFolder,
+    pinnedFolders,
+    togglePinFolder,
+    createFolder,
+    restoreNote,
+
   } = useNotes(user);
 
   const handleCreateNote = () => {
@@ -64,10 +73,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     setIsEditorOpen(true);
   };
 
-  const handleEditNote = (note: Note) => {
-    setEditingNote(note);
-    setIsEditorOpen(true);
-  };
+
 
   /* 
   const handleSaveNote = async (noteData: Partial<Note>) => {
@@ -88,110 +94,155 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     setSelectedTags([]);
   };
 
-  const displayNotes = currentView === 'archive' ? archivedNotes : activeNotes;
-  const displayPinnedNotes = currentView === 'archive' ? [] : pinnedNotes;
-
-  const PageLoader = () => (
-    <div className="flex items-center justify-center h-full min-h-[50vh]">
-      <div className="animate-spin h-8 w-8 border-4 border-violet-500 rounded-full border-t-transparent"></div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-background">
-      <Header
-        user={user}
-        onSignOut={onSignOut}
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        onOpenSettings={(tab = 'profile') => {
-          setSettingsTab(tab);
-          setCurrentView('settings');
-        }}
-        onSignIn={onSignIn}
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <SEO
+        title={
+          currentView === 'notes' ? 'Notes' :
+            currentView === 'archive' ? 'Archive' :
+              currentView === 'trash' ? 'Trash' :
+                currentView === 'settings' ? 'Settings' :
+                  currentView === 'scanner' ? 'Scanner' :
+                    currentView === 'schedule' ? 'Schedule' :
+                      currentView === 'books' ? 'Books' :
+                        currentView === 'admin' ? 'Admin Panel' : 'Dashboard'
+        }
       />
-
-      <div className="flex">
-        <Sidebar
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          onCreateNote={handleCreateNote}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          folders={folders}
-          activeFolder={activeFolder}
-          onSelectFolder={setActiveFolder}
-          onOpenSettings={() => setCurrentView('settings')}
-          onAddFolder={() => {
-            const folderName = prompt("Enter folder name:");
-            if (folderName && folderName.trim()) {
-              setActiveFolder(folderName.trim());
-              // Optionally create an empty note to 'persist' it immediately? 
-              // Or just let the user create a note in it.
-              // For better UX, let's create a welcome note.
-              createNote({
-                title: `Welcome to ${folderName}`,
-                content: 'Start adding notes to this folder!',
-                folder: folderName.trim()
-              });
-              toast.success(`Folder "${folderName}" created`);
-            }
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header
+          user={user}
+          onSignOut={onSignOut}
+          onSignIn={onSignIn}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          onOpenSettings={(tab) => {
+            setSettingsTab(tab || 'profile');
+            setCurrentView('settings');
           }}
+          onOpenAlarm={() => setIsAlarmOpen(true)}
         />
+        <div className="flex-1 flex overflow-hidden relative">
+          <Sidebar
+            currentView={currentView}
+            onViewChange={setCurrentView}
+            onCreateNote={async () => {
+              await createNote({
+                title: 'New Note',
+                content: '',
+                folder: activeFolder === 'Trash' || activeFolder === 'Google Drive' ? 'Main' : activeFolder
+              });
+              // Note creation events are handled by the list/editor
+            }}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            folders={folders}
+            activeFolder={activeFolder}
+            onSelectFolder={setActiveFolder}
+            onOpenSettings={() => setCurrentView('settings')}
+            onAddFolder={() => {
+              const name = prompt("New Folder Name:");
+              if (name) createFolder(name);
+            }}
+            renameFolder={renameFolder}
+            deleteFolder={deleteFolder}
+            pinnedFolders={pinnedFolders}
+            togglePinFolder={togglePinFolder}
+          />
 
-        <main className="flex-1 min-w-0">
-          <div className="max-w-7xl mx-auto p-4 lg:p-6 space-y-6">
-            {/* Show Search Bar only for note views */}
-            {['notes', 'archive', 'trash'].includes(currentView) && (
-              <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                selectedTags={selectedTags}
-                availableTags={allTags}
-                onTagToggle={toggleTag}
-                onClearFilters={clearFilters}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-              />
-            )}
+          <main className="flex-1 overflow-auto w-full relative">
+            <Suspense fallback={<div className="h-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" /></div>}>
+              {currentView === 'notes' || currentView === 'archive' || currentView === 'trash' ? (
+                // ... (Notes View Logic)
+                editingNote ? (
+                  <NoteEditor
+                    note={editingNote}
+                    isOpen={!!editingNote || isEditorOpen}
+                    onUpdate={(updates) => {
+                      if (editingNote) updateNote(editingNote.id, updates);
+                    }}
+                    onClose={() => {
+                      setEditingNote(null);
+                      setIsEditorOpen(false);
+                    }}
+                    isExpanded={isEditorOpen}
+                    onToggleExpand={() => setIsEditorOpen(!isEditorOpen)}
+                    onDelete={() => {
+                      deleteNote(editingNote.id);
+                      setEditingNote(null);
+                      setIsEditorOpen(false);
+                    }}
+                  />
+                ) : (
+                  <div className="h-full flex flex-col">
+                    <SearchBar
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      selectedTags={selectedTags}
+                      availableTags={allTags}
+                      onTagToggle={toggleTag}
+                      onClearFilters={clearFilters}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
+                      viewMode={viewMode}
+                      setViewMode={setViewMode}
+                    />
+                    {currentView === 'trash' && (
+                      <div className="px-4 py-2 bg-red-50 border-b border-red-100 text-red-600 text-sm flex items-center justify-center">
+                        Notes in Trash are deleted after 30 days.
+                      </div>
+                    )}
+                    {activeNotes.length === 0 ? (
+                      <EmptyState type={currentView} onClearFilters={() => { setSearchQuery(''); setSelectedTags([]); }} />
+                    ) : (
+                      <NotesGrid
+                        notes={activeNotes}
+                        pinnedNotes={pinnedNotes}
+                        searchQuery={searchQuery}
+                        onCreate={handleCreateNote}
+                        viewMode={viewMode}
+                        onNoteClick={(note) => {
+                          setEditingNote(note);
+                          setIsEditorOpen(false); // Start unexpanded
+                        }}
+                        onTogglePin={togglePin}
+                        onDelete={deleteNote}
+                        onRestore={restoreNote}
 
-            {/* Content Switcher */}
-            <Suspense fallback={<PageLoader />}>
-              {currentView === 'settings' ? (
-                <SettingsPage defaultTab={settingsTab} />
+                        onToggleArchive={toggleArchive}
+                        onDuplicate={duplicateNote}
+                        onChangeColor={handleChangeColor}
+                      />
+                    )}
+                  </div>
+                )
+              ) : currentView === 'settings' ? (
+                <div className="p-6">
+                  <SettingsPage defaultTab={settingsTab} />
+                </div>
               ) : currentView === 'scanner' ? (
-                <ScannerPage />
+                <div className="h-full">
+                  <ScannerPage />
+                </div>
               ) : currentView === 'schedule' ? (
-                <SchedulePage />
-              ) : currentView === 'admin' ? (
-                <AdminUserList />
+                <div className="h-full">
+                  <SchedulePage />
+                </div>
               ) : currentView === 'books' ? (
-                <BookLayout />
-              ) : currentView === 'archive' && archivedNotes.length === 0 ? (
-                <EmptyState type="archive" />
-              ) : (
-                <NotesGrid
-                  notes={displayNotes}
-                  pinnedNotes={displayPinnedNotes}
-                  viewMode={viewMode}
-                  searchQuery={searchQuery}
-                  onEdit={handleEditNote}
-                  onCreate={handleCreateNote}
-                  onTogglePin={togglePin}
-                  onToggleArchive={toggleArchive}
-                  onDuplicate={duplicateNote}
-                  onDelete={deleteNote}
-                  onChangeColor={handleChangeColor}
-                />
-              )}
+                <div className="h-full bg-stone-50">
+                  <BookLayout />
+                </div>
+              ) : currentView === 'admin' ? (
+                <div className="p-6">
+                  <AdminUserList />
+                </div>
+              ) : null}
             </Suspense>
-          </div>
-        </main>
-      </div>
 
+            <AdOverlay />
+          </main>
+        </div>
+      </div>
       {/* Floating Action Button for Mobile */}
-      {['notes', 'archive'].includes(currentView) && (
+      {['notes', 'archive'].includes(currentView) && !editingNote && (
         <Button
           onClick={handleCreateNote}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-300 lg:hidden"
@@ -208,7 +259,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
           setEditingNote(null);
           setIsEditorOpen(false);
         }}
-        onSave={async (noteData) => {
+        onUpdate={async (noteData) => {
           if (editingNote) {
             await updateNote(editingNote.id, noteData);
           } else {
@@ -227,6 +278,10 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       />
 
       <AdOverlay />
-    </div>
+
+      <Suspense fallback={null}>
+        {isAlarmOpen && <AlarmDialog isOpen={isAlarmOpen} onClose={() => setIsAlarmOpen(false)} />}
+      </Suspense>
+    </Suspense>
   );
 }

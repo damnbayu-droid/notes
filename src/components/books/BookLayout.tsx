@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Plus, Book as BookIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +25,9 @@ export function BookLayout() {
                 setBooks(loadedBooks || []);
             } catch (error) {
                 console.error("Failed to load books:", error);
-                toast.error("Failed to load your bookshelf");
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Error', message: "Failed to load your bookshelf", type: 'error' }
+                }));
             } finally {
                 // setLoading(false);
             }
@@ -61,10 +63,14 @@ export function BookLayout() {
             setActiveBook(newBook);
             setView('editor');
             setIsCreateDialogOpen(false);
-            toast.success("New book created");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: "New book created", type: 'success' }
+            }));
         } catch (error) {
             console.error("Failed to create book:", error);
-            toast.error("Failed to create book");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to create book", type: 'error' }
+            }));
         }
     };
 

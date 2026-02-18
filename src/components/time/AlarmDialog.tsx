@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Clock, Bell, Trash2, Plus } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 interface Alarm {
     id: string;
@@ -65,7 +65,9 @@ export function AlarmDialog({ isOpen, onClose }: AlarmDialogProps) {
         setIsAdding(false);
         setNewTime('');
         setNewLabel('');
-        toast.success("Alarm set for " + newTime + " (Bali Time)");
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Success', message: "Alarm set for " + newTime + " (Bali Time)", type: 'success' }
+        }));
     };
 
     const toggleAlarm = (id: string) => {

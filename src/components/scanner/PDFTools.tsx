@@ -3,7 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Download, FileStack, Scissors, Minimize, FileUp, RefreshCw, X } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 type ToolType = 'merge' | 'split' | 'compress';
 
@@ -23,7 +23,9 @@ export function PDFTools() {
     };
 
     const handleMerge = async () => {
-        if (files.length < 2) return toast.error("Please select at least 2 PDF files");
+        if (files.length < 2) return window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Error', message: "Please select at least 2 PDF files", type: 'error' }
+        }));
         setIsProcessing(true);
         try {
             const mergedPdf = await PDFDocument.create();
@@ -37,15 +39,21 @@ export function PDFTools() {
             createDownload(pdfBytes, 'merged-document.pdf');
         } catch (error) {
             console.error(error);
-            toast.error("Failed to merge PDFs");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to merge PDFs", type: 'error' }
+            }));
         } finally {
             setIsProcessing(false);
         }
     };
 
     const handleSplit = async () => {
-        if (files.length !== 1) return toast.error("Please select 1 PDF file to split");
-        if (!splitRange) return toast.error("Please enter a page range (e.g., 1, 3-5)");
+        if (files.length !== 1) return window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Error', message: "Please select 1 PDF file to split", type: 'error' }
+        }));
+        if (!splitRange) return window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Error', message: "Please enter a page range (e.g., 1, 3-5)", type: 'error' }
+        }));
 
         setIsProcessing(true);
         try {
@@ -87,14 +95,18 @@ export function PDFTools() {
             createDownload(pdfBytes, `split-${files[0].name}`);
         } catch (error) {
             console.error(error);
-            toast.error("Failed to split PDF. Check page range.");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to split PDF. Check page range.", type: 'error' }
+            }));
         } finally {
             setIsProcessing(false);
         }
     };
 
     const handleCompress = async () => {
-        if (files.length !== 1) return toast.error("Please select 1 PDF file");
+        if (files.length !== 1) return window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Error', message: "Please select 1 PDF file", type: 'error' }
+        }));
         setIsProcessing(true);
         try {
             // "Compress" -> Optimize / Re-save
@@ -108,10 +120,14 @@ export function PDFTools() {
             // We will just save it efficiently.
             const pdfBytes = await pdf.save({ useObjectStreams: false });
             createDownload(pdfBytes, `compressed-${files[0].name}`);
-            toast.success("PDF Optimized!");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: "PDF Optimized!", type: 'success' }
+            }));
         } catch (error) {
             console.error(error);
-            toast.error("Failed to process PDF");
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: "Failed to process PDF", type: 'error' }
+            }));
         } finally {
             setIsProcessing(false);
         }
@@ -122,7 +138,9 @@ export function PDFTools() {
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
         setDownloadName(filename);
-        toast.success("File ready!");
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+            detail: { title: 'Success', message: "File ready!", type: 'success' }
+        }));
     };
 
     return (
