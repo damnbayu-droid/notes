@@ -94,7 +94,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         <div className="flex-1 flex justify-center relative h-14 items-center">
           <div
             className={`
-                relative z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden
+                absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden
                 ${isActive
                 ? 'bg-black text-white' // Active State (Black Pill)
                 : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100' // Default State
@@ -209,6 +209,6 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           )}
         </div>
       </div>
-    </header>
+    </header >
   );
 }
