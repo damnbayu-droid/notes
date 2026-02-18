@@ -25,9 +25,78 @@ export function useAuth(): UseAuthReturn {
     isAuthenticated: false,
   });
 
-  // ... (existing useEffects)
+  useEffect(() => {
+    let mounted = true;
 
-  // Request Notification Permission on Auth
+    // Safety timeout: If auth takes longer than 5s, force loading to stop
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && state.isLoading) {
+        console.warn('Auth check timed out, forcing loading false');
+        setState(prev => ({ ...prev, isLoading: false }));
+      }
+    }, 5000);
+
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (mounted) {
+          if (session?.user) {
+            setState({
+              user: {
+                id: session.user.id,
+                email: session.user.email!,
+                name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+                avatar: session.user.user_metadata.avatar,
+              },
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            setState(prev => ({ ...prev, isLoading: false, isAuthenticated: false, user: null }));
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setState(prev => ({ ...prev, isLoading: false, isAuthenticated: false, user: null }));
+        }
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
+      if (session?.user) {
+        setState({
+          user: {
+            id: session.user.id,
+            email: session.user.email!,
+            name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+            avatar: session.user.user_metadata.avatar,
+          },
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } else {
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    });
+
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
+  }, []);
   useEffect(() => {
     if (state.isAuthenticated && 'Notification' in window) {
       if (Notification.permission === 'default') {
