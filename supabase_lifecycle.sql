@@ -7,7 +7,10 @@
 
 -- Create a Trigger Function to handle avatar cleanup
 CREATE OR REPLACE FUNCTION delete_old_avatar()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   old_avatar_url TEXT;
   bucket_path TEXT;
@@ -35,7 +38,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- Bind Trigger to Auth Users Update
 DROP TRIGGER IF EXISTS on_auth_user_avatar_change ON auth.users;
@@ -52,7 +55,10 @@ CREATE TRIGGER on_auth_user_avatar_change
 -- Function to clean up old trash notes
 -- This should be called by a Scheduled Cron Job (pg_cron)
 CREATE OR REPLACE FUNCTION cleanup_trash_notes()
-RETURNS void AS $$
+RETURNS void 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   -- Delete notes that are marked as deleted and updated more than 30 days ago
   DELETE FROM notes 
@@ -92,14 +98,17 @@ WHERE last_sign_in_at < (NOW() - INTERVAL '3 months');
 
 -- FUNCTION TO DELETE EXPIRED ACCOUNTS
 CREATE OR REPLACE FUNCTION delete_expired_accounts()
-RETURNS void AS $$
+RETURNS void 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   -- Delete users who haven't signed in for 3 months
   -- Note: Cascading deletes should clean up their data (notes, etc) if foreign keys are set to DELETE CASCADE
   DELETE FROM auth.users 
   WHERE last_sign_in_at < (NOW() - INTERVAL '3 months');
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- CRON JOB FOR ACCOUNT DELETION
 -- select cron.schedule(
