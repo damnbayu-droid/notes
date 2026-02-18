@@ -58,6 +58,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             size="icon"
             className="lg:hidden"
             onClick={onToggleSidebar}
+            aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </Button>
@@ -73,7 +74,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           <div className={`
                 absolute z-20 flex items-center justify-center gap-3 px-4 py-2 rounded-full transition-all duration-500 ease-spring
                 ${dynamicStatus
-              ? 'bg-black text-white w-auto min-w-[200px] scale-100 shadow-xl opacity-100 translate-y-0'
+              ? 'bg-black text-white w-auto min-w-[200px] max-w-full scale-100 shadow-xl opacity-100 translate-y-0'
               : 'bg-transparent w-auto scale-90 opacity-0 pointer-events-none -translate-y-2'
             }
             `}>
@@ -88,7 +89,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </div>
 
           {/* Default: Bali Time Clock */}
-          <div className={`transition-all duration-300 ease-in-out transform ${dynamicStatus ? 'opacity-0 scale-90 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
+          <div className={`transition-all duration-300 ease-in-out transform ${dynamicStatus ? 'opacity-0 scale-90 blur-sm pointer-events-none' : 'opacity-100 scale-100 blur-0'}`}>
             <BaliTimeClock />
           </div>
         </div>
@@ -96,14 +97,14 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {/* Smart Mode / Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full" aria-label="Toggle theme">
             {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
 
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-violet-100 dark:ring-violet-900">
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-violet-100 dark:ring-violet-900" aria-label="Open user menu">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={user?.avatar} alt={user?.name} />
                     <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white">
@@ -140,6 +141,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               onClick={onSignIn}
               size="sm"
               className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6"
+              aria-label="Sign in"
             >
               Sign In
             </Button>

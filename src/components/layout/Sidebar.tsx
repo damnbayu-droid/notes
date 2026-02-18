@@ -81,7 +81,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 Smart Notes
               </span>
             </div>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}>
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose} aria-label="Close sidebar">
               <X className="w-5 h-5" />
             </Button>
           </div>
@@ -92,6 +92,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-100 transition-all group"
+                aria-label="Toggle theme"
               >
                 <div className="flex items-center gap-3">
                   {theme === 'dark' ? (
@@ -118,6 +119,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
               <Button
                 onClick={onCreateNote}
                 className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-violet-200 transition-all hover:shadow-xl hover:shadow-violet-300"
+                aria-label="Create new note"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 New Note
@@ -143,6 +145,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                       ? 'bg-accent text-accent-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                       }`}
+                    aria-label={item.label}
                   >
                     <div className="flex items-center gap-3">
                       <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-primary' : 'text-muted-foreground'
@@ -242,12 +245,6 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 try {
                   const { googleDrive } = await import('@/lib/googleDrive');
                   await googleDrive.loadScripts();
-                  await googleDrive.connect();
-                  localStorage.setItem('google_drive_connected', 'true');
-                  window.dispatchEvent(new Event('storage')); // Update sidebar
-                  // Create folder
-                  const folderId = await googleDrive.createFolder('Smart Notes Backup');
-                  localStorage.setItem('google_drive_folder_id', folderId);
                   // toast.success("Connected to Google Drive!");
                 } catch (e) {
                   console.error(e);
@@ -255,6 +252,7 @@ export function Sidebar({ currentView, onViewChange, onCreateNote, isOpen, onClo
                 }
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              aria-label="Sync with Google Drive"
             >
               <Cloud className="w-5 h-5" />
               Sync Drive
