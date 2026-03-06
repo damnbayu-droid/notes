@@ -8,8 +8,10 @@
 
   <!-- ===== CORE SEO ===== -->
   <title>Smart Notes - Aplikasi Catatan Pintar & Produktivitas | Notes App Indonesia</title>
-  <meta name="description" content="Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas Anda. Tulis, simpan, dan kelola catatan harian, jadwal, tugas secara offline & online. Gratis, aman, dan canggih." />
-  <meta name="keywords" content="catatan pintar, smart notes, aplikasi catatan, notes app, catatan harian, catatan online, ai notes, aplikasi produktivitas, offline notes, pwa notes, catatan indonesia, note taking app" />
+  <meta name="description"
+    content="Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas Anda. Tulis, simpan, dan kelola catatan harian, jadwal, tugas secara offline & online. Gratis, aman, dan canggih." />
+  <meta name="keywords"
+    content="catatan pintar, smart notes, aplikasi catatan, notes app, catatan harian, catatan online, ai notes, aplikasi produktivitas, offline notes, pwa notes, catatan indonesia, note taking app" />
   <meta name="author" content="Smart Notes" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -42,7 +44,8 @@
   <meta property="og:site_name" content="Smart Notes" />
   <meta property="og:url" content="https://notes.biz.id/" />
   <meta property="og:title" content="Smart Notes - Aplikasi Catatan Pintar & Produktivitas" />
-  <meta property="og:description" content="Tulis, simpan, dan bagikan catatan Anda dengan AI pintar. Offline support, reminder, jadwal, scanner, dan banyak lagi. Gratis selamanya." />
+  <meta property="og:description"
+    content="Tulis, simpan, dan bagikan catatan Anda dengan AI pintar. Offline support, reminder, jadwal, scanner, dan banyak lagi. Gratis selamanya." />
   <meta property="og:image" content="https://notes.biz.id/Logo.webp" />
   <meta property="og:image:alt" content="Smart Notes - Aplikasi Catatan AI Indonesia" />
   <meta property="og:image:width" content="1200" />
@@ -56,7 +59,8 @@
   <meta name="twitter:creator" content="@smartnotes" />
   <meta name="twitter:url" content="https://notes.biz.id/" />
   <meta name="twitter:title" content="Smart Notes - Aplikasi Catatan Pintar & Produktivitas" />
-  <meta name="twitter:description" content="Catatan pintar dengan AI, offline support, reminder, jadwal & scanner. Gratis dan aman." />
+  <meta name="twitter:description"
+    content="Catatan pintar dengan AI, offline support, reminder, jadwal & scanner. Gratis dan aman." />
   <meta name="twitter:image" content="https://notes.biz.id/Logo.webp" />
   <meta name="twitter:image:alt" content="Smart Notes App" />
 
@@ -66,15 +70,12 @@
   <link rel="apple-touch-icon" href="/Logo.webp" />
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- ===== PERFORMANCE: PRECONNECT ===== -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preconnect" href="https://api.openai.com" />
-  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-  <link rel="dns-prefetch" href="https://api.openai.com" />
+  <!-- ===== PERFORMANCE: PRECONNECT (only origins needed on first paint) ===== -->
+  <!-- Supabase: auth check fires before anything renders -->
+  <link rel="dns-prefetch" href="https://supabase.co" />
 
   <!-- ===== LOGO PRELOAD (LCP) ===== -->
-  <link rel="preload" as="image" href="/Logo.webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="/Logo.webp" fetchpriority="high" type="image/webp" />
 
   <!-- ===== STRUCTURED DATA (JSON-LD) ===== -->
   <script type="application/ld+json">
