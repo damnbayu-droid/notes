@@ -94,6 +94,7 @@ export function NoteEditor({
   const [shareSlug, setShareSlug] = useState<string | undefined>();
   const [isSharing, setIsSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [textCopied, setTextCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Track initial state to avoid auto-save on mount if nothing changed
@@ -255,32 +256,32 @@ export function NoteEditor({
       <DialogContent
         className={`${isMaximized ? 'max-w-[95vw] h-[95vh]' : 'sm:max-w-2xl max-h-[90vh]'} overflow-y-auto p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300`}
       >
-        <DialogHeader className="p-4 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="sr-only">
-              {isNewNote ? 'Create Note' : 'Edit Note'}
-            </DialogTitle>
-            <div className="flex items-center gap-1">
+        <DialogHeader className="p-4 pb-2 border-b border-gray-100">
+          {/* 3-column layout: [left: expand] [center: actions] [right: close] */}
+          <div className="flex items-center gap-2">
+
+            {/* LEFT — Full Screen toggle */}
+            <div className="flex items-center shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-gray-500"
+                className="h-8 w-8 text-gray-400 hover:text-gray-700"
                 onClick={toggleMaximized}
-                title={isMaximized ? "Exit Full Screen" : "Full Screen"}
+                title={isMaximized ? 'Exit Full Screen' : 'Full Screen'}
               >
                 {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </Button>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* CENTER — All action buttons */}
+            <div className="flex-1 flex items-center justify-center gap-1 flex-wrap">
               {!isNewNote && onTogglePin && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className={`h-9 w-9 ${isPinned ? 'text-violet-600 bg-violet-50' : 'text-gray-500'}`}
-                  onClick={() => {
-                    setIsPinned(!isPinned);
-                    onTogglePin(note.id);
-                  }}
+                  onClick={() => { setIsPinned(!isPinned); onTogglePin(note.id); }}
+                  title={isPinned ? 'Unpin' : 'Pin'}
                 >
                   {isPinned ? <Pin className="w-4 h-4 fill-violet-500" /> : <PinOff className="w-4 h-4" />}
                 </Button>
@@ -290,17 +291,17 @@ export function NoteEditor({
                   variant="ghost"
                   size="icon"
                   className={`h-9 w-9 ${isArchived ? 'text-amber-600 bg-amber-50' : 'text-gray-500'}`}
-                  onClick={() => {
-                    setIsArchived(!isArchived);
-                    onToggleArchive(note.id);
-                  }}
+                  onClick={() => { setIsArchived(!isArchived); onToggleArchive(note.id); }}
+                  title={isArchived ? 'Unarchive' : 'Archive'}
                 >
                   {isArchived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                 </Button>
               )}
+
+              {/* Color picker */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-gray-500" title="Color">
                     <Palette className="w-4 h-4" />
                   </Button>
                 </PopoverTrigger>
@@ -310,16 +311,15 @@ export function NoteEditor({
                       <button
                         key={c.value}
                         onClick={() => setColor(c.value)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${color === c.value
-                          ? 'border-violet-500 scale-110'
-                          : 'border-transparent hover:scale-105'
-                          } ${c.bg} ${c.border} border`}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${color === c.value ? 'border-violet-500 scale-110' : 'border-transparent hover:scale-105'} ${c.bg} ${c.border} border`}
                         title={c.label}
                       />
                     ))}
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Sketch */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -329,19 +329,35 @@ export function NoteEditor({
               >
                 <PenTool className="w-4 h-4" />
               </Button>
+
+              {/* Voice */}
               <Button
                 variant="ghost"
                 size="icon"
                 className={`h-9 w-9 ${isVoiceOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500'}`}
-                onClick={() => {
-                  setIsVoiceOpen(!isVoiceOpen);
-                  setIsCanvasOpen(false); // Close canvas if open
-                }}
+                onClick={() => { setIsVoiceOpen(!isVoiceOpen); setIsCanvasOpen(false); }}
                 title="Add Voice Note"
               >
                 <Mic className="w-4 h-4" />
               </Button>
 
+              {/* Copy All Text */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-9 w-9 ${textCopied ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Copy all text"
+                onClick={() => {
+                  const fullText = [title, content].filter(Boolean).join('\n\n');
+                  navigator.clipboard.writeText(fullText);
+                  setTextCopied(true);
+                  setTimeout(() => setTextCopied(false), 2000);
+                }}
+              >
+                {textCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </Button>
+
+              {/* Share / Public link */}
               {!isNewNote && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -354,40 +370,28 @@ export function NoteEditor({
                       {isShared ? <Globe className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 p-4 space-y-3" align="end">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium">
-                          {isShared ? '🌐 Public Link Active' : '🔒 Private'}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {isShared
-                            ? 'Anyone with the link can view this note'
-                            : 'Only you can see this note'}
-                        </p>
-                      </div>
+                  <PopoverContent className="w-72 p-4 space-y-3" align="center">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {isShared ? '🌐 Public Link Active' : '🔒 Private'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {isShared ? 'Anyone with the link can view this note' : 'Only you can see this note'}
+                      </p>
                     </div>
-
                     {isShared && shareSlug && (
                       <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                         <span className="text-xs text-muted-foreground flex-1 truncate font-mono">
                           {buildShareUrl(shareSlug)}
                         </span>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0"
-                          onClick={() => {
-                            navigator.clipboard.writeText(buildShareUrl(shareSlug!));
-                            setShareCopied(true);
-                            setTimeout(() => setShareCopied(false), 2000);
-                          }}
+                          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                          onClick={() => { navigator.clipboard.writeText(buildShareUrl(shareSlug!)); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }}
                         >
                           {shareCopied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                         </Button>
                       </div>
                     )}
-
                     <div className="flex gap-2">
                       {!isShared ? (
                         <Button
@@ -399,15 +403,11 @@ export function NoteEditor({
                             setIsSharing(true);
                             const result = await onShareNote(note.id);
                             if (result.success && result.slug) {
-                              setIsShared(true);
-                              setShareSlug(result.slug);
+                              setIsShared(true); setShareSlug(result.slug);
                               const url = buildShareUrl(result.slug);
                               navigator.clipboard.writeText(url);
-                              setShareCopied(true);
-                              setTimeout(() => setShareCopied(false), 2000);
-                              window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                detail: { title: 'Link Copied!', message: `Note is now public: ${url}`, type: 'success' }
-                              }));
+                              setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
+                              window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Link Copied!', message: `Note is now public: ${url}`, type: 'success' } }));
                             }
                             setIsSharing(false);
                           }}
@@ -417,40 +417,20 @@ export function NoteEditor({
                         </Button>
                       ) : (
                         <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 gap-2"
-                            onClick={() => {
-                              if (shareSlug) {
-                                const url = buildShareUrl(shareSlug);
-                                navigator.clipboard.writeText(url);
-                                setShareCopied(true);
-                                setTimeout(() => setShareCopied(false), 2000);
-                              }
-                            }}
-                          >
+                          <Button variant="outline" size="sm" className="flex-1 gap-2"
+                            onClick={() => { if (shareSlug) { navigator.clipboard.writeText(buildShareUrl(shareSlug)); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); } }}>
                             {shareCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                             Copy Link
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                          <Button variant="outline" size="sm" className="gap-2 text-red-600 hover:bg-red-50 border-red-200"
                             disabled={isSharing}
                             onClick={async () => {
                               if (!note || !onUnshareNote) return;
                               setIsSharing(true);
                               const result = await onUnshareNote(note.id);
-                              if (result.success) {
-                                setIsShared(false);
-                                window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                  detail: { title: 'Note Made Private', message: 'The share link is now disabled.', type: 'info' }
-                                }));
-                              }
+                              if (result.success) { setIsShared(false); window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Note Made Private', message: 'The share link is now disabled.', type: 'info' } })); }
                               setIsSharing(false);
-                            }}
-                          >
+                            }}>
                             <Lock className="w-4 h-4" />
                             {isSharing ? 'Updating...' : 'Make Private'}
                           </Button>
@@ -461,21 +441,26 @@ export function NoteEditor({
                 </Popover>
               )}
 
+              {/* Delete */}
               {!isNewNote && onDelete && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => {
-                    onDelete(note.id);
-                    onClose();
-                  }}
+                  title="Delete note"
+                  onClick={() => { onDelete(note.id); onClose(); }}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               )}
             </div>
+
+            {/* RIGHT — Close button (has its own Radix X, but we also add explicit spacing) */}
+            <div className="shrink-0 w-8" />
           </div>
+          <DialogTitle className="sr-only">
+            {isNewNote ? 'Create Note' : 'Edit Note'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="p-4 space-y-4">

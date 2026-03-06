@@ -13,7 +13,7 @@ interface SEOProps {
 
 const SITE_NAME = 'Smart Notes';
 const BASE_URL = 'https://notes.biz.id';
-const DEFAULT_IMAGE = `${BASE_URL}/Logo.webp`;
+const DEFAULT_IMAGE = `${BASE_URL}/Logo.jpg`;
 
 const DEFAULT_TITLE = 'Smart Notes - Aplikasi Catatan Pintar & Produktivitas | Notes App Indonesia';
 const DEFAULT_DESCRIPTION =
