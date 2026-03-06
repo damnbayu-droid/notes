@@ -20,6 +20,7 @@ import {
   Trash2,
   Tag,
   Clock,
+  Globe,
 } from 'lucide-react';
 import { formatDistanceToNow } from '@/lib/utils';
 
@@ -70,6 +71,16 @@ export function NoteCard({
       {note.is_pinned && (
         <div className="absolute top-3 right-3 z-10">
           <Pin className="w-4 h-4 text-violet-500 fill-violet-500" />
+        </div>
+      )}
+
+      {/* Public share indicator */}
+      {note.is_shared && (
+        <div className="absolute top-3 left-3 z-10">
+          <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-green-200 dark:border-green-800">
+            <Globe className="w-2.5 h-2.5" />
+            <span>Public</span>
+          </div>
         </div>
       )}
 

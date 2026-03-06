@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { Note, SortOption, User } from '@/types';
 import { supabase } from '@/lib/supabase';
+import { generateShareSlug } from '@/lib/shareUtils';
 
 interface UseNotesReturn {
   notes: Note[];
@@ -35,6 +36,8 @@ interface UseNotesReturn {
   createFolder: (name: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
   restoreNote: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteForever: (id: string) => Promise<{ success: boolean; error?: string }>;
+  shareNote: (id: string) => Promise<{ success: boolean; slug?: string; error?: string }>;
+  unshareNote: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 type SyncAction =
@@ -47,8 +50,13 @@ export function useNotes(user: User | null): UseNotesReturn {
   const [notes, setNotes] = useState<Note[]>(() => {
     // Initial load from local storage
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('notes');
-      return cached ? JSON.parse(cached) : [];
+      try {
+        const cached = localStorage.getItem('notes');
+        return cached ? JSON.parse(cached) : [];
+      } catch (e) {
+        console.error('Failed to parse notes from localStorage:', e);
+        return [];
+      }
     }
     return [];
   });
@@ -64,16 +72,26 @@ export function useNotes(user: User | null): UseNotesReturn {
   // Sync Queue
   const [syncQueue, setSyncQueue] = useState<SyncAction[]>(() => {
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('syncQueue');
-      return cached ? JSON.parse(cached) : [];
+      try {
+        const cached = localStorage.getItem('syncQueue');
+        return cached ? JSON.parse(cached) : [];
+      } catch (e) {
+        console.error('Failed to parse syncQueue from localStorage:', e);
+        return [];
+      }
     }
     return [];
   });
 
   const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem('pinnedFolders');
-      return cached ? JSON.parse(cached) : [];
+      try {
+        const cached = localStorage.getItem('pinnedFolders');
+        return cached ? JSON.parse(cached) : [];
+      } catch (e) {
+        console.error('Failed to parse pinnedFolders from localStorage:', e);
+        return [];
+      }
     }
     return [];
   });
@@ -568,6 +586,51 @@ export function useNotes(user: User | null): UseNotesReturn {
         console.error('Delete forever failed, queued:', error);
       }
       return { success: true };
-    }
+    },
+    shareNote: async (id: string) => {
+      const note = notes.find(n => n.id === id);
+      if (!note) return { success: false, error: 'Note not found' };
+
+      // Reuse existing slug if already shared, otherwise generate new one
+      const slug = note.share_slug || generateShareSlug(note.title || 'note');
+
+      // Optimistic update
+      setNotes(prev => prev.map(n => n.id === id ? { ...n, is_shared: true, share_slug: slug } : n));
+
+      try {
+        const { error } = await supabase
+          .from('notes')
+          .update({ is_shared: true, share_slug: slug })
+          .eq('id', id);
+
+        if (error) throw error;
+        return { success: true, slug };
+      } catch (err: any) {
+        // Revert optimistic update
+        setNotes(prev => prev.map(n => n.id === id ? note : n));
+        return { success: false, error: err.message };
+      }
+    },
+    unshareNote: async (id: string) => {
+      const note = notes.find(n => n.id === id);
+      if (!note) return { success: false, error: 'Note not found' };
+
+      // Optimistic update
+      setNotes(prev => prev.map(n => n.id === id ? { ...n, is_shared: false } : n));
+
+      try {
+        const { error } = await supabase
+          .from('notes')
+          .update({ is_shared: false })
+          .eq('id', id);
+
+        if (error) throw error;
+        return { success: true };
+      } catch (err: any) {
+        // Revert optimistic update
+        setNotes(prev => prev.map(n => n.id === id ? note : n));
+        return { success: false, error: err.message };
+      }
+    },
   };
 }

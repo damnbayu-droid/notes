@@ -7,6 +7,14 @@ const urlsToCache = [
     '/manifest.json',
 ];
 
+// Routes that should always be Network-First or ignored by SW
+const IGNORE_ROUTES = [
+    'supabase.co',
+    'api.openai.com',
+    '/auth/v1/',
+    '/rest/v1/'
+];
+
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -32,32 +40,49 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - Optimized Strategy
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+
+    // Skip caching for API calls and dynamic routes
+    if (IGNORE_ROUTES.some(route => url.href.includes(route))) {
+        return; // Let browser handle normally
+    }
+
+    // Network-First strategy for index.html and root to prevent ChunkLoadErrors after deploy
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Cache-First (with Network fallback and update) for static assets
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                // Cache hit - return response
                 if (response) {
                     return response;
                 }
 
-                // Clone the request
                 const fetchRequest = event.request.clone();
-
                 return fetch(fetchRequest).then((response) => {
-                    // Check if valid response
                     if (!response || response.status !== 200 || response.type !== 'basic') {
                         return response;
                     }
 
-                    // Clone the response
                     const responseToCache = response.clone();
-
-                    caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache);
+                    });
 
                     return response;
                 });

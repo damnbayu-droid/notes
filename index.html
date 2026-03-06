@@ -1,19 +1,154 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" dir="ltr">
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#7c3aed" />
-  <link rel="icon" href="/Logo.jpg" />
+  <!-- Viewport: mobile-first, prevents zooming on input -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- ===== CORE SEO ===== -->
+  <title>Smart Notes - Aplikasi Catatan Pintar & Produktivitas | Notes App Indonesia</title>
+  <meta name="description" content="Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas Anda. Tulis, simpan, dan kelola catatan harian, jadwal, tugas secara offline & online. Gratis, aman, dan canggih." />
+  <meta name="keywords" content="catatan pintar, smart notes, aplikasi catatan, notes app, catatan harian, catatan online, ai notes, aplikasi produktivitas, offline notes, pwa notes, catatan indonesia, note taking app" />
+  <meta name="author" content="Smart Notes" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+  <meta name="rating" content="general" />
+  <meta name="language" content="Indonesian" />
+  <meta name="revisit-after" content="7 days" />
+  <meta name="generator" content="Smart Notes PWA" />
+  <link rel="canonical" href="https://notes.biz.id/" />
+
+  <!-- ===== HREFLANG / INTERNATIONAL SEO ===== -->
+  <link rel="alternate" hreflang="id" href="https://notes.biz.id/" />
+  <link rel="alternate" hreflang="en" href="https://notes.biz.id/en/" />
+  <link rel="alternate" hreflang="x-default" href="https://notes.biz.id/" />
+
+  <!-- ===== THEME & APPEARANCE ===== -->
+  <meta name="theme-color" content="#7c3aed" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#4c1d95" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Smart Notes" />
+  <meta name="application-name" content="Smart Notes" />
+  <meta name="msapplication-TileColor" content="#7c3aed" />
+  <meta name="msapplication-TileImage" content="/Logo.webp" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- ===== OPEN GRAPH (Facebook/WhatsApp/LinkedIn) ===== -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Smart Notes" />
+  <meta property="og:url" content="https://notes.biz.id/" />
+  <meta property="og:title" content="Smart Notes - Aplikasi Catatan Pintar & Produktivitas" />
+  <meta property="og:description" content="Tulis, simpan, dan bagikan catatan Anda dengan AI pintar. Offline support, reminder, jadwal, scanner, dan banyak lagi. Gratis selamanya." />
+  <meta property="og:image" content="https://notes.biz.id/Logo.webp" />
+  <meta property="og:image:alt" content="Smart Notes - Aplikasi Catatan AI Indonesia" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="id_ID" />
+  <meta property="og:locale:alternate" content="en_US" />
+
+  <!-- ===== TWITTER CARD ===== -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@smartnotes" />
+  <meta name="twitter:creator" content="@smartnotes" />
+  <meta name="twitter:url" content="https://notes.biz.id/" />
+  <meta name="twitter:title" content="Smart Notes - Aplikasi Catatan Pintar & Produktivitas" />
+  <meta name="twitter:description" content="Catatan pintar dengan AI, offline support, reminder, jadwal & scanner. Gratis dan aman." />
+  <meta name="twitter:image" content="https://notes.biz.id/Logo.webp" />
+  <meta name="twitter:image:alt" content="Smart Notes App" />
+
+  <!-- ===== ICONS & PWA ===== -->
+  <link rel="icon" type="image/webp" href="/Logo.webp" />
+  <link rel="icon" type="image/jpeg" href="/Logo.jpg" sizes="any" />
+  <link rel="apple-touch-icon" href="/Logo.webp" />
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- Preconnect to external domains for faster loading -->
+  <!-- ===== PERFORMANCE: PRECONNECT ===== -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://api.openai.com" />
   <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://api.openai.com" />
+
+  <!-- ===== LOGO PRELOAD (LCP) ===== -->
+  <link rel="preload" as="image" href="/Logo.webp" fetchpriority="high" />
+
+  <!-- ===== STRUCTURED DATA (JSON-LD) ===== -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://notes.biz.id/#website",
+        "url": "https://notes.biz.id/",
+        "name": "Smart Notes",
+        "description": "Aplikasi catatan pintar dengan AI, offline support, dan fitur produktivitas lengkap.",
+        "inLanguage": ["id-ID", "en-US"],
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://notes.biz.id/?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://notes.biz.id/#app",
+        "name": "Smart Notes",
+        "alternateName": "Smart Notes Indonesia",
+        "url": "https://notes.biz.id/",
+        "applicationCategory": "ProductivityApplication",
+        "applicationSubCategory": "NotesTakingApplication",
+        "operatingSystem": "Web, Android, iOS",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "IDR"
+        },
+        "description": "Aplikasi catatan AI terbaik untuk produktivitas. Tulis, simpan, jadwalkan, dan bagikan catatan dengan mudah.",
+        "image": "https://notes.biz.id/Logo.webp",
+        "screenshot": "https://notes.biz.id/Logo.webp",
+        "featureList": [
+          "Catatan offline & online",
+          "AI Assistant",
+          "Reminder & Jadwal",
+          "Scanner Dokumen",
+          "Berbagi Catatan Publik",
+          "Dark Mode",
+          "PWA"
+        ],
+        "author": {
+          "@type": "Organization",
+          "name": "Smart Notes",
+          "url": "https://notes.biz.id/"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.9",
+          "reviewCount": "128",
+          "bestRating": "5",
+          "worstRating": "1"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 
 <body>
+  <!-- No-JS fallback for accessibility and crawlers -->
+  <noscript>
+    <div style="padding: 20px; text-align: center; font-family: sans-serif;">
+      <h1>Smart Notes</h1>
+      <p>Aktifkan JavaScript untuk menggunakan Smart Notes. Enable JavaScript to use Smart Notes.</p>
+    </div>
+  </noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

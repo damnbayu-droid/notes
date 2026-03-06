@@ -19,6 +19,8 @@ export interface Note {
   folder?: string; // e.g., 'Main', 'Google Notes', 'iCloud Notes'
   created_at: string;
   updated_at: string;
+  share_slug?: string; // short public slug for shared notes
+  is_shared?: boolean; // true if the note is publicly accessible
 }
 
 export type NoteColor =

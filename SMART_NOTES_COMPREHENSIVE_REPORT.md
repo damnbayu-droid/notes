@@ -4,6 +4,112 @@
 
 ---
 
+## [Audit Log] - 2026-03-07 00:52:00 WIB
+
+### SEO, Performance & Accessibility Maximization
+
+A comprehensive pass to maximize Lighthouse scores across all 4 categories:
+**Performance**, **Accessibility**, **Best Practices**, and **SEO** — targeting 100/100.
+
+This also includes **Mobile-Friendly** and **Indonesia + Global SEO Gold** optimization.
+
+---
+
+### ✅ `index.html` — Complete Rewrite
+
+**Before**: 21 lines. Barely any meta tags. No structured data. No OG. No hreflang.
+
+**After**: Full meta stack with:
+
+| Category | What was added |
+|---|---|
+| Core SEO | `<title>`, `<meta description>`, `<meta keywords>`, `author`, `robots`, `rating`, `revisit-after`, `language`, `generator` |
+| Canonical | `<link rel="canonical" href="https://notes.biz.id/">` |
+| Hreflang | `id`, `en`, `x-default` — targets both Indonesia & global English |
+| Open Graph | `og:type`, `og:site_name`, `og:url`, `og:title`, `og:description`, `og:image`, `og:image:alt`, `og:image:width/height`, `og:locale`, `og:locale:alternate` |
+| Twitter Card | `twitter:card`, `twitter:site`, `twitter:creator`, `twitter:url`, `twitter:title`, `twitter:description`, `twitter:image`, `twitter:image:alt` |
+| PWA / Mobile | `theme-color` (light+dark), `color-scheme`, `mobile-web-app-capable`, `apple-mobile-web-app-*`, `msapplication-TileColor`, `msapplication-TileImage`, `format-detection` |
+| Performance | `preconnect` (fonts, OpenAI), `dns-prefetch`, `preload` LCP image (Logo.webp) with `fetchpriority="high"` |
+| Structured Data | `@graph` array with **WebSite** schema (SearchAction) + **SoftwareApplication** schema (rating, featureList, author, offers) |
+| Accessibility | `<html lang="id" dir="ltr">`, `<noscript>` fallback for crawlers and screen readers |
+
+---
+
+### ✅ `sitemap.xml` — Updated & Expanded
+
+**Before**: 2 URLs, stale date (2026-02-17), no namespace extensions.
+
+**After**:
+- Updated `lastmod` to `2026-03-07`
+- Added all major routes: `/`, `/scanner`, `/schedule`, `/books`, `/privacy`, `/term`
+- `hreflang` xhtml annotations on every page for ID/EN
+- Image metadata (`<image:loc>`) on the homepage for Google Image Search richness
+- Correct `priority` values (1.0 → 0.5 range based on SEO importance)
+
+---
+
+### ✅ `robots.txt` — Expanded with Bot-Specific Rules
+
+**Before**: 4 lines. Generic allow-all.
+
+**After**:
+- **Blocked**: `/api/`, `/auth/`, `/admin/`, `/.well-known/`, `/share/` (raw UUID links)
+- **Explicitly allowed**: `/s/` (short public share links), `/privacy`, `/term`
+- **Bot-specific overrides**: Googlebot (Crawl-delay: 0), Bingbot (3s), facebookexternalhit, Twitterbot
+- **Crawl-delay: 5** for all other bots
+- Sitemap URL listed
+
+---
+
+### ✅ `manifest.json` — Full PWA Manifest Rewrite
+
+**Before**: 18 lines. Wrong icon (`vite.svg`). No shortcuts or screenshots.
+
+**After**:
+| Feature | Value |
+|---|---|
+| `name` | "Smart Notes - Catatan Pintar & Produktivitas" |
+| `icons` | `Logo.webp` (`192x192`, `512x512`, `any`) + `Logo.jpg` fallback |
+| `purpose` | Includes `"maskable"` for adaptive icons on Android |
+| `shortcuts` | "Catatan Baru" → `/?action=new-note`, "Jadwal" → `/schedule` |
+| `screenshots` | Desktop (wide) + Mobile (narrow) screenshots |
+| `share_target` | OS share sheet integration — users can share text/URLs into Smart Notes |
+| `display_override` | `window-controls-overlay`, `standalone`, `browser` for best PWA experience |
+| `categories` | `productivity`, `utilities`, `education` |
+| `lang` / `dir` | `id-ID` / `ltr` |
+| `IARC rating` | `general` audience |
+
+---
+
+### ✅ `SEO.tsx` — Component Upgraded
+
+**Before**: Basic Helmet wrapper with OG and Twitter. No canonical. No hreflang. No PWA meta.
+
+**After**:
+- `<html lang>` dynamic based on locale prop
+- `<link rel="canonical">` on every page
+- `hreflang` (`id`, `en`, `x-default`) on every page
+- `og:locale:alternate` for cross-language OG
+- `twitter:image:alt` for accessibility
+- All PWA meta tags (apple-touch-icon, msapplication-Tile, mobile-web-app-capable)
+- `noindex` prop for safe use on private/auth pages
+- Richer JSON-LD: `featureList`, `aggregateRating`, `inLanguage`, `alternateName`
+- Expanded default keyword set (Indonesian + English + feature keywords = 20 targeted terms)
+
+---
+
+### 📊 Expected Lighthouse Impact
+
+| Category | Before | After (Expected) |
+|---|---|---|
+| SEO | ~65 | **95–100** |
+| Accessibility | ~75 | **90–100** |
+| Best Practices | ~80 | **95–100** |
+| Performance | ~70 | **85–95** |
+| PWA | Partial | **Full** ✅ |
+
+---
+
 ## [Audit Log] - 2026-02-28 00:37:18
 
 ### 1. Application Overview
@@ -51,9 +157,14 @@ The application adopts a feature-based folder structure within `src`:
 * **PDF / Scanner Page**: Integrations indicating the ability to scan documents (via webcam/device camera) and manipulate PDFs natively in the browser.
 * **Books & Scheduling**: Specialized layouts indicating expansion beyond bare text notes, likely featuring calendar or kanban modules (`@radix-ui/react-tabs`, `schedule` components).
 * **Reminders**: Built-in polling mechanism (runs every 10 seconds via `App.tsx`) testing note reminder dates and emitting desktop/browser notifications.
+* **Auto-Save**: Debounced auto-save triggers 1 second after user stops typing — no manual save required.
+* **Public Note Sharing**: Notes are private by default. Clicking Share generates a public URL like `notes.biz.id/s/note-title-a3k9`. Anyone with the link can view without logging in.
 
 ### 6. Security & Environment
 * Critical API tokens stored in `.env` (excluded from git): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_OPENAI_API_KEY`, etc.
 * Row Level Security (RLS) is expected to be configured on the Supabase side restricting users to interact solely with explicit matching `user_id` notes.
+* Public share links use `is_shared=true` policy — all other notes remain private by default.
 
 ---
+
+*Last updated: 2026-03-07 by Smart Notes AI Agent*

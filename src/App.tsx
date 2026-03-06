@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNotes } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
 import { SEO } from '@/components/seo/SEO';
+import { Spinner } from '@/components/ui/spinner';
 import './App.css';
 
 // Lazy load all major components
@@ -98,17 +99,24 @@ function MainApp() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Show loading state - Optimized to be less intrusive
+  // Show loading state - Optimized to be less intrusive, but provide feedback
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+        <Spinner className="size-8 text-primary" />
+        <p className="text-sm text-muted-foreground animate-pulse">Initializing Smart Notes...</p>
+      </div>
     );
   }
 
   // Show auth page if not authenticated AND auth view is requested
   if (!isAuthenticated && showAuth) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Spinner className="size-8 text-primary" />
+        </div>
+      }>
         <AuthPage
           onSignIn={async (email, password) => {
             const result = await signIn(email, password);
@@ -135,7 +143,11 @@ function MainApp() {
 
   // Show dashboard (Authenticated OR Guest)
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Spinner className="size-8 text-primary" />
+      </div>
+    }>
       <Dashboard
         user={user}
         onSignOut={signOut}
@@ -156,6 +168,18 @@ function App() {
       <Routes>
         <Route
           path="/share/:id"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <SharedNoteView />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/s/:slug"
           element={
             <Suspense fallback={
               <div className="min-h-screen bg-background flex items-center justify-center">

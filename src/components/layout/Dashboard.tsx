@@ -65,7 +65,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     togglePinFolder,
     createFolder,
     restoreNote,
-
+    shareNote,
+    unshareNote,
   } = useNotes(user);
 
   const handleCreateNote = () => {
@@ -156,8 +157,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                   <NoteEditor
                     note={editingNote}
                     isOpen={!!editingNote || isEditorOpen}
-                    onUpdate={(updates) => {
-                      if (editingNote) updateNote(editingNote.id, updates);
+                    onUpdate={async (updates) => {
+                      if (editingNote) await updateNote(editingNote.id, updates);
                     }}
                     onClose={() => {
                       setEditingNote(null);
@@ -263,10 +264,11 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
           if (editingNote) {
             await updateNote(editingNote.id, noteData);
           } else {
-            await createNote(noteData);
+            const result = await createNote(noteData);
+            if (result.success && result.note) {
+              setEditingNote(result.note);
+            }
           }
-          setEditingNote(null);
-          setIsEditorOpen(false);
         }}
         onDelete={editingNote ? async (id) => {
           await deleteNote(id);
@@ -275,6 +277,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
         } : undefined}
         onTogglePin={editingNote ? togglePin : undefined}
         onToggleArchive={editingNote ? toggleArchive : undefined}
+        onShareNote={editingNote ? shareNote : undefined}
+        onUnshareNote={editingNote ? unshareNote : undefined}
       />
 
       <AdOverlay />
