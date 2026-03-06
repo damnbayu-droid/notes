@@ -4,13 +4,14 @@ import type { Note } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Calendar, Tag, ArrowRight, Lock } from 'lucide-react';
+import { Globe, Calendar, Tag, ArrowRight, Lock, Copy, Check, ClipboardCopy } from 'lucide-react';
 
 export default function SharedNoteView() {
     const { id, slug } = useParams();
     const [note, setNote] = useState<Note | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const fetchNote = async () => {
@@ -18,7 +19,6 @@ export default function SharedNoteView() {
             setNotFound(false);
 
             try {
-                // New slug-based route: fetch by share_slug
                 if (slug) {
                     const { data, error } = await supabase
                         .from('notes')
@@ -27,14 +27,9 @@ export default function SharedNoteView() {
                         .eq('is_shared', true)
                         .single();
 
-                    if (error || !data) {
-                        setNotFound(true);
-                    } else {
-                        setNote(data as Note);
-                    }
-                }
-                // Legacy route: fetch by ID (backward compat)
-                else if (id) {
+                    if (error || !data) setNotFound(true);
+                    else setNote(data as Note);
+                } else if (id) {
                     const { data, error } = await supabase
                         .from('notes')
                         .select('*')
@@ -42,11 +37,8 @@ export default function SharedNoteView() {
                         .eq('is_shared', true)
                         .single();
 
-                    if (error || !data) {
-                        setNotFound(true);
-                    } else {
-                        setNote(data as Note);
-                    }
+                    if (error || !data) setNotFound(true);
+                    else setNote(data as Note);
                 } else {
                     setNotFound(true);
                 }
@@ -59,6 +51,21 @@ export default function SharedNoteView() {
 
         fetchNote();
     }, [id, slug]);
+
+    const handleCopyAll = (n: Note) => {
+        const parts: string[] = [];
+
+        if (n.title) parts.push(n.title);
+        if (n.tags && n.tags.length > 0) parts.push(`Tags: ${n.tags.join(', ')}`);
+        if (n.content) parts.push(n.content);
+        if (n.reminder_date) parts.push(`Reminder: ${new Date(n.reminder_date).toLocaleString()}`);
+
+        const text = parts.join('\n\n');
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+        });
+    };
 
     if (isLoading) {
         return (
@@ -104,24 +111,51 @@ export default function SharedNoteView() {
                         <span>Public Note</span>
                     </div>
                 </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = '/'}
-                    className="gap-2"
-                >
-                    Create Your Own Notes
-                    <ArrowRight className="w-3 h-3" />
-                </Button>
+                <div className="flex items-center gap-2">
+                    {/* Copy All — header shortcut */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyAll(note)}
+                        className={`gap-2 transition-all ${copied ? 'border-green-400 text-green-600 bg-green-50' : ''}`}
+                    >
+                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied ? 'Copied!' : 'Copy All'}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.location.href = '/'}
+                        className="gap-2"
+                    >
+                        Create Your Own Notes
+                        <ArrowRight className="w-3 h-3" />
+                    </Button>
+                </div>
             </header>
 
             {/* Content */}
             <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 space-y-8">
                 {/* Title & Meta */}
                 <div className="space-y-4">
-                    <h1 className="text-4xl font-bold text-foreground break-words leading-tight">
-                        {note.title || 'Untitled Note'}
-                    </h1>
+                    <div className="flex items-start justify-between gap-4">
+                        <h1 className="text-4xl font-bold text-foreground break-words leading-tight flex-1">
+                            {note.title || 'Untitled Note'}
+                        </h1>
+                        {/* Inline Copy All CTA next to title */}
+                        <button
+                            onClick={() => handleCopyAll(note)}
+                            title="Copy everything in this note"
+                            className={`shrink-0 mt-1 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
+                                ${copied
+                                    ? 'border-green-400 text-green-600 bg-green-50'
+                                    : 'border-gray-200 text-gray-500 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50'
+                                }`}
+                        >
+                            {copied ? <Check className="w-3.5 h-3.5" /> : <ClipboardCopy className="w-3.5 h-3.5" />}
+                            {copied ? 'Copied!' : 'Copy Note'}
+                        </button>
+                    </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {note.updated_at && (
@@ -154,6 +188,23 @@ export default function SharedNoteView() {
                 {/* Body */}
                 <div className="prose prose-lg dark:prose-invert max-w-none text-foreground whitespace-pre-wrap leading-relaxed break-words text-base">
                     {note.content || <span className="text-muted-foreground italic">This note has no content.</span>}
+                </div>
+
+                {/* Bottom copy CTA — big and clear after reading */}
+                <div className="pt-6 border-t border-border">
+                    <button
+                        onClick={() => handleCopyAll(note)}
+                        className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl border-2 font-semibold text-sm transition-all duration-200
+                            ${copied
+                                ? 'border-green-400 text-green-600 bg-green-50'
+                                : 'border-dashed border-gray-300 text-gray-500 hover:border-violet-500 hover:text-violet-600 hover:bg-violet-50'
+                            }`}
+                    >
+                        {copied
+                            ? <><Check className="w-4 h-4" /> Everything copied to clipboard!</>
+                            : <><ClipboardCopy className="w-4 h-4" /> Copy Everything — Title, Tags & Content</>
+                        }
+                    </button>
                 </div>
             </main>
 
