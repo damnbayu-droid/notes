@@ -1,7 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 
 
 import { useTheme } from '@/hooks/useTheme';
@@ -20,8 +19,11 @@ const SharedNoteView = lazy(() => import('@/components/notes/SharedNoteView'));
 const PrivacyPage = lazy(() => import('@/components/legal/PrivacyPage'));
 const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
 
+import { useEngagement } from '@/hooks/useEngagement';
+
 function MainApp() {
-  const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle } = useAuth();
+  const { user, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle } = useAuth();
+  useEngagement(user);
   // Removed global useNotes(user) call here as it's already handled inside lazy-loaded Dashboard.
   // This reduces dispatcher overhead during initialization.
   const [showAuth, setShowAuth] = useState(false);
@@ -90,21 +92,7 @@ function MainApp() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Show loading state - Optimized to be less intrusive, but provide feedback
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Spinner className="size-8 text-primary" />
-        <p className="text-sm text-muted-foreground animate-pulse">Initializing Smart Notes...</p>
-        <div className="mt-8 flex flex-col items-center gap-2 animate-in fade-in duration-1000 slide-in-from-bottom-2">
-          <p className="text-xs text-muted-foreground opacity-50">Taking too long?</p>
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-            Reload Page
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Show auth page if not authenticated AND auth view is requested
 
   // Show auth page if not authenticated AND auth view is requested
   if (!isAuthenticated && showAuth) {

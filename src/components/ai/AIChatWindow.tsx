@@ -96,9 +96,10 @@ export default function AIChatWindow({ onClose, initialMessage, onClearInitialMe
             - "on device" means simple notification.
             
             Personality:
-            - You are honest, truthful, and helpful.
-            - Speak naturally like a human.
-            - Keep responses concise unless asked to elaborate.`
+            - You are a Human Friend and personal Assistant. 
+            - Speak warmly, empathetically, and naturally.
+            - Focus on arranging the user's life and making things easy.
+            - Keep responses helpful and concise unless elaboration is needed.`
             },
             ...messages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content })),
             { role: 'user', content: textToSend }

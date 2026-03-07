@@ -36,7 +36,7 @@ interface UseNotesReturn {
   createFolder: (name: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
   restoreNote: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteForever: (id: string) => Promise<{ success: boolean; error?: string }>;
-  shareNote: (id: string) => Promise<{ success: boolean; slug?: string; error?: string }>;
+  shareNote: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string) => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
   unshareNote: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -626,24 +626,58 @@ export function useNotes(user: User | null): UseNotesReturn {
       }
       return { success: true };
     },
-    shareNote: async (id: string) => {
+    shareNote: async (id: string, type: 'public' | 'password' | 'encrypted' = 'public', password?: string) => {
       const note = notes.find(n => n.id === id);
       if (!note) return { success: false, error: 'Note not found' };
 
       // Reuse existing slug if already shared, otherwise generate new one
       const slug = note.share_slug || generateShareSlug(note.title || 'note');
-
-      // Optimistic update
-      setNotes(prev => prev.map(n => n.id === id ? { ...n, is_shared: true, share_slug: slug } : n));
+      let finalContent = note.content;
+      let salt: string | undefined;
+      let key: string | undefined;
+      let is_password_protected = false;
+      let is_encrypted = false;
 
       try {
+        if (type === 'password' && password) {
+          const { encryptWithPassword } = await import('@/lib/crypto');
+          const result = await encryptWithPassword(note.content, password);
+          finalContent = result.encrypted;
+          salt = result.salt;
+          is_password_protected = true;
+          is_encrypted = true;
+        } else if (type === 'encrypted') {
+          const { encryptE2EE } = await import('@/lib/crypto');
+          const result = await encryptE2EE(note.content);
+          finalContent = result.encrypted;
+          key = result.key;
+          is_encrypted = true;
+        }
+
+        const updates = {
+          is_shared: true,
+          share_slug: slug,
+          share_type: type,
+          is_password_protected,
+          password_salt: salt,
+          is_encrypted,
+          // We only store encrypted content in the DB if it's a shared state?
+          // Actually, for consistency, the DB record for this note id will hold the encrypted version
+          // OR we should have a separate table for shared content.
+          // Given the current architecture, we'll update the note itself.
+          content: finalContent
+        };
+
+        // Optimistic update
+        setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
+
         const { error } = await supabase
           .from('notes')
-          .update({ is_shared: true, share_slug: slug })
+          .update(updates)
           .eq('id', id);
 
         if (error) throw error;
-        return { success: true, slug };
+        return { success: true, slug, key };
       } catch (err: any) {
         // Revert optimistic update
         setNotes(prev => prev.map(n => n.id === id ? note : n));

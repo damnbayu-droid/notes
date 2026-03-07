@@ -46,13 +46,13 @@ export function BaliTimeClock({ headless = false }: BaliTimeClockProps) {
 
     const content = (
         <>
-            <Clock className={`w-5 h-5 ${headless ? 'text-inherit' : 'text-violet-600 dark:text-violet-400'}`} />
-            <div className="flex flex-col">
-                <div className={`text-2xl font-bold tabular-nums ${headless ? 'text-inherit' : 'text-violet-900 dark:text-violet-100'}`}>
+            <Clock className={`w-4 h-4 ${headless ? 'text-inherit' : 'text-violet-600 dark:text-violet-400'}`} />
+            <div className="flex flex-col items-center">
+                <div className={`${headless ? 'text-sm' : 'text-2xl'} font-bold tabular-nums leading-none ${headless ? 'text-inherit' : 'text-violet-900 dark:text-violet-100'}`}>
                     {formattedTime}
                 </div>
-                <div className={`text-xs ${headless ? 'text-inherit opacity-80' : 'text-violet-600 dark:text-violet-400'}`}>
-                    {formattedDate} (Bali Time)
+                <div className={`${headless ? 'text-[8px]' : 'text-xs'} leading-tight ${headless ? 'text-inherit opacity-80' : 'text-violet-600 dark:text-violet-400'}`}>
+                    {formattedDate} (Bali)
                 </div>
             </div>
         </>

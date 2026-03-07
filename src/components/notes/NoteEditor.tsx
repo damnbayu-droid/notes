@@ -39,6 +39,7 @@ import {
   Lock,
   Copy,
   Check,
+  Shield,
 } from 'lucide-react';
 import { buildShareUrl } from '@/lib/shareUtils';
 import { CanvasEditor } from './CanvasEditor';
@@ -60,8 +61,8 @@ interface NoteEditorProps {
   onDelete?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onToggleArchive?: (id: string) => void;
-  onShareNote?: (id: string) => Promise<{ success: boolean; slug?: string }>;
-  onUnshareNote?: (id: string) => Promise<{ success: boolean }>;
+  onShareNote?: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string) => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
+  onUnshareNote?: (id: string) => Promise<{ success: boolean; error?: string }>;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
 }
@@ -216,19 +217,46 @@ export function NoteEditor({
       return;
     }
 
+    // Force immediate save of current local state
     onUpdate({
       title: title.trim() || 'Untitled Note',
       content: content.trim(),
       color,
       is_pinned: isPinned,
       is_archived: isArchived,
-
       tags,
       reminder_date: reminderDate || undefined,
       folder,
     });
+
+    // Update last saved state to prevent the auto-save effect from firing redundant update
+    lastSavedState.current = {
+      title, content, color, tags: [...tags], folder, reminderDate
+    };
+
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
     onClose();
-  }, [title, content, color, isPinned, isArchived, tags, onUpdate, onClose]);
+  }, [title, content, color, isPinned, isArchived, tags, reminderDate, folder, onUpdate, onClose]);
+
+  // Handle immediate save on blur
+  const handleBlur = () => {
+    if (title !== lastSavedState.current.title || content !== lastSavedState.current.content) {
+      onUpdate({
+        title: title.trim() || 'Untitled Note',
+        content: content.trim(),
+        color,
+        is_pinned: isPinned,
+        is_archived: isArchived,
+        tags,
+        reminder_date: reminderDate || undefined,
+        folder,
+      });
+      lastSavedState.current = { ...lastSavedState.current, title, content };
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1000);
+    }
+  };
 
   const handleAddTag = () => {
     const trimmedTag = newTag.trim().toLowerCase();
@@ -370,73 +398,159 @@ export function NoteEditor({
                       {isShared ? <Globe className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-72 p-4 space-y-3" align="center">
-                    <div>
-                      <p className="text-sm font-medium">
-                        {isShared ? '🌐 Public Link Active' : '🔒 Private'}
+                  <PopoverContent className="w-80 p-4 space-y-4" align="center">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold flex items-center gap-2">
+                        {isShared ? (
+                          <>
+                            <Globe className="w-4 h-4 text-green-600" />
+                            Public Link Active
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4 text-gray-500" />
+                            Private Note
+                          </>
+                        )}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {isShared ? 'Anyone with the link can view this note' : 'Only you can see this note'}
+                      <p className="text-xs text-muted-foreground">
+                        {isShared
+                          ? 'Manage how others access this note.'
+                          : 'Only you can see this note. Share it to collaborate.'}
                       </p>
                     </div>
-                    {isShared && shareSlug && (
-                      <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                        <span className="text-xs text-muted-foreground flex-1 truncate font-mono">
-                          {buildShareUrl(shareSlug)}
-                        </span>
-                        <Button
-                          variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                          onClick={() => { navigator.clipboard.writeText(buildShareUrl(shareSlug!)); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }}
-                        >
-                          {shareCopied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                        </Button>
+
+                    {!isShared ? (
+                      <div className="space-y-3 pt-2 border-t border-gray-100">
+                        <div className="grid grid-cols-1 gap-2">
+                          <Button
+                            variant="outline"
+                            className="justify-start gap-2 h-10"
+                            size="sm"
+                            disabled={isSharing || isNewNote}
+                            onClick={async () => {
+                              if (!note || !onShareNote) return;
+                              setIsSharing(true);
+                              const result = await onShareNote?.(note.id, 'public');
+                              if (result && result.success && result.slug) {
+                                setIsShared(true); setShareSlug(result.slug);
+                                const url = buildShareUrl(result.slug);
+                                navigator.clipboard.writeText(url);
+                                setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
+                                window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Public Link Created', message: 'Standard link copied to clipboard', type: 'success' } }));
+                              }
+                              setIsSharing(false);
+                            }}
+                          >
+                            <Globe className="w-4 h-4 text-blue-500" />
+                            Standard Public Link
+                          </Button>
+
+                          <div className="space-y-2 border rounded-lg p-2 bg-gray-50/50">
+                            <div className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1">
+                              <Lock className="w-3 h-3" /> Password Protected
+                            </div>
+                            <div className="flex gap-1">
+                              <Input
+                                placeholder="Set password..."
+                                type="password"
+                                className="h-8 text-xs bg-white"
+                                id="share-password"
+                              />
+                              <Button
+                                size="sm"
+                                className="h-8 px-2 bg-violet-600"
+                                disabled={isSharing}
+                                onClick={async () => {
+                                  const pwd = (document.getElementById('share-password') as HTMLInputElement)?.value;
+                                  if (!pwd) return;
+                                  setIsSharing(true);
+                                  const result = await onShareNote?.(note!.id, 'password', pwd);
+                                  if (result && result.success && result.slug) {
+                                    setIsShared(true); setShareSlug(result.slug);
+                                    const url = buildShareUrl(result.slug);
+                                    navigator.clipboard.writeText(url);
+                                    setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Password Set', message: 'Note encrypted with password', type: 'success' } }));
+                                  }
+                                  setIsSharing(false);
+                                }}
+                              >
+                                Set
+                              </Button>
+                            </div>
+                          </div>
+
+                          <Button
+                            variant="outline"
+                            className="justify-start gap-2 h-10 border-dashed border-violet-300 hover:border-violet-500 hover:bg-violet-50"
+                            size="sm"
+                            disabled={isSharing || isNewNote}
+                            onClick={async () => {
+                              if (!note || !onShareNote) return;
+                              setIsSharing(true);
+                              const result = await onShareNote?.(note.id, 'encrypted');
+                              if (result && result.success && result.slug && result.key) {
+                                setIsShared(true); setShareSlug(result.slug);
+                                const url = `${buildShareUrl(result.slug)}#${result.key}`;
+                                navigator.clipboard.writeText(url);
+                                setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
+                                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                  detail: {
+                                    title: 'E2EE Created',
+                                    message: 'Zero-knowledge link with key copied!',
+                                    type: 'success'
+                                  }
+                                }));
+                              }
+                              setIsSharing(false);
+                            }}
+                          >
+                            <Shield className="w-4 h-4 text-violet-600" />
+                            Full End-to-End Encryption
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex gap-2">
-                      {!isShared ? (
+                    ) : (
+                      <div className="space-y-3">
+                        {shareSlug && (
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded-md border border-gray-100">
+                            <span className="text-xs text-muted-foreground flex-1 truncate font-mono">
+                              {buildShareUrl(shareSlug)}
+                            </span>
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                              onClick={() => { navigator.clipboard.writeText(buildShareUrl(shareSlug!)); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); }}
+                            >
+                              {shareCopied ? < Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                            </Button>
+                          </div>
+                        )}
                         <Button
-                          className="flex-1 gap-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white"
+                          variant="outline"
                           size="sm"
-                          disabled={isSharing || isNewNote}
+                          className="w-full gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                          disabled={isSharing}
                           onClick={async () => {
-                            if (!note || !onShareNote) return;
+                            if (!note || !onUnshareNote) return;
                             setIsSharing(true);
-                            const result = await onShareNote(note.id);
-                            if (result.success && result.slug) {
-                              setIsShared(true); setShareSlug(result.slug);
-                              const url = buildShareUrl(result.slug);
-                              navigator.clipboard.writeText(url);
-                              setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
-                              window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Link Copied!', message: `Note is now public: ${url}`, type: 'success' } }));
+                            const result = await onUnshareNote(note.id);
+                            if (result.success) {
+                              setIsShared(false);
+                              setShareSlug(undefined);
+                              window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Note Made Private', message: 'The share link is now disabled.', type: 'info' } }));
                             }
                             setIsSharing(false);
                           }}
                         >
-                          <Globe className="w-4 h-4" />
-                          {isSharing ? 'Making Public...' : 'Make Public & Copy Link'}
+                          <Lock className="w-4 h-4" />
+                          {isSharing ? 'Updating...' : 'Disable Link & Make Private'}
                         </Button>
-                      ) : (
-                        <>
-                          <Button variant="outline" size="sm" className="flex-1 gap-2"
-                            onClick={() => { if (shareSlug) { navigator.clipboard.writeText(buildShareUrl(shareSlug)); setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); } }}>
-                            {shareCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                            Copy Link
-                          </Button>
-                          <Button variant="outline" size="sm" className="gap-2 text-red-600 hover:bg-red-50 border-red-200"
-                            disabled={isSharing}
-                            onClick={async () => {
-                              if (!note || !onUnshareNote) return;
-                              setIsSharing(true);
-                              const result = await onUnshareNote(note.id);
-                              if (result.success) { setIsShared(false); window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Note Made Private', message: 'The share link is now disabled.', type: 'info' } })); }
-                              setIsSharing(false);
-                            }}>
-                            <Lock className="w-4 h-4" />
-                            {isSharing ? 'Updating...' : 'Make Private'}
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                        <p className="text-[10px] text-center text-muted-foreground italic">
+                          Type: {note?.share_type === 'encrypted' ? 'E2E Encrypted' : note?.share_type === 'password' ? 'Password Protected' : 'Public'}
+                        </p>
+                      </div>
+                    )}
                   </PopoverContent>
                 </Popover>
               )}
@@ -506,6 +620,7 @@ export function NoteEditor({
                 placeholder="Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleBlur}
                 className="text-xl font-semibold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
               />
 
@@ -513,6 +628,7 @@ export function NoteEditor({
                 placeholder="Take a note..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onBlur={handleBlur}
                 className="min-h-[200px] max-h-none resize-y border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
                 rows={10}
               />

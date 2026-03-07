@@ -21,6 +21,10 @@ export interface Note {
   updated_at: string;
   share_slug?: string; // short public slug for shared notes
   is_shared?: boolean; // true if the note is publicly accessible
+  share_type?: 'public' | 'password' | 'encrypted'; // type of sharing
+  is_password_protected?: boolean;
+  password_salt?: string; // salt for key derivation
+  is_encrypted?: boolean; // true if content is encrypted (AES-GCM)
 }
 
 export type NoteColor =

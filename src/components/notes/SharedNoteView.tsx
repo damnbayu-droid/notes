@@ -1,17 +1,52 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import type { Note } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Calendar, Tag, ArrowRight, Lock, Copy, Check, ClipboardCopy } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Globe, Calendar, Tag, ArrowRight, Lock, Copy, Check, ClipboardCopy, Shield, Key } from 'lucide-react';
 
 export default function SharedNoteView() {
     const { id, slug } = useParams();
+    const location = useLocation();
     const [note, setNote] = useState<Note | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // Encryption state
+    const [isLocked, setIsLocked] = useState(false);
+    const [password, setPassword] = useState('');
+    const [isDecrypting, setIsDecrypting] = useState(false);
+    const [decryptionError, setDecryptionError] = useState('');
+    const [rawNote, setRawNote] = useState<Note | null>(null);
+
+    const handleDecrypt = async (pwd?: string) => {
+        if (!rawNote) return;
+        setIsDecrypting(true);
+        setDecryptionError('');
+
+        try {
+            const { decryptWithPassword, decryptE2EE } = await import('@/lib/crypto');
+            let decryptedContent = '';
+
+            if (rawNote.share_type === 'password' && (pwd || password)) {
+                decryptedContent = await decryptWithPassword(rawNote.content, pwd || password, rawNote.password_salt!);
+            } else if (rawNote.share_type === 'encrypted') {
+                const key = location.hash.replace('#', '');
+                if (!key) throw new Error('Decryption key missing in URL');
+                decryptedContent = await decryptE2EE(rawNote.content, key);
+            }
+
+            setNote({ ...rawNote, content: decryptedContent });
+            setIsLocked(false);
+        } catch (err: any) {
+            setDecryptionError(err.message || 'Decryption failed');
+        } finally {
+            setIsDecrypting(false);
+        }
+    };
 
     useEffect(() => {
         const fetchNote = async () => {
@@ -19,28 +54,37 @@ export default function SharedNoteView() {
             setNotFound(false);
 
             try {
-                if (slug) {
-                    const { data, error } = await supabase
-                        .from('notes')
-                        .select('*')
-                        .eq('share_slug', slug)
-                        .eq('is_shared', true)
-                        .single();
+                let query = supabase.from('notes').select('*').eq('is_shared', true);
 
-                    if (error || !data) setNotFound(true);
-                    else setNote(data as Note);
-                } else if (id) {
-                    const { data, error } = await supabase
-                        .from('notes')
-                        .select('*')
-                        .eq('id', id)
-                        .eq('is_shared', true)
-                        .single();
+                if (slug) query = query.eq('share_slug', slug);
+                else if (id) query = query.eq('id', id);
+                else throw new Error('No identifier');
 
-                    if (error || !data) setNotFound(true);
-                    else setNote(data as Note);
-                } else {
+                const { data, error } = await query.single();
+
+                if (error || !data) {
                     setNotFound(true);
+                } else {
+                    const fetchedNote = data as Note;
+                    if (fetchedNote.is_encrypted) {
+                        setRawNote(fetchedNote);
+                        setIsLocked(true);
+                        // Auto-decrypt if it's E2EE and hash exists
+                        if (fetchedNote.share_type === 'encrypted' && location.hash) {
+                            // We need to wait for state to set or just pass data
+                            const { decryptE2EE } = await import('@/lib/crypto');
+                            const key = location.hash.replace('#', '');
+                            try {
+                                const decrypted = await decryptE2EE(fetchedNote.content, key);
+                                setNote({ ...fetchedNote, content: decrypted });
+                                setIsLocked(false);
+                            } catch {
+                                setIsLocked(true); // Stay locked if auto-decrypt fails
+                            }
+                        }
+                    } else {
+                        setNote(fetchedNote);
+                    }
                 }
             } catch {
                 setNotFound(true);
@@ -50,7 +94,7 @@ export default function SharedNoteView() {
         };
 
         fetchNote();
-    }, [id, slug]);
+    }, [id, slug, location.hash]);
 
     const handleCopyAll = (n: Note) => {
         const parts: string[] = [];
@@ -78,22 +122,88 @@ export default function SharedNoteView() {
         );
     }
 
-    if (notFound || !note) {
+    if (notFound || !note || isLocked) {
         return (
             <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6 px-4">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                    <Lock className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div className="text-center space-y-2">
-                    <h1 className="text-2xl font-bold text-foreground">Note Not Found</h1>
-                    <p className="text-muted-foreground max-w-sm">
-                        This note doesn't exist, was made private, or has been deleted by its author.
-                    </p>
-                </div>
-                <Button onClick={() => window.location.href = '/'} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600">
-                    <ArrowRight className="w-4 h-4" />
-                    Go to Smart Notes
-                </Button>
+                {notFound || !note ? (
+                    <>
+                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                            <Lock className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h1 className="text-2xl font-bold text-foreground">Note Not Found</h1>
+                            <p className="text-muted-foreground max-w-sm">
+                                This note doesn't exist, was made private, or has been deleted by its author.
+                            </p>
+                        </div>
+                    </>
+                ) : (
+                    <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-300">
+                        <div className="flex flex-col items-center text-center space-y-2">
+                            <div className="w-20 h-20 rounded-3xl bg-violet-50 flex items-center justify-center mb-4">
+                                {rawNote?.share_type === 'encrypted' ? (
+                                    <Shield className="w-10 h-10 text-violet-600" />
+                                ) : (
+                                    <Key className="w-10 h-10 text-violet-600" />
+                                )}
+                            </div>
+                            <h1 className="text-2xl font-bold text-foreground">
+                                {rawNote?.share_type === 'encrypted' ? 'End-to-End Encrypted' : 'Password Protected'}
+                            </h1>
+                            <p className="text-muted-foreground">
+                                {rawNote?.share_type === 'encrypted'
+                                    ? 'This note is encrypted with a secret key in the link. Only people with the full link can read it.'
+                                    : 'Please enter the password provided by the author to view this note.'}
+                            </p>
+                        </div>
+
+                        {rawNote?.share_type === 'password' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        type="password"
+                                        placeholder="Enter password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleDecrypt()}
+                                        className="h-12 text-center text-lg shadow-sm"
+                                        autoFocus
+                                    />
+                                    {decryptionError && (
+                                        <p className="text-sm text-red-600 text-center font-medium animate-bounce">{decryptionError}</p>
+                                    )}
+                                </div>
+                                <Button
+                                    onClick={() => handleDecrypt()}
+                                    className="w-full h-12 text-lg bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-violet-200 hover:scale-[1.02] transition-transform active:scale-95"
+                                    disabled={isDecrypting || !password}
+                                >
+                                    {isDecrypting ? 'Decrypting...' : 'Unlock Note'}
+                                </Button>
+                            </div>
+                        )}
+
+                        {rawNote?.share_type === 'encrypted' && decryptionError && (
+                            <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-center">
+                                <p className="text-sm text-red-600 font-medium">Decryption Error</p>
+                                <p className="text-xs text-red-500 mt-1">{decryptionError}</p>
+                                <p className="text-[10px] text-red-400 mt-2 italic">Make sure you have the full link with the #key part.</p>
+                            </div>
+                        )}
+
+                        <div className="pt-4 text-center">
+                            <Button variant="ghost" size="sm" onClick={() => window.location.href = '/'} className="text-muted-foreground">
+                                Back to Home
+                            </Button>
+                        </div>
+                    </div>
+                )}
+                {(notFound || !note) && (
+                    <Button onClick={() => window.location.href = '/'} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600">
+                        <ArrowRight className="w-4 h-4" />
+                        Go to Smart Notes
+                    </Button>
+                )}
             </div>
         );
     }

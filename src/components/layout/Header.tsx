@@ -18,11 +18,11 @@ import {
   User as UserIcon,
   Moon,
   Sun,
+  Bell,
+  X,
+  CheckCircle2,
   Mic,
   Scan,
-  Bell,
-  XCircle,
-  CheckCircle2
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -68,7 +68,6 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
 
   // Determine container state
   const isActive = !!dynamicStatus || !!notification;
-  const isStacked = !!notification && !dynamicStatus; // Stack only if not in active mode (mic/scan)
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border transition-all duration-300">
@@ -86,7 +85,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </Button>
 
           <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-purple-600 hidden sm:block">
-            Smart Notes | save and secured encrypted
+            Smart Notes
           </span>
         </div>
 
@@ -94,16 +93,13 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         <div className="flex-1 flex justify-center relative h-14 items-center">
           <div
             className={`
-                absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden
+                absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
                 ${isActive
-                ? 'bg-black text-white' // Active State (Black Pill)
-                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100' // Default State
-              }
-                ${isStacked
-                ? 'rounded-3xl px-6 py-3 gap-2 min-w-[300px] max-w-[90vw]' // Stacked (Taller)
-                : 'rounded-full px-6 py-2 gap-3 min-w-[240px] max-w-[90vw]' // Single Row (Pill)
+                ? 'bg-black text-white px-4 py-2 gap-1.5 min-w-[280px] max-w-[90vw] rounded-2xl' // Active/Notification State (Black Pill)
+                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-5 gap-2 min-w-[200px] max-w-[90vw] rounded-full h-10' // Default State
               }
               `}
+            onClick={onOpenAlarm}
           >
             {/* 
                 Content Management:
@@ -122,35 +118,35 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               </div>
             )}
 
-            {/* Case 2 & 3: Clock + Optional Notification */}
+            {/* Case 2 & 3: Clock + Slide-down Notification */}
             {!dynamicStatus && (
-              <>
-                {/* Clock Row */}
-                <div className={`flex items-center gap-3 transition-all duration-300`}>
+              <div className="flex flex-col items-center">
+                {/* Clock Row - Always Visible or Primary */}
+                <div className={`flex items-center gap-3 transition-all duration-300 ${notification ? 'h-8' : 'h-10'}`}>
                   <BaliTimeClock headless />
                   <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
-                  <button
-                    onClick={onOpenAlarm}
-                    className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-violet-600 dark:text-violet-300"
+                  <div
+                    className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-violet-600 dark:text-violet-300 flex items-center gap-1.5"
                     aria-label="Set Alarm"
                   >
-                    <Bell className="w-4 h-4" />
-                  </button>
+                    <Bell className="w-3.5 h-3.5" />
+                    <span className="text-[10px] uppercase font-bold tracking-wider">Alarm</span>
+                  </div>
                 </div>
 
-                {/* Notification Row (Stacked) */}
+                {/* Notification Row - Slide Down Effect */}
                 {notification && (
-                  <div className="flex items-center gap-2 animate-in slide-in-from-top-2 fade-in duration-300 mt-1 pb-1">
-                    {notification.type === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
-                    {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                    {(!notification.type || notification.type === 'info') && <Bell className="w-4 h-4 text-blue-400" />}
+                  <div className="flex items-center gap-2 animate-in slide-in-from-top-4 fade-in duration-500 pb-2 border-t border-white/10 w-full justify-center mt-1 pt-1">
+                    {notification.type === 'error' && <X className="w-3.5 h-3.5 text-red-500" />}
+                    {notification.type === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
+                    {(!notification.type || notification.type === 'info') && <Bell className="w-3.5 h-3.5 text-blue-400" />}
                     <div className="flex flex-col items-center">
-                      <span className="text-sm font-semibold leading-tight">{notification.title}</span>
-                      {notification.message && <span className="text-xs opacity-80 leading-tight">{notification.message}</span>}
+                      <span className="text-[10px] font-bold leading-tight">{notification.title}</span>
+                      {notification.message && <span className="text-[9px] opacity-80 leading-tight truncate max-w-[200px]">{notification.message}</span>}
                     </div>
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -201,7 +197,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             <Button
               onClick={onSignIn}
               size="sm"
-              className="bg-violet-600 hover:bg-violet-700 text-white rounded-full px-6"
+              className="bg-violet-600 hover:bg-violet-700 text-white !rounded-xl px-6 min-h-[36px]"
               aria-label="Sign in"
             >
               Sign In

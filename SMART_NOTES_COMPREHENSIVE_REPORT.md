@@ -192,4 +192,36 @@ The application adopts a feature-based folder structure within `src`:
 
 ---
 
+## [Audit Log] - 2026-03-07 16:50:00 WIB
+
+### ✅ Email Infrastructure & Security Hardening
+
+To ensure professional communication and high delivery rates for `notes.biz.id`, the following measures were implemented:
+
+- **SMTP Provider**: Integrated **Resend** with Supabase Auth.
+- **Sender Identity**: Configured `smart@notes.biz.id` as the primary sender.
+- **Security Guide**: Created `EMAIL_HARDENING_GUIDE.md` detailing SPF, DKIM, and DMARC requirements for DNS records to prevent spoofing and spam flagging.
+- **Branded Templates**: Developed custom HTML/CSS email templates (stored in `/email_templates/`) for:
+    - **Confirm Signup**: Welcoming users to the encrypted ecosystem.
+    - **Reset Password**: Secure recovery flow with branded buttons.
+    - **Magic Link**: Seamless login experience.
+- **Tone & Voice**: Implemented Indonesian (ID) localization for all primary auth flows to better serve the local market while maintaining a professional "Global Gold" aesthetic.
+
+---
+
 *Last updated: 2026-03-07 by Smart Notes AI Agent*
+
+### Phase 30: Auto-Save Stability & Advanced Encryption (The Hardening Finale)
+Implemented mission-critical updates for data reliability and professional-grade security sharing.
+- **Auto-Save Hardening**: 
+  - Attached `onBlur` listeners to Title and Content for immediate local saves.
+  - Implemented robust `handleSave` on Dialog close to prevent data loss on modal exit.
+  - Optimized `useNotes` persistence to ensure state is synchronized with `localStorage` reliably.
+- **Advanced 3-Tier Sharing System**:
+  - **Option 1: Public**: Standard public access (legacy support).
+  - **Option 2: Password Protected**: AES-GCM 256-bit encryption using keys derived from a password via PBKDF2 (100k iterations).
+  - **Option 3: Full End-to-End Encryption (E2EE)**: Zero-knowledge encryption. The server stores only the encrypted blob; the key is never sent to the backend and resides only in the URL hash fragment (`#key`) of the share link.
+- **Secure Viewer UI**:
+  - Redesigned `SharedNoteView` with professional "Locked" states.
+  - Integrated automatic decryption logic for E2EE links.
+  - Added branded password prompt UI for secure notes.

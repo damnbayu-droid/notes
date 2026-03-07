@@ -16,7 +16,6 @@ import {
   Book,
   Mic,
   Pin,
-  Tag,
   Settings,
   Cloud,
   MoreHorizontal,
@@ -67,7 +66,6 @@ export function Sidebar({
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const tags: string[] = [];
   const activeNotesCount = 0;
   const archivedNotesCount = 0;
 
@@ -112,7 +110,7 @@ export function Sidebar({
           <div className="flex items-center justify-between h-16 px-4 border-b border-border">
             <div className="flex items-center gap-2 lg:hidden">
               <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                Smart Notes | save and secured encrypted
+                Smart Notes
               </span>
             </div>
             <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose} aria-label="Close sidebar">
@@ -202,7 +200,7 @@ export function Sidebar({
                   </p>
                 </div>
                 <div className="space-y-0.5">
-                  {sortedFolders.map(folder => (
+                  {sortedFolders.map(folder => folder !== 'Google Drive' && (
                     <div key={folder} className="group flex items-center justify-between pr-2 rounded-lg hover:bg-accent transition-colors">
                       <button
                         onClick={() => {
@@ -221,7 +219,7 @@ export function Sidebar({
                       </button>
 
                       {/* Folder Actions */}
-                      {folder !== 'Main' && folder !== 'Google Drive' && (
+                      {folder !== 'Main' && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -304,36 +302,12 @@ export function Sidebar({
                 </div>
               </div>
 
-              {/* Tags */}
-              {tags.length > 0 && (
-                <div className="space-y-1">
-                  <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Tags
-                  </p>
-                  <div className="space-y-0.5">
-                    {tags.slice(0, 8).map((tag) => (
-                      <button
-                        key={tag}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent transition-colors"
-                      >
-                        <Tag className="w-4 h-4 text-muted-foreground" />
-                        <span className="capitalize">{tag}</span>
-                      </button>
-                    ))}
-                    {tags.length > 8 && (
-                      <button className="w-full text-left px-3 py-2 text-sm text-primary hover:text-primary/80 font-medium">
-                        +{tags.length - 8} more
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Tags placeholder removed as per logic but keeping structure if needed */}
             </div>
           </ScrollArea>
 
           {/* Footer */}
           <div className="p-4 border-t border-border space-y-2">
-
             <button
               onClick={() => {
                 onOpenSettings();
@@ -349,20 +323,27 @@ export function Sidebar({
             </button>
             <button
               onClick={async () => {
-                try {
-                  const { googleDrive } = await import('@/lib/googleDrive');
-                  await googleDrive.loadScripts();
-                } catch (e) {
-                  console.error(e);
-                }
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                  detail: { title: 'Syncing', message: 'Synchronizing with Local Storage...', type: 'info' }
+                }));
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              aria-label="Sync with Google Drive"
-              title="Sync notes with Google Drive"
+              aria-label="Sync with Local Storage"
+              title="Sync notes with Local Storage"
             >
               <Cloud className="w-5 h-5" aria-hidden="true" />
               Sync Drive
             </button>
+            <div className="pt-2 text-center">
+              <a
+                href="https://bali.enterprises"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-60 hover:opacity-100 hover:text-violet-600 transition-all underline-offset-4 hover:underline"
+              >
+                Powered by Bali.Enterprises
+              </a>
+            </div>
           </div>
         </div>
       </aside>

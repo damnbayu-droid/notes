@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Confirm Your Smart Notes Account</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, blinkmacsystemfont, sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 40px 30px;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+            background-color: #f3f4f6;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background-color: #7c3aed;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 9999px;
+            font-weight: 600;
+            margin-top: 24px;
+            transition: background-color 0.2s;
+        }
+
+        h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        p {
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Smart Notes</h1>
+        </div>
+        <div class="content">
+            <h2 style="margin-top: 0;">Halo dari Smart Notes!</h2>
+            <p>Terima kasih telah bergabung dengan <strong>Smart Notes | save and secured encrypted</strong>.</p>
+            <p>Catatan Anda, ide Anda, dan jadwal Anda sekarang aman dan terenkripsi bersama kami. Klik tombol di bawah
+                ini untuk memverifikasi akun Anda dan mulai menulis.</p>
+            <div style="text-align: center;">
+                <a href="{{ .ConfirmationURL }}" class="button">Konfirmasi Akun Saya</a>
+            </div>
+            <p style="margin-top: 32px; font-size: 14px; color: #6b7280;">Jika tombol di atas tidak berfungsi, salin dan
+                tempel link berikut ke browser Anda:<br>
+                <span style="word-break: break-all;">{{ .ConfirmationURL }}</span>
+            </p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Smart Notes. notes.biz.id<br>
+            Aman • Terenkripsi • Cerdas
+        </div>
+    </div>
+</body>
+
+</html>

@@ -19,7 +19,7 @@ const SettingsPage = lazy(() => import('./SettingsPage').then(module => ({ defau
 const AdminUserList = lazy(() => import('@/components/admin/AdminUserList').then(module => ({ default: module.AdminUserList })));
 const SchedulePage = lazy(() => import('@/components/schedule/SchedulePage').then(module => ({ default: module.SchedulePage })));
 const BookLayout = lazy(() => import('@/components/books/BookLayout').then(module => ({ default: module.BookLayout })));
-const AlarmDialog = lazy(() => import('@/components/time/AlarmDialog').then(module => ({ default: module.AlarmDialog })));
+const NotificationCenter = lazy(() => import('@/components/time/NotificationCenter').then(module => ({ default: module.NotificationCenter })));
 
 interface DashboardProps {
   user: User | null;
@@ -35,7 +35,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [isAlarmOpen, setIsAlarmOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
   const {
     pinnedNotes,
@@ -133,7 +133,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             setSettingsTab(tab || 'profile');
             setCurrentView('settings');
           }}
-          onOpenAlarm={() => setIsAlarmOpen(true)}
+          onOpenAlarm={() => setIsNotificationCenterOpen(true)}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <Sidebar
@@ -298,7 +298,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       <AdOverlay />
 
       <Suspense fallback={null}>
-        {isAlarmOpen && <AlarmDialog isOpen={isAlarmOpen} onClose={() => setIsAlarmOpen(false)} />}
+        {isNotificationCenterOpen && <NotificationCenter isOpen={isNotificationCenterOpen} onClose={() => setIsNotificationCenterOpen(false)} />}
       </Suspense>
     </Suspense>
   );
