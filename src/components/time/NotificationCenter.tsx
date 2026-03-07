@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, History, Calendar, Trash2, Plus, Settings } from 'lucide-react';
+import { Clock, History, Calendar, Trash2, Plus, Settings, Info, ShieldCheck, Zap, HardDrive, BookOpen, Scaling, Radio } from 'lucide-react';
 
 interface Alarm {
     id: string;
@@ -24,10 +24,11 @@ interface NotificationItem {
 interface NotificationCenterProps {
     isOpen: boolean;
     onClose: () => void;
+    defaultTab?: 'notifications' | 'alarms' | 'schedule' | 'info';
 }
 
-export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
-    const [activeTab, setActiveTab] = useState<'notifications' | 'alarms' | 'schedule'>('notifications');
+export function NotificationCenter({ isOpen, onClose, defaultTab = 'notifications' }: NotificationCenterProps) {
+    const [activeTab, setActiveTab] = useState<'notifications' | 'alarms' | 'schedule' | 'info'>(defaultTab);
     const [alarms, setAlarms] = useState<Alarm[]>([]);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [isAddingAlarm, setIsAddingAlarm] = useState(false);
@@ -39,8 +40,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         const savedAlarms = localStorage.getItem('alarms');
         if (savedAlarms) setAlarms(JSON.parse(savedAlarms));
 
-        // Load Notification History (if we implement a store for it)
-        // For now, let's look at recent events or just use placeholders
+        // Load Notification History
         setNotifications([
             { id: '1', title: 'Welcome', message: 'Welcome to Smart Notes Secured and Encrypted.', time: 'Just now', type: 'success' },
             { id: '2', title: 'Auth System', message: 'Identity verified via Supabase.', time: '5m ago', type: 'info' }
@@ -87,8 +87,14 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                             <Calendar className="w-3.5 h-3.5" />
                             Schedule
                         </button>
-                        {/* Space for Dialog Close Button */}
-                        <div className="w-10 shrink-0" />
+                        <button
+                            onClick={() => setActiveTab('info')}
+                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-lg transition-all ${activeTab === 'info' ? 'bg-white text-violet-600 shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-white/50'}`}
+                        >
+                            <Info className="w-3.5 h-3.5" />
+                            Info
+                        </button>
+                        <div className="w-8 shrink-0" />
                     </div>
 
                     <ScrollArea className="flex-1 p-4">
@@ -158,6 +164,97 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                                 <Calendar className="w-8 h-8 mb-2 text-violet-300" />
                                 <p className="text-xs font-bold text-violet-900 uppercase">Upcoming Events</p>
                                 <p className="text-[10px] text-muted-foreground">Connected to your reminders & notes</p>
+                            </div>
+                        )}
+
+                        {activeTab === 'info' && (
+                            <div className="space-y-4 pb-4">
+                                <div className="p-4 bg-gradient-to-br from-violet-600 to-purple-700 rounded-2xl text-white shadow-lg overflow-hidden relative">
+                                    <div className="relative z-10">
+                                        <h3 className="text-sm font-bold flex items-center gap-2">
+                                            <Zap className="w-4 h-4 text-yellow-300" />
+                                            Super Smart Panel
+                                        </h3>
+                                        <p className="text-[10px] text-white/80 leading-relaxed mt-1">Discover the advanced features powering your secure workspace.</p>
+                                    </div>
+                                    <div className="absolute -right-4 -bottom-4 opacity-10">
+                                        <Scaling className="w-24 h-24" />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">Encrypted File Sharing</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Military-grade E2E encryption for your shared notes. Only recipients with the password can decrypt and view.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-purple-50 rounded-lg group-hover:bg-purple-100 transition-colors">
+                                                <Zap className="w-4 h-4 text-purple-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">AI Integration</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Smart summaries, tone adjustment, and intelligent organization powered by advanced GPT technology.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                                                <HardDrive className="w-4 h-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">Local Storage</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Connect to your device's local folders for lightning-fast offline sync and ultimate data ownership.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-amber-50 rounded-lg group-hover:bg-amber-100 transition-colors">
+                                                <BookOpen className="w-4 h-4 text-amber-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">Book Mode</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Deep focus reading and writing mode optimized for long documents and creative projects.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                                                <Scaling className="w-4 h-4 text-red-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">Scanner</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Quickly scan documents to PDF or extract text directly into your notes using AI OCR.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-white border border-violet-50 rounded-xl shadow-sm hover:border-violet-200 transition-colors group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-cyan-50 rounded-lg group-hover:bg-cyan-100 transition-colors">
+                                                <Radio className="w-4 h-4 text-cyan-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[11px] font-bold text-gray-900">Recorder</p>
+                                                <p className="text-[10px] text-muted-foreground leading-tight">Record voice memos directly into your notes with real-time transcription and summary features.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </ScrollArea>

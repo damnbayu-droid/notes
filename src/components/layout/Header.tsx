@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Mic,
   Scan,
+  Info,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -32,7 +33,7 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onOpenSettings: (tab?: string) => void;
   onSignIn: () => void;
-  onOpenAlarm: () => void;
+  onOpenAlarm: (tab?: string) => void;
 }
 
 export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm }: HeaderProps) {
@@ -61,7 +62,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
     window.addEventListener('dcpi-notification' as any, handleNotification);
 
     return () => {
-      window.removeEventListener('dynamic-status' as any, handleStatus);
+      window.removeEventListener('dcpi-status' as any, handleStatus);
       window.removeEventListener('dcpi-notification' as any, handleNotification);
     };
   }, []);
@@ -95,20 +96,12 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             className={`
                 absolute top-1/2 -translate-y-[calc(50%-env(safe-area-inset-top,0px)/4)] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
                 ${isActive
-                ? 'bg-black text-white px-3 py-1.5 sm:px-4 sm:py-2 gap-1.5 min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-2xl' // Active/Notification State (Black Pill)
-                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-full h-8 sm:h-10' // Default State
+                ? 'bg-black text-white px-3 py-1.5 sm:px-4 sm:py-2 gap-1.5 min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-2xl'
+                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-full h-8 sm:h-10'
               }
               `}
-            onClick={onOpenAlarm}
+            onClick={() => onOpenAlarm()}
           >
-            {/* 
-                Content Management:
-                1. Dynamic Status (Mic/Scan) -> Replaces everything, Single Row.
-                2. Notification -> Center-Top Overlay.
-                3. Default -> Clock only.
-             */}
-
-            {/* Case 1: Dynamic Status (Mic/Scan) overrides everything */}
             {dynamicStatus && (
               <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in zoom-in duration-300">
                 {dynamicStatus.type === 'record' && <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
@@ -118,26 +111,29 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               </div>
             )}
 
-            {/* Case 2 & 3: Clock + Centered Notification Overlay (Stable Container) */}
             {!dynamicStatus && (
               <div className="flex flex-col items-center">
-                {/* Clock Row - Always Stable */}
                 <div className="flex items-center gap-2 sm:gap-3 h-8 sm:h-10 transition-all duration-300">
                   <BaliTimeClock headless />
                   <div className="h-3 sm:h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-0.5 sm:mx-1" />
-                  <div className="p-1 rounded-full text-violet-600 dark:text-violet-300 flex items-center gap-1 sm:gap-1.5">
-                    <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider">Alarm</span>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1 rounded-full text-violet-600 dark:text-violet-300 flex items-center gap-1 sm:gap-1.5 hover:bg-violet-100/50 transition-colors">
+                      <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider">Alarm</span>
+                    </div>
+                    <div className="p-1 rounded-full text-blue-600 dark:text-blue-300 flex items-center gap-1 hover:bg-blue-100/50 transition-colors" onClick={(e) => { e.stopPropagation(); onOpenAlarm('info'); }}>
+                      <Info className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                      <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider">Info</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Floating Notification Overlay - Appears smoothly below Dynamic Island */}
                 {notification && (
                   <div
                     className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-700"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onOpenAlarm(); // Click notification to open center
+                      onOpenAlarm();
                     }}
                   >
                     <div className="bg-black/95 backdrop-blur-md text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl shadow-2xl border border-white/10 min-w-[260px] sm:min-w-[320px] max-w-[95vw] flex items-center gap-3 sm:gap-4 group cursor-pointer hover:bg-black transition-all">
@@ -165,9 +161,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </div>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-2">
-          {/* Smart Mode / Theme Toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full" aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
             {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
@@ -219,6 +213,6 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           )}
         </div>
       </div>
-    </header >
+    </header>
   );
 }

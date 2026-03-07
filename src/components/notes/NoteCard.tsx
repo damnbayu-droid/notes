@@ -60,8 +60,8 @@ export function NoteCard({
     <Card
       className={`group relative overflow-hidden transition-all duration-200 cursor-pointer
         ${colorOption.bg} ${colorOption.border} border
-        ${viewMode === 'grid' ? 'h-full' : 'flex flex-row items-start gap-4'}
-        ${isHovered ? 'shadow-lg scale-[1.02]' : 'shadow-sm'}
+        ${viewMode === 'grid' ? 'h-full' : 'flex flex-row items-center gap-2'}
+        ${isHovered ? 'shadow-lg scale-[1.01]' : 'shadow-sm'}
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -84,34 +84,34 @@ export function NoteCard({
         </div>
       )}
 
-      <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
+      <div className={`p-2 sm:p-3 ${viewMode === 'list' ? 'flex-1' : ''}`}>
         {/* Title */}
         {note.title && (
-          <h3 className="font-semibold text-foreground mb-2 pr-6 line-clamp-2">
+          <h3 className="font-semibold text-foreground mb-1 pr-6 line-clamp-1 text-sm">
             {note.title}
           </h3>
         )}
 
         {/* Content */}
-        <p className={`text-muted-foreground text-sm whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-6' : 'line-clamp-2'}`}>
-          {truncateContent(note.content)}
+        <p className={`text-muted-foreground text-[11px] sm:text-xs whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-4' : 'line-clamp-1'}`}>
+          {truncateContent(note.content, 80)}
         </p>
 
         {/* Tags */}
         {note.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
-            {note.tags.slice(0, 3).map((tag) => (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {note.tags.slice(0, 2).map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground"
+                className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-muted-foreground"
               >
-                <Tag className="w-3 h-3 mr-1" />
+                <Tag className="w-2.5 h-2.5 mr-1" />
                 {tag}
               </span>
             ))}
-            {note.tags.length > 3 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-muted-foreground">
-                +{note.tags.length - 3}
+            {note.tags.length > 2 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-secondary text-muted-foreground">
+                +{note.tags.length - 2}
               </span>
             )}
           </div>
@@ -119,8 +119,8 @@ export function NoteCard({
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-          <div className="flex items-center text-xs text-muted-foreground">
-            <Clock className="w-3 h-3 mr-1" />
+          <div className="flex items-center text-[10px] text-muted-foreground">
+            <Clock className="w-2.5 h-2.5 mr-1" />
             {formatDistanceToNow(note.updated_at)}
           </div>
 

@@ -34,6 +34,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [notificationTab, setNotificationTab] = useState<'notifications' | 'alarms' | 'schedule' | 'info'>('notifications');
 
   const {
     pinnedNotes,
@@ -111,7 +112,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <SEO
         title={
-          currentView === 'notes' ? 'Notes' :
+          currentView === 'notes' ? 'Smart Notes : Secured and Encrypted' :
             currentView === 'archive' ? 'Archive' :
               currentView === 'trash' ? 'Trash' :
                 currentView === 'settings' ? 'Settings' :
@@ -131,7 +132,10 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             setSettingsTab(tab || 'profile');
             setCurrentView('settings');
           }}
-          onOpenAlarm={() => setIsNotificationCenterOpen(true)}
+          onOpenAlarm={(tab) => {
+            setNotificationTab(tab as any || 'notifications');
+            setIsNotificationCenterOpen(true);
+          }}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <Sidebar
@@ -288,7 +292,13 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       <AdOverlay />
 
       <Suspense fallback={null}>
-        {isNotificationCenterOpen && <NotificationCenter isOpen={isNotificationCenterOpen} onClose={() => setIsNotificationCenterOpen(false)} />}
+        {isNotificationCenterOpen && (
+          <NotificationCenter
+            isOpen={isNotificationCenterOpen}
+            onClose={() => setIsNotificationCenterOpen(false)}
+            defaultTab={notificationTab}
+          />
+        )}
       </Suspense>
     </Suspense>
   );

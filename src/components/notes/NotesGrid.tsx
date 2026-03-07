@@ -55,7 +55,7 @@ export function NotesGrid({
         style={{
           display: 'grid',
           gridTemplateColumns: viewMode === 'grid'
-            ? 'repeat(auto-fill, minmax(280px, 1fr))'
+            ? 'repeat(auto-fill, minmax(200px, 1fr))'
             : '1fr',
           gap: '1rem',
           ...style,
@@ -81,7 +81,13 @@ export function NotesGrid({
             <span className="w-2 h-2 rounded-full bg-violet-500" />
             Pinned ({pinnedNotes.length})
           </h2>
-          <div className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
+              gap: '1rem'
+            }}
+          >
             {pinnedNotes.map((note) => (
               <NoteCard
                 key={note.id}

@@ -87,19 +87,14 @@ export function SearchBar({
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
-          {/* Mobile Create Button */}
-          <div className="lg:hidden">
-            <CreateNoteButton onClick={onCreate} variant="icon" />
-          </div>
-
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {/* Sort Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-12 px-3 gap-2">
                 <ArrowUpDown className="w-4 h-4" />
                 <span className="hidden sm:inline">
-                  {sortOptions.find(o => o.value === sortBy)?.label}
+                  {sortOptions.find((o) => o.value === sortBy)?.label}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -169,6 +164,11 @@ export function SearchBar({
             >
               <List className="w-4 h-4" />
             </Button>
+          </div>
+
+          {/* Mobile Create Button - Moved to Right */}
+          <div className="lg:hidden">
+            <CreateNoteButton onClick={onCreate} variant="icon" />
           </div>
         </div>
       </div>

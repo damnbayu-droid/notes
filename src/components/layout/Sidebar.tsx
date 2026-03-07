@@ -19,6 +19,7 @@ import {
   Settings,
   Shield,
   Cloud,
+  LogOut,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -309,6 +310,19 @@ export function Sidebar({
 
           {/* Footer */}
           <div className="p-4 border-t border-border space-y-2 pb-[env(safe-area-inset-bottom,1rem)]">
+            {currentView !== 'notes' && (
+              <button
+                onClick={() => {
+                  onViewChange('notes');
+                  onClose();
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-100 shadow-sm mb-2"
+                aria-label="Exit to Notes"
+              >
+                <LogOut className="w-5 h-5 rotate-180" />
+                Exit to Notes
+              </button>
+            )}
             <button
               onClick={() => {
                 onOpenSettings('profile');
@@ -335,15 +349,21 @@ export function Sidebar({
             <button
               onClick={async () => {
                 window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                  detail: { title: 'Syncing', message: 'Synchronizing with Local Storage...', type: 'info' }
+                  detail: { title: 'Local Sync', message: 'Connecting to Local Storage...', type: 'info' }
                 }));
+                const res = await (window as any).syncWithLocalStorage?.();
+                if (res) {
+                  window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Success', message: 'Connected to Local Storage', type: 'success' }
+                  }));
+                }
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               aria-label="Sync with Local Storage"
               title="Sync notes with Local Storage"
             >
               <Cloud className="w-5 h-5" aria-hidden="true" />
-              Sync Drive
+              Sync with Local Storage
             </button>
             <div className="pt-2 text-center">
               <a

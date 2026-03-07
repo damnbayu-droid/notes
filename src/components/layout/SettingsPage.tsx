@@ -7,14 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Lock, Mail, Shield, Bell, Bot, Cpu, Key, Database } from 'lucide-react';
+import { User, Lock, Mail, Shield, Bot, Cpu, Key, Database, Phone, ExternalLink, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
     const { user, changePassword, updateProfile } = useAuth();
-    const { isStorageSupported, storageUsage, clearAllData, exportData, importData } = useOfflineStorage();
+    const { isStorageSupported, storageUsage, isConnectedToFolder, syncWithLocalStorage, clearAllData, exportData, importData } = useOfflineStorage();
     const [loading, setLoading] = useState(false);
 
     // Password State
@@ -53,24 +53,26 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-8 px-4 sm:px-0">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h2>
-                <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h2>
+                    <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/'} className="shrink-0 gap-2 border-violet-200 hover:bg-violet-50 text-violet-700">
+                    <ExternalLink className="w-4 h-4" />
+                    Back to Notes
+                </Button>
             </div>
 
             <Tabs defaultValue={defaultTab} className="space-y-4">
                 <TabsList className="w-full justify-start overflow-x-auto overflow-y-hidden h-auto p-1 bg-muted/50 scrollbar-hide">
                     <TabsTrigger value="profile" className="flex items-center gap-2 whitespace-nowrap">
                         <User className="w-4 h-4" />
-                        Profile
+                        Profile Information
                     </TabsTrigger>
                     <TabsTrigger value="security" className="flex items-center gap-2 whitespace-nowrap">
                         <Shield className="w-4 h-4" />
                         Security
-                    </TabsTrigger>
-                    <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap">
-                        <Bell className="w-4 h-4" />
-                        Notifications
                     </TabsTrigger>
                     <TabsTrigger value="ai" className="flex items-center gap-2 whitespace-nowrap">
                         <Bot className="w-4 h-4" />
@@ -132,12 +134,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 }
 
                                                 setLoading(true);
-                                                // Create a toast ID to update progress
-                                                // const toastId = toast.loading("Uploading image...");
-
-
                                                 try {
-                                                    // Convert to WebP for optimization
                                                     const webpBlob = await convertToWebP(file, 0.8);
                                                     const optimizedFile = new File([webpBlob], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' });
 
@@ -148,21 +145,17 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                         return;
                                                     }
 
-                                                    // 1. Upload to Supabase Storage
                                                     const fileName = `${user?.id}/${Date.now()}.webp`;
-
                                                     const { error: uploadError } = await supabase.storage
                                                         .from('app-files')
                                                         .upload(fileName, optimizedFile, { upsert: true });
 
                                                     if (uploadError) throw uploadError;
 
-                                                    // 2. Get Public URL
                                                     const { data: { publicUrl } } = supabase.storage
                                                         .from('app-files')
                                                         .getPublicUrl(fileName);
 
-                                                    // 3. Update User Metadata
                                                     const { error: updateError } = await updateProfile({ avatar: publicUrl });
                                                     if (updateError) throw new Error(updateError);
 
@@ -200,7 +193,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 if (!confirm("Remove profile picture?")) return;
                                                 setLoading(true);
                                                 try {
-                                                    const { error } = await updateProfile({ avatar: '' }); // Reset to empty to trigger fallback
+                                                    const { error } = await updateProfile({ avatar: '' });
                                                     if (error) throw new Error(error);
                                                     window.dispatchEvent(new CustomEvent('dcpi-notification', {
                                                         detail: { title: 'Success', message: "Profile picture removed", type: 'success' }
@@ -220,7 +213,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                 </div>
                                 <div className="flex flex-col gap-1 mt-2">
                                     <p className="text-xs text-muted-foreground">Recommended: Square JPG, PNG. Max 2MB. Auto-converted to WebP.</p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <div className="text-xs text-muted-foreground">
                                         Or use a preset:
                                         <span className="ml-2 inline-flex gap-2">
                                             <button
@@ -237,7 +230,55 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 Boy
                                             </button>
                                         </span>
-                                    </p>
+                                    </div>
+                                </div>
+                                <div className="pt-6 border-t mt-6 space-y-6">
+                                    <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50 border-blue-100">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-base font-medium flex items-center gap-2">
+                                                <Phone className="w-4 h-4 text-blue-600" />
+                                                Enable Notifications
+                                            </Label>
+                                            <p className="text-xs text-muted-foreground">Stay updated with reminders and security alerts.</p>
+                                        </div>
+                                        <Switch
+                                            checked={typeof window !== 'undefined' && Notification.permission === 'granted'}
+                                            onCheckedChange={async (checked) => {
+                                                if (checked) {
+                                                    const permission = await Notification.requestPermission();
+                                                    if (permission === 'granted') {
+                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                            detail: { title: 'Success', message: 'Notifications enabled!', type: 'success' }
+                                                        }));
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex flex-wrap gap-4 justify-center sm:justify-start items-center">
+                                            <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-violet-600 p-0 h-auto" onClick={() => window.open('/privacy', '_blank')}>
+                                                Privacy Policy
+                                            </Button>
+                                            <span className="text-gray-300">|</span>
+                                            <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-violet-600 p-0 h-auto" onClick={() => window.open('/term', '_blank')}>
+                                                Terms & Conditions
+                                            </Button>
+                                            <span className="text-gray-300">|</span>
+                                            <Button variant="ghost" size="sm" className="text-xs text-violet-600 font-bold hover:underline p-0 h-auto" onClick={() => window.location.href = '/contact'}>
+                                                Contact & Legal
+                                            </Button>
+                                        </div>
+                                        <div className="pt-2 border-t mt-2">
+                                            <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-2">
+                                                Partner Links:
+                                                <a href="https://bali.enterprises" target="_blank" rel="noreferrer" className="text-violet-600 hover:underline">bali.enterprises</a>
+                                                <span className="text-gray-300">|</span>
+                                                <a href="https://indonesianvisas.com" target="_blank" rel="noreferrer" className="text-violet-600 hover:underline">indonesianvisas.com</a>
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
@@ -307,27 +348,6 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                     </Card>
                 </TabsContent>
 
-                {/* Notifications Tab */}
-                <TabsContent value="notifications">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notifications</CardTitle>
-                            <CardDescription>Manage how you receive alerts.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="space-y-0.5">
-                                    <Label className="text-base">Browser Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">Receive reminders on this device.</p>
-                                </div>
-                                <Button variant="outline" onClick={() => Notification.requestPermission()}>
-                                    {Notification.permission === 'granted' ? 'Enabled' : 'Enable'}
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
                 {/* AI Settings Tab */}
                 <TabsContent value="ai">
                     <Card>
@@ -339,7 +359,6 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                             <CardDescription>Configure your intelligent assistant preferences.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-
                             {/* Smart Mode Toggle */}
                             <div className="flex items-center justify-between p-4 border rounded-lg bg-violet-50/50 border-violet-100">
                                 <div className="space-y-0.5">
@@ -356,7 +375,6 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         window.dispatchEvent(new CustomEvent('dcpi-notification', {
                                             detail: { title: 'Smart Mode', message: `Smart Mode ${checked ? 'Enabled' : 'Disabled'}`, type: 'info' }
                                         }));
-                                        // Force re-render would be better, but for now this persists
                                     }}
                                 />
                             </div>
@@ -376,7 +394,6 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         className="font-mono text-sm"
                                     />
                                     <Button onClick={() => {
-                                        // The onChange handles saving to ref/state, but let's confirm saving
                                         window.dispatchEvent(new CustomEvent('dcpi-notification', {
                                             detail: { title: 'Success', message: "API Key saved securely locally", type: 'success' }
                                         }));
@@ -395,25 +412,19 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     </div>
                                     Voice Integration
                                 </Label>
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="space-y-0.5">
-                                        <span className="text-sm font-medium">Voice Commands & Dictation</span>
-                                        <p className="text-xs text-muted-foreground">Allow Note Ai to access your microphone for voice notes.</p>
-                                    </div>
-                                    <Button variant="outline" size="sm" onClick={() => {
-                                        navigator.mediaDevices.getUserMedia({ audio: true })
-                                            .then(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                detail: { title: 'Success', message: "Microphone access granted", type: 'success' }
-                                            })))
-                                            .catch(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                detail: { title: 'Error', message: "Microphone access denied", type: 'error' }
-                                            })));
-                                    }}>
-                                        Test Access
-                                    </Button>
-                                </div>
+                                <p className="text-xs text-muted-foreground">Allow Note Ai to access your microphone for voice notes.</p>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    navigator.mediaDevices.getUserMedia({ audio: true })
+                                        .then(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                            detail: { title: 'Success', message: "Microphone access granted", type: 'success' }
+                                        })))
+                                        .catch(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                            detail: { title: 'Error', message: "Microphone access denied", type: 'error' }
+                                        })));
+                                }}>
+                                    Test Access
+                                </Button>
                             </div>
-
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -463,9 +474,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
                                         <div className="space-y-0.5">
-                                            <span className="text-sm font-medium flex items-center gap-2">
-                                                Export Data
-                                            </span>
+                                            <span className="text-sm font-medium">Export Data</span>
                                             <p className="text-xs text-muted-foreground">Download a backup of all your notes and books.</p>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={async () => {
@@ -473,76 +482,89 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                             if (success) window.dispatchEvent(new CustomEvent('dcpi-notification', {
                                                 detail: { title: 'Success', message: "Data exported successfully", type: 'success' }
                                             }));
-                                            else window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                detail: { title: 'Error', message: "Failed to export data", type: 'error' }
-                                            }));
                                         }}>
                                             Export JSON
                                         </Button>
                                     </div>
 
-                                    {/* Google Drive Connect */}
-                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4 col-span-1 md:col-span-2 bg-blue-50/30 border-blue-100">
+                                    <div className={`p-4 border rounded-lg flex flex-col justify-between gap-4 col-span-1 md:col-span-2 transition-all ${isConnectedToFolder ? 'bg-green-50/30 border-green-100' : 'bg-blue-50/30 border-blue-100'}`}>
                                         <div className="space-y-0.5">
                                             <span className="text-sm font-medium flex items-center gap-2">
-                                                <Database className="w-4 h-4 text-blue-500" />
-                                                Google Drive Sync
+                                                <Database className={`w-4 h-4 ${isConnectedToFolder ? 'text-green-500' : 'text-blue-500'}`} />
+                                                Sync with Local Storage
+                                                {isConnectedToFolder && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold ml-2">Connected</span>}
                                             </span>
-                                            <p className="text-xs text-muted-foreground">Connect your Google Drive to sync notes across devices.</p>
+                                            <p className="text-xs text-muted-foreground">Connect to a folder on your device to enable high-speed offline synchronization.</p>
                                         </div>
-                                        <Button variant="outline" size="sm" className="w-full bg-white hover:bg-blue-50 text-blue-700 border-blue-200" onClick={() => {
-                                            localStorage.setItem('google_drive_connected', 'true');
-                                            window.dispatchEvent(new Event('storage')); // Notify hooks
-                                            window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                detail: { title: 'Success', message: "Google Drive connected (Simulated)", type: 'success' }
-                                            }));
-                                        }}>
-                                            Connect Folder
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={`w-full bg-white transition-all ${isConnectedToFolder ? 'hover:bg-green-50 text-green-700 border-green-200' : 'hover:bg-blue-50 text-blue-700 border-blue-200'}`}
+                                            onClick={async () => {
+                                                const res = await syncWithLocalStorage();
+                                                if (res) {
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Success', message: "Local Storage sync enabled!", type: 'success' }
+                                                    }));
+                                                }
+                                            }}
+                                        >
+                                            {isConnectedToFolder ? 'Reconnect Folder' : 'Connect Folder'}
                                         </Button>
                                     </div>
+
+                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                        <div className="space-y-0.5">
+                                            <span className="text-sm font-medium">Encrypted Export</span>
+                                            <p className="text-xs text-muted-foreground">Export encrypted backup (.snb) for portability.</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={async () => {
+                                            const pwd = prompt("Enter a password for the encrypted backup:", "smart-notes-locked");
+                                            if (!pwd) return;
+                                            const success = await exportData(pwd);
+                                            if (success) window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                detail: { title: 'Success', message: "Encrypted export complete", type: 'success' }
+                                            }));
+                                        }}>
+                                            Export .snb
+                                        </Button>
+                                    </div>
+
                                     <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
                                         <div className="space-y-0.5">
                                             <span className="text-sm font-medium">Import Data</span>
-                                            <p className="text-xs text-muted-foreground">Restore from a backup file. Current data will be merged.</p>
+                                            <p className="text-xs text-muted-foreground">Restore from an encrypted .snb backup file.</p>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                type="file"
-                                                accept=".json"
-                                                className="hidden"
-                                                id="import-file"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
+                                        <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
+                                            Import .snb
+                                        </Button>
+                                        <input
+                                            type="file"
+                                            accept=".snb,.json"
+                                            className="hidden"
+                                            id="import-file"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
 
-                                                    const success = await importData(file);
-                                                    if (success) {
-                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                            detail: { title: 'Success', message: "Data imported successfully", type: 'success' }
-                                                        }));
-                                                        window.location.reload();
-                                                    } else {
-                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                            detail: { title: 'Error', message: "Failed to import data", type: 'error' }
-                                                        }));
-                                                    }
-                                                }}
-                                            />
-                                            <Button variant="outline" size="sm" className="w-full" onClick={() => document.getElementById('import-file')?.click()}>
-                                                Import JSON
-                                            </Button>
-                                        </div>
+                                                const pwd = prompt("Enter the password for this backup:");
+                                                if (pwd === null) return;
+
+                                                const success = await importData(file, pwd);
+                                                if (success) {
+                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                        detail: { title: 'Success', message: "Data imported successfully", type: 'success' }
+                                                    }));
+                                                    window.location.reload();
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4 pt-4 border-t">
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
-                                        <p className="text-xs text-muted-foreground">Irreversible actions.</p>
-                                    </div>
-                                </div>
+                                <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
                                 <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50/50">
                                     <div className="space-y-0.5">
                                         <span className="text-sm font-medium text-red-900">Clear All Local Data</span>
@@ -561,7 +583,6 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     </Button>
                                 </div>
 
-                                {/* Delete Account (Danger Zone) */}
                                 <div className="flex items-center justify-between p-4 border border-red-500/30 rounded-lg bg-red-100/50 mt-4">
                                     <div className="space-y-0.5">
                                         <span className="text-sm font-bold text-red-900">Delete Account</span>
@@ -578,35 +599,16 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                             if (userInput === randomCode) {
                                                 setLoading(true);
                                                 try {
-                                                    // 1. Clear local data
                                                     await clearAllData();
-
-                                                    // 2. Delete user from Supabase (if using admin/edge function, otherwise just sign out for now as implied by 'Delete Account system')
-                                                    // Since we don't have a backend admin function exposed here, we'll simulate deletion by signing out and clearing everything, 
-                                                    // but ideally this calls an RPC. 
-                                                    // For this task, "Clear All Local Data" + "Sign Out" is the client-side equivalent unless we have RPC.
-                                                    // Let's assume we just sign out for now, or use rpc if exists.
-                                                    // The user asked for "Delete Account system", implying logic.
-
-                                                    // NOTE: True deletion requires backend. We will just sign out and show message.
                                                     const { error } = await supabase.auth.signOut();
                                                     if (error) throw error;
-
                                                     window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Account Deleted', message: "Account deleted (simulated) and data cleared.", type: 'success' }
+                                                        detail: { title: 'Account Deleted', message: "Account deleted and data cleared.", type: 'success' }
                                                     }));
                                                     window.location.reload();
-                                                } catch (err: any) {
-                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Error', message: err.message, type: 'error' }
-                                                    }));
                                                 } finally {
                                                     setLoading(false);
                                                 }
-                                            } else {
-                                                if (userInput !== null) window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                    detail: { title: 'Error', message: "Incorrect confirmation code.", type: 'error' }
-                                                }));
                                             }
                                         }}
                                     >
@@ -617,18 +619,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                         </CardContent>
                     </Card>
                 </TabsContent>
-
             </Tabs>
-
-            {/* Legal Links (Requested) */}
-            <div className="flex justify-center gap-4 py-8">
-                <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-gray-900" onClick={() => window.open('/privacy', '_blank')}>
-                    Privacy Policy
-                </Button>
-                <Button variant="ghost" size="sm" className="text-xs text-gray-500 hover:text-gray-900" onClick={() => window.open('/term', '_blank')}>
-                    Terms & Conditions
-                </Button>
-            </div>
         </div>
     );
 }

@@ -100,6 +100,7 @@ export function NoteEditor({
 
   // Track initial state to avoid auto-save on mount if nothing changed
   const lastSavedState = useRef({ title: '', content: '', color: '', tags: [] as string[], folder: '', reminderDate: '' });
+  const isCreatingRef = useRef(false);
   // Internal state fallback if prop not provided (though Dashboard provides it)
   const [internalExpanded, setInternalExpanded] = useState(false);
 
@@ -177,6 +178,9 @@ export function NoteEditor({
       JSON.stringify(debouncedTags) !== JSON.stringify(lastSavedState.current.tags);
 
     if (hasChanged && (debouncedTitle.trim() || debouncedContent.trim())) {
+      if (isNewNote && isCreatingRef.current) return;
+      if (isNewNote) isCreatingRef.current = true;
+
       setSaveStatus('saving');
 
       // We don't want to use handleSave here because it closes the dialog

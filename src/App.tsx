@@ -18,6 +18,7 @@ const GuestNagModal = lazy(() => import('@/components/auth/GuestNagModal').then(
 const SharedNoteView = lazy(() => import('@/components/notes/SharedNoteView'));
 const PrivacyPage = lazy(() => import('@/components/legal/PrivacyPage'));
 const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
+const ContactPage = lazy(() => import('@/components/legal/ContactPage'));
 
 import { useEngagement } from '@/hooks/useEngagement';
 
@@ -196,6 +197,18 @@ function App() {
               </div>
             }>
               <TermsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <ContactPage />
             </Suspense>
           }
         />

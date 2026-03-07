@@ -25,6 +25,9 @@ export function useEngagement(user: User | null) {
             const signUpIntervals = [6, 16];
             signUpIntervals.forEach((min, index) => {
                 timers.push(setTimeout(() => {
+                    // Re-check user state inside timeout
+                    if (window.localStorage.getItem('supabase.auth.token')) return; // Extra check for auth token
+
                     const hasSeen = localStorage.getItem(`seen_signup_prompt_${index}`);
                     if (!hasSeen) {
                         notify('Secure Your Notes', 'Sign up now to sync your notes across devices and enable advanced encryption.', 'success');
