@@ -581,7 +581,7 @@ export function NoteEditor({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 sm:pb-6 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 sm:pb-6 scrollbar-hide">
           {isCanvasOpen ? (
             <div className="h-[400px] border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner flex flex-col">
               <CanvasEditor
@@ -709,7 +709,7 @@ export function NoteEditor({
         </div>
 
         {/* Footer */}
-        <div className="p-4 pt-0 flex items-center justify-between border-t border-gray-100 mt-auto bg-gray-50/50">
+        <div className="p-4 pt-3 flex items-center justify-between border-t border-gray-100 mt-auto bg-gray-50/50 pb-[env(safe-area-inset-bottom,1.5rem)]">
           <div className="flex flex-col text-[10px] text-gray-400">
             {saveStatus === 'saving' ? (
               <span className="text-violet-600 font-medium animate-pulse flex items-center gap-1">

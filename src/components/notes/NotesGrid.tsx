@@ -55,7 +55,7 @@ export function NotesGrid({
         style={{
           display: 'grid',
           gridTemplateColumns: viewMode === 'grid'
-            ? 'repeat(auto-fill, minmax(200px, 1fr))'
+            ? 'repeat(auto-fill, minmax(140px, 1fr))'
             : '1fr',
           gap: '1rem',
           ...style,
@@ -68,7 +68,7 @@ export function NotesGrid({
   }, [viewMode]);
 
   return (
-    <div className="space-y-8 h-full flex flex-col">
+    <div className="space-y-8 h-full flex flex-col pt-2 px-1">
       {/* Create Note Button - Hidden on Mobile (moved to SearchBar) */}
       <div className={`hidden sm:grid gap-4 flex-shrink-0 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
         <CreateNoteButton onClick={onCreate} />
@@ -77,14 +77,15 @@ export function NotesGrid({
       {/* Pinned Notes */}
       {pinnedNotes.length > 0 && (
         <div className="space-y-4 flex-shrink-0">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-violet-500" />
+          <h2 className="text-[11px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-[0.2em] flex items-center gap-2 px-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
             Pinned ({pinnedNotes.length})
           </h2>
           <div
+            className="px-2"
             style={{
               display: 'grid',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(200px, 1fr))' : '1fr',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(140px, 1fr))' : '1fr',
               gap: '1rem'
             }}
           >
@@ -110,9 +111,9 @@ export function NotesGrid({
       {notes.length > 0 && (
         <div className="flex-1 min-h-[400px]">
           {pinnedNotes.length > 0 && (
-            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-gray-300" />
-              Others ({notes.length})
+            <h2 className="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 px-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700" />
+              Recent ({notes.length})
             </h2>
           )}
 
@@ -121,6 +122,7 @@ export function NotesGrid({
             style={{ height: '100%', width: '100%' }}
             totalCount={notes.length}
             overscan={200}
+            className="px-2"
             components={{
               List: ListContainer,
               Item: ItemContainer

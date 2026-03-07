@@ -10,6 +10,7 @@ import { NoteEditor } from '@/components/notes/NoteEditor';
 import { EmptyState } from '@/components/notes/EmptyState';
 import { AdOverlay } from '@/components/ads/AdOverlay';
 import { SEO } from '@/components/seo/SEO';
+import { SmartInfoPanel } from '@/components/info/SmartInfoPanel';
 
 // Lazy load heavy components
 const ScannerPage = lazy(() => import('@/components/scanner/ScannerPage').then(module => ({ default: module.ScannerPage })));
@@ -34,7 +35,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
-  const [notificationTab, setNotificationTab] = useState<'notifications' | 'alarms' | 'schedule' | 'info'>('notifications');
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
 
   const {
     pinnedNotes,
@@ -132,10 +133,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             setSettingsTab(tab || 'profile');
             setCurrentView('settings');
           }}
-          onOpenAlarm={(tab) => {
-            setNotificationTab(tab as any || 'notifications');
-            setIsNotificationCenterOpen(true);
-          }}
+          onOpenAlarm={() => { }} // Disabled as requested
+          onOpenInfo={() => setIsInfoPanelOpen(true)}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <Sidebar
@@ -234,7 +233,10 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                 )
               ) : currentView === 'settings' ? (
                 <div className="p-6">
-                  <SettingsPage defaultTab={settingsTab} />
+                  <SettingsPage
+                    defaultTab={settingsTab}
+                    onClose={() => setCurrentView('notes')}
+                  />
                 </div>
               ) : currentView === 'scanner' ? (
                 <div className="h-full">
@@ -292,14 +294,13 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       <AdOverlay />
 
       <Suspense fallback={null}>
-        {isNotificationCenterOpen && (
-          <NotificationCenter
-            isOpen={isNotificationCenterOpen}
-            onClose={() => setIsNotificationCenterOpen(false)}
-            defaultTab={notificationTab}
-          />
-        )}
+        {isNotificationCenterOpen && <NotificationCenter isOpen={isNotificationCenterOpen} onClose={() => setIsNotificationCenterOpen(false)} />}
       </Suspense>
+
+      <SmartInfoPanel
+        isOpen={isInfoPanelOpen}
+        onClose={() => setIsInfoPanelOpen(false)}
+      />
     </Suspense>
   );
 }

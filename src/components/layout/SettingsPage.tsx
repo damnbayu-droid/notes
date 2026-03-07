@@ -7,12 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Lock, Mail, Shield, Bot, Cpu, Key, Database, Phone, ExternalLink, Info } from 'lucide-react';
+import { User, Lock, Mail, Shield, Bot, Cpu, Key, Database, Phone, Info, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
 import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
-export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }) {
+export function SettingsPage({ defaultTab = 'profile', onClose }: { defaultTab?: string, onClose?: () => void }) {
     const { user, changePassword, updateProfile } = useAuth();
     const { isStorageSupported, storageUsage, isConnectedToFolder, syncWithLocalStorage, clearAllData, exportData, importData } = useOfflineStorage();
     const [loading, setLoading] = useState(false);
@@ -52,14 +52,14 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto space-y-8 px-4 sm:px-0">
+        <div className="w-full max-w-4xl mx-auto space-y-8 px-4 sm:px-0 text-gray-900 dark:text-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
                     <p className="text-muted-foreground">Manage your account settings and preferences.</p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/'} className="shrink-0 gap-2 border-violet-200 hover:bg-violet-50 text-violet-700">
-                    <ExternalLink className="w-4 h-4" />
+                <Button variant="outline" size="sm" onClick={onClose || (() => window.location.href = '/')} className="shrink-0 gap-2 border-violet-200 hover:bg-violet-50 text-violet-700">
+                    <X className="w-4 h-4" />
                     Back to Notes
                 </Button>
             </div>
@@ -135,6 +135,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
 
                                                 setLoading(true);
                                                 try {
+                                                    // Convert to WebP for optimization
                                                     const webpBlob = await convertToWebP(file, 0.8);
                                                     const optimizedFile = new File([webpBlob], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' });
 
@@ -213,8 +214,8 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                 </div>
                                 <div className="flex flex-col gap-1 mt-2">
                                     <p className="text-xs text-muted-foreground">Recommended: Square JPG, PNG. Max 2MB. Auto-converted to WebP.</p>
-                                    <div className="text-xs text-muted-foreground">
-                                        Or use a preset:
+                                    <p className="text-xs text-muted-foreground">
+                                        Presets:
                                         <span className="ml-2 inline-flex gap-2">
                                             <button
                                                 className="text-violet-600 hover:underline cursor-pointer"
@@ -230,10 +231,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                                 Boy
                                             </button>
                                         </span>
-                                    </div>
+                                    </p>
                                 </div>
                                 <div className="pt-6 border-t mt-6 space-y-6">
-                                    <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50 border-blue-100">
+                                    <div className="flex items-center justify-between p-4 border rounded-lg bg-blue-50/50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30">
                                         <div className="space-y-0.5">
                                             <Label className="text-base font-medium flex items-center gap-2">
                                                 <Phone className="w-4 h-4 text-blue-600" />
@@ -360,7 +361,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Smart Mode Toggle */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-violet-50/50 border-violet-100">
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-violet-50/50 border-violet-100 dark:bg-violet-900/10 dark:border-violet-900/30">
                                 <div className="space-y-0.5">
                                     <Label className="text-base font-medium flex items-center gap-2">
                                         <Cpu className="w-4 h-4 text-violet-600" />
@@ -400,19 +401,30 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     }}>Save</Button>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Your key is stored locally on your device. Leave empty to use the system default key if available.
+                                    Your key is stored locally on your device.
                                 </p>
                             </div>
 
                             {/* Voice Integration */}
                             <div className="space-y-3">
-                                <Label className="flex items-center gap-2">
-                                    <div className="w-4 h-4 flex items-center justify-center">
-                                        <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                <div className="flex items-center justify-between">
+                                    <Label className="flex items-center gap-2">
+                                        <div className="w-4 h-4 flex items-center justify-center">
+                                            <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                                        </div>
+                                        Voice Integration
+                                    </Label>
+                                    <div
+                                        className="p-1.5 rounded-full text-blue-600 dark:text-blue-300 flex items-center gap-1.5 hover:bg-blue-100/50 transition-all cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                                        onClick={() => {
+                                            window.dispatchEvent(new CustomEvent('dcpi-status', { detail: 'info' }));
+                                        }}
+                                    >
+                                        <Info className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] uppercase font-bold tracking-wider">Feature Info</span>
                                     </div>
-                                    Voice Integration
-                                </Label>
-                                <p className="text-xs text-muted-foreground">Allow Note Ai to access your microphone for voice notes.</p>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Allow Note Ai to access your microphone for voice notes and AI dictation.</p>
                                 <Button variant="outline" size="sm" onClick={() => {
                                     navigator.mediaDevices.getUserMedia({ audio: true })
                                         .then(() => window.dispatchEvent(new CustomEvent('dcpi-notification', {
@@ -422,7 +434,7 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                             detail: { title: 'Error', message: "Microphone access denied", type: 'error' }
                                         })));
                                 }}>
-                                    Test Access
+                                    Test Microphone
                                 </Button>
                             </div>
                         </CardContent>
@@ -442,9 +454,9 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
                                 <h3 className="text-sm font-medium">Storage Status</h3>
-                                <div className="p-4 border rounded-lg bg-gray-50 space-y-2">
+                                <div className="p-4 border rounded-lg bg-muted/30 space-y-2">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Offline Support:</span>
+                                        <span className="text-gray-600 dark:text-gray-400">Offline Support:</span>
                                         <span className={isStorageSupported ? "text-green-600 font-medium" : "text-red-500 font-medium"}>
                                             {isStorageSupported ? "Available" : "Not Supported"}
                                         </span>
@@ -452,10 +464,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     {storageUsage && (
                                         <div className="space-y-1">
                                             <div className="flex justify-between text-sm">
-                                                <span className="text-gray-600">Used Space:</span>
+                                                <span className="text-gray-600 dark:text-gray-400">Used Space:</span>
                                                 <span className="font-medium">{(storageUsage.usage / 1024 / 1024).toFixed(2)} MB</span>
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
                                                 <div
                                                     className="bg-violet-600 h-2 rounded-full"
                                                     style={{ width: `${Math.min((storageUsage.usage / storageUsage.quota) * 100, 100)}%` }}
@@ -472,10 +484,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                             <div className="space-y-4 pt-4 border-t">
                                 <h3 className="text-sm font-medium">Data Management</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                    <div className="p-4 border rounded-lg hover:bg-muted/30 flex flex-col justify-between gap-4">
                                         <div className="space-y-0.5">
-                                            <span className="text-sm font-medium">Export Data</span>
-                                            <p className="text-xs text-muted-foreground">Download a backup of all your notes and books.</p>
+                                            <span className="text-sm font-medium">Export Data (JSON)</span>
+                                            <p className="text-xs text-muted-foreground">Standard backup of notes.</p>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={async () => {
                                             const success = await exportData();
@@ -487,19 +499,19 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         </Button>
                                     </div>
 
-                                    <div className={`p-4 border rounded-lg flex flex-col justify-between gap-4 col-span-1 md:col-span-2 transition-all ${isConnectedToFolder ? 'bg-green-50/30 border-green-100' : 'bg-blue-50/30 border-blue-100'}`}>
+                                    <div className={`p-4 border rounded-lg flex flex-col justify-between gap-4 col-span-1 md:col-span-2 transition-all ${isConnectedToFolder ? 'bg-green-50/10 border-green-500/30' : 'bg-blue-50/10 border-blue-500/30'}`}>
                                         <div className="space-y-0.5">
                                             <span className="text-sm font-medium flex items-center gap-2">
                                                 <Database className={`w-4 h-4 ${isConnectedToFolder ? 'text-green-500' : 'text-blue-500'}`} />
                                                 Sync with Local Storage
-                                                {isConnectedToFolder && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase font-bold ml-2">Connected</span>}
+                                                {isConnectedToFolder && <span className="text-[10px] bg-green-500/20 text-green-600 px-2 py-0.5 rounded-full uppercase font-bold ml-2">Connected</span>}
                                             </span>
-                                            <p className="text-xs text-muted-foreground">Connect to a folder on your device to enable high-speed offline synchronization.</p>
+                                            <p className="text-xs text-muted-foreground">Connect to a folder on your device for high-speed synchronization.</p>
                                         </div>
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className={`w-full bg-white transition-all ${isConnectedToFolder ? 'hover:bg-green-50 text-green-700 border-green-200' : 'hover:bg-blue-50 text-blue-700 border-blue-200'}`}
+                                            className="w-full"
                                             onClick={async () => {
                                                 const res = await syncWithLocalStorage();
                                                 if (res) {
@@ -513,10 +525,10 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         </Button>
                                     </div>
 
-                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                    <div className="p-4 border rounded-lg hover:bg-muted/30 flex flex-col justify-between gap-4">
                                         <div className="space-y-0.5">
-                                            <span className="text-sm font-medium">Encrypted Export</span>
-                                            <p className="text-xs text-muted-foreground">Export encrypted backup (.snb) for portability.</p>
+                                            <span className="text-sm font-medium">Export .snb</span>
+                                            <p className="text-xs text-muted-foreground">Encrypted backup file.</p>
                                         </div>
                                         <Button variant="outline" size="sm" onClick={async () => {
                                             const pwd = prompt("Enter a password for the encrypted backup:", "smart-notes-locked");
@@ -530,15 +542,12 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                         </Button>
                                     </div>
 
-                                    <div className="p-4 border rounded-lg hover:bg-gray-50 flex flex-col justify-between gap-4">
+                                    <div className="p-4 border rounded-lg hover:bg-muted/30 flex flex-col justify-between gap-4">
                                         <div className="space-y-0.5">
                                             <span className="text-sm font-medium">Import Data</span>
-                                            <p className="text-xs text-muted-foreground">Restore from an encrypted .snb backup file.</p>
+                                            <p className="text-xs text-muted-foreground">Restore from .snb or .json.</p>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
-                                            Import .snb
-                                        </Button>
-                                        <input
+                                        <Input
                                             type="file"
                                             accept=".snb,.json"
                                             className="hidden"
@@ -546,74 +555,42 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                             onChange={async (e) => {
                                                 const file = e.target.files?.[0];
                                                 if (!file) return;
-
-                                                const pwd = prompt("Enter the password for this backup:");
-                                                if (pwd === null) return;
-
-                                                const success = await importData(file, pwd);
+                                                const pwd = prompt("Enter password (if any):");
+                                                const success = await importData(file, pwd || undefined);
                                                 if (success) {
                                                     window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Success', message: "Data imported successfully", type: 'success' }
+                                                        detail: { title: 'Success', message: "Data imported! Reloading...", type: 'success' }
                                                     }));
-                                                    window.location.reload();
+                                                    setTimeout(() => window.location.reload(), 1000);
                                                 }
                                             }}
                                         />
+                                        <Button variant="outline" size="sm" onClick={() => document.getElementById('import-file')?.click()}>
+                                            Import File
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4 pt-4 border-t">
-                                <h3 className="text-sm font-medium text-red-600">Danger Zone</h3>
-                                <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50/50">
-                                    <div className="space-y-0.5">
-                                        <span className="text-sm font-medium text-red-900">Clear All Local Data</span>
-                                        <p className="text-xs text-red-700/80">Deletes all notes, books, and settings stored on this device.</p>
-                                    </div>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() => {
-                                            if (confirm("Are you sure? This will delete all your local notes and cannot be undone.")) {
-                                                clearAllData();
-                                            }
-                                        }}
-                                    >
-                                        Clear Data
-                                    </Button>
-                                </div>
-
-                                <div className="flex items-center justify-between p-4 border border-red-500/30 rounded-lg bg-red-100/50 mt-4">
-                                    <div className="space-y-0.5">
-                                        <span className="text-sm font-bold text-red-900">Delete Account</span>
-                                        <p className="text-xs text-red-800">Permanently remove your account and all data.</p>
-                                    </div>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="bg-red-700 hover:bg-red-800"
-                                        onClick={async () => {
-                                            const randomCode = `DELETE-${Math.floor(1000 + Math.random() * 9000)}`;
-                                            const userInput = prompt(`To confirm, type "${randomCode}":`);
-
-                                            if (userInput === randomCode) {
-                                                setLoading(true);
-                                                try {
-                                                    await clearAllData();
-                                                    const { error } = await supabase.auth.signOut();
-                                                    if (error) throw error;
-                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Account Deleted', message: "Account deleted and data cleared.", type: 'success' }
-                                                    }));
-                                                    window.location.reload();
-                                                } finally {
-                                                    setLoading(false);
+                                <div className="p-4 border border-red-200 rounded-lg bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <span className="text-sm font-medium text-red-900 dark:text-red-400">Clear All Local Data</span>
+                                            <p className="text-xs text-red-700/80 dark:text-red-500/70">Irreversible: Deletes all local notes and settings.</p>
+                                        </div>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                                if (confirm("Are you sure? This cannot be undone.")) {
+                                                    clearAllData();
                                                 }
-                                            }
-                                        }}
-                                    >
-                                        Delete Account
-                                    </Button>
+                                            }}
+                                        >
+                                            Clear All
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
