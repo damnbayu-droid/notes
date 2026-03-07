@@ -17,6 +17,7 @@ import {
   Mic,
   Pin,
   Settings,
+  Shield,
   Cloud,
   MoreHorizontal,
   Pencil,
@@ -40,7 +41,7 @@ interface SidebarProps {
   folders: string[];
   activeFolder: string;
   onSelectFolder: (folder: string) => void;
-  onOpenSettings: () => void;
+  onOpenSettings: (tab?: string) => void;
   onAddFolder: () => void;
   renameFolder: (oldName: string, newName: string) => Promise<{ success: boolean; error?: string }>;
   deleteFolder: (folderName: string) => Promise<{ success: boolean; error?: string }>;
@@ -229,7 +230,7 @@ export function Sidebar({
                               aria-label={`Options for ${folder}`}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                              < MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
@@ -307,10 +308,10 @@ export function Sidebar({
           </ScrollArea>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border space-y-2">
+          <div className="p-4 border-t border-border space-y-2 pb-[env(safe-area-inset-bottom,1rem)]">
             <button
               onClick={() => {
-                onOpenSettings();
+                onOpenSettings('profile');
                 onClose();
               }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${currentView === 'settings'
@@ -318,8 +319,18 @@ export function Sidebar({
                 : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 }`}
             >
-              <Settings className={`w-5 h-5 ${currentView === 'settings' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <Settings className="w-5 h-5" />
               Settings
+            </button>
+            <button
+              onClick={() => {
+                onOpenSettings('security');
+                onClose();
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Shield className="w-5 h-5" />
+              Security
             </button>
             <button
               onClick={async () => {

@@ -282,7 +282,7 @@ export function NoteEditor({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSave()}>
       <DialogContent
-        className={`${isMaximized ? 'max-w-[95vw] h-[95vh]' : 'sm:max-w-2xl max-h-[90vh]'} overflow-y-auto p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300`}
+        className={`${isMaximized ? 'w-full h-full sm:max-w-[95vw] sm:h-[95vh]' : 'w-full sm:max-w-2xl h-full sm:h-auto max-h-screen sm:max-h-[90vh]'} flex flex-col p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300 overflow-hidden shadow-2xl`}
       >
         <DialogHeader className="p-4 pb-2 border-b border-gray-100">
           {/* 3-column layout: [left: expand] [center: actions] [right: close] */}
@@ -577,7 +577,7 @@ export function NoteEditor({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20 sm:pb-6 scrollbar-hide">
           {isCanvasOpen ? (
             <div className="h-[400px] border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner flex flex-col">
               <CanvasEditor

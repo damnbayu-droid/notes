@@ -70,7 +70,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
   const isActive = !!dynamicStatus || !!notification;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border transition-all duration-300">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border transition-all duration-300 pt-[env(safe-area-inset-top,0px)]">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6 gap-4">
         {/* Left: Mobile Menu & Logo */}
         <div className="flex items-center gap-4">
@@ -93,10 +93,10 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         <div className="flex-1 flex justify-center relative h-14 items-center">
           <div
             className={`
-                absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
+                absolute top-1/2 -translate-y-[calc(50%-env(safe-area-inset-top,0px)/4)] left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
                 ${isActive
-                ? 'bg-black text-white px-3 py-1.5 sm:px-4 sm:py-2 gap-1.5 min-w-[200px] sm:min-w-[280px] max-w-[90vw] rounded-2xl' // Active/Notification State (Black Pill)
-                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[90vw] rounded-full h-8 sm:h-10' // Default State
+                ? 'bg-black text-white px-3 py-1.5 sm:px-4 sm:py-2 gap-1.5 min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-2xl' // Active/Notification State (Black Pill)
+                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-full h-8 sm:h-10' // Default State
               }
               `}
             onClick={onOpenAlarm}

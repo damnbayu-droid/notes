@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { convertToWebP } from '@/lib/imageUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -51,31 +52,31 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="w-full max-w-4xl mx-auto space-y-8 px-4 sm:px-0">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h2>
                 <p className="text-muted-foreground">Manage your account settings and preferences.</p>
             </div>
 
             <Tabs defaultValue={defaultTab} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="profile" className="flex items-center gap-2">
+                <TabsList className="w-full justify-start overflow-x-auto overflow-y-hidden h-auto p-1 bg-muted/50 scrollbar-hide">
+                    <TabsTrigger value="profile" className="flex items-center gap-2 whitespace-nowrap">
                         <User className="w-4 h-4" />
                         Profile
                     </TabsTrigger>
-                    <TabsTrigger value="security" className="flex items-center gap-2">
+                    <TabsTrigger value="security" className="flex items-center gap-2 whitespace-nowrap">
                         <Shield className="w-4 h-4" />
                         Security
                     </TabsTrigger>
-                    <TabsTrigger value="notifications" className="flex items-center gap-2">
+                    <TabsTrigger value="notifications" className="flex items-center gap-2 whitespace-nowrap">
                         <Bell className="w-4 h-4" />
                         Notifications
                     </TabsTrigger>
-                    <TabsTrigger value="ai" className="flex items-center gap-2">
+                    <TabsTrigger value="ai" className="flex items-center gap-2 whitespace-nowrap">
                         <Bot className="w-4 h-4" />
                         Note Ai
                     </TabsTrigger>
-                    <TabsTrigger value="storage" className="flex items-center gap-2">
+                    <TabsTrigger value="storage" className="flex items-center gap-2 whitespace-nowrap">
                         <Database className="w-4 h-4" />
                         Storage
                     </TabsTrigger>
@@ -136,14 +137,23 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
 
 
                                                 try {
+                                                    // Convert to WebP for optimization
+                                                    const webpBlob = await convertToWebP(file, 0.8);
+                                                    const optimizedFile = new File([webpBlob], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' });
+
+                                                    if (optimizedFile.size > 2 * 1024 * 1024) {
+                                                        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                            detail: { title: 'Error', message: "Optimized image still too large (>2MB)", type: 'error' }
+                                                        }));
+                                                        return;
+                                                    }
+
                                                     // 1. Upload to Supabase Storage
-                                                    // Generate a unique filename: user_id/timestamp_filename
-                                                    const fileExt = file.name.split('.').pop();
-                                                    const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+                                                    const fileName = `${user?.id}/${Date.now()}.webp`;
 
                                                     const { error: uploadError } = await supabase.storage
                                                         .from('app-files')
-                                                        .upload(fileName, file, { upsert: true });
+                                                        .upload(fileName, optimizedFile, { upsert: true });
 
                                                     if (uploadError) throw uploadError;
 
@@ -209,20 +219,20 @@ export function SettingsPage({ defaultTab = 'profile' }: { defaultTab?: string }
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-1 mt-2">
-                                    <p className="text-xs text-muted-foreground">Recommended: Square JPG, PNG. Max 2MB.</p>
+                                    <p className="text-xs text-muted-foreground">Recommended: Square JPG, PNG. Max 2MB. Auto-converted to WebP.</p>
                                     <p className="text-xs text-muted-foreground">
                                         Or use a preset:
                                         <span className="ml-2 inline-flex gap-2">
                                             <button
                                                 className="text-violet-600 hover:underline cursor-pointer"
-                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka' })}
+                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mimi' })}
                                             >
                                                 Girl
                                             </button>
                                             <span className="text-gray-300">|</span>
                                             <button
                                                 className="text-violet-600 hover:underline cursor-pointer"
-                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix' })}
+                                                onClick={() => updateProfile({ avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jace' })}
                                             >
                                                 Boy
                                             </button>
