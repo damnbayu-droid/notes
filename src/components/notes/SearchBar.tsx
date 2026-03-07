@@ -32,7 +32,10 @@ interface SearchBarProps {
   setSortBy: (sort: SortOption) => void;
   viewMode: 'grid' | 'list';
   setViewMode: (mode: 'grid' | 'list') => void;
+  onCreate: () => void;
 }
+
+import { CreateNoteButton } from './CreateNoteButton';
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'updated', label: 'Last updated' },
@@ -51,6 +54,7 @@ export function SearchBar({
   setSortBy,
   viewMode,
   setViewMode,
+  onCreate,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -84,6 +88,11 @@ export function SearchBar({
 
         {/* Controls */}
         <div className="flex items-center gap-2">
+          {/* Mobile Create Button */}
+          <div className="lg:hidden">
+            <CreateNoteButton onClick={onCreate} variant="icon" />
+          </div>
+
           {/* Sort Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

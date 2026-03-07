@@ -52,7 +52,38 @@ export function useNotes(user: User | null): UseNotesReturn {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('notes');
-        return cached ? JSON.parse(cached) : [];
+        const parsed = cached ? JSON.parse(cached) : [];
+
+        // Add sample note if first time
+        if (parsed.length === 0 && !localStorage.getItem('has_seen_welcome')) {
+          const sampleNote: Note = {
+            id: 'sample-welcome-note',
+            title: 'Welcome to Smart Notes! 🚀',
+            content: `This is a sample note to help you get started.
+            
+Smart Notes is a secured and encrypted note-taking app. You can:
+- 📝 Create rich text or canvas notes
+- 🔒 Secure your notes with advanced encryption
+- 📂 Organize with folders and tags
+- 📱 Use it offline - everything stays on your device!
+- 📤 Share notes with password protection
+
+Try creating your first note by clicking the "+" button. Enjoy your productivity!`,
+            user_id: user?.id || 'guest',
+            color: 'purple',
+            is_pinned: true,
+            is_archived: false,
+            tags: ['Welcome', 'Guide'],
+            folder: 'Main',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          localStorage.setItem('has_seen_welcome', 'true');
+          return [sampleNote];
+        }
+
+        return parsed;
       } catch (e) {
         console.error('Failed to parse notes from localStorage:', e);
         return [];

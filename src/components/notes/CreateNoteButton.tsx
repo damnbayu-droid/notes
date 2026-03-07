@@ -4,10 +4,28 @@ import { Plus } from 'lucide-react';
 
 interface CreateNoteButtonProps {
   onClick: () => void;
+  variant?: 'card' | 'icon';
 }
 
-export function CreateNoteButton({ onClick }: CreateNoteButtonProps) {
+export function CreateNoteButton({ onClick, variant = 'card' }: CreateNoteButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  if (variant === 'icon') {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 active:scale-95"
+        title="Create new note"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </button>
+    );
+  }
 
   return (
     <Card
@@ -25,10 +43,10 @@ export function CreateNoteButton({ onClick }: CreateNoteButtonProps) {
       }}
       aria-label="Create new note"
     >
-      <div className="p-4 flex flex-col items-center justify-center min-h-[100px] text-center">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg transition-all duration-300 ${isHovered ? 'scale-110 shadow-violet-300' : ''
+      <div className="p-6 flex flex-col items-center justify-center min-h-[140px] text-center">
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg transition-all duration-300 ${isHovered ? 'scale-120 shadow-violet-300' : ''
           }`}>
-          <Plus className="w-4 h-6 text-white" />
+          <Plus className="w-6 h-6 text-white" />
         </div>
         <h3 className="mt-3 text-sm font-bold text-gray-900">
           Create new note

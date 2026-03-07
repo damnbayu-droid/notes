@@ -69,8 +69,8 @@ export function NotesGrid({
 
   return (
     <div className="space-y-8 h-full flex flex-col">
-      {/* Create Note Button */}
-      <div className={`grid gap-4 flex-shrink-0 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
+      {/* Create Note Button - Hidden on Mobile (moved to SearchBar) */}
+      <div className={`hidden sm:grid gap-4 flex-shrink-0 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
         <CreateNoteButton onClick={onCreate} />
       </div>
 
@@ -111,6 +111,7 @@ export function NotesGrid({
           )}
 
           <VirtuosoGrid
+            key={viewMode}
             style={{ height: '100%', width: '100%' }}
             totalCount={notes.length}
             overscan={200}

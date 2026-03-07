@@ -8,8 +8,6 @@ import { SearchBar } from '@/components/notes/SearchBar';
 import { NotesGrid } from '@/components/notes/NotesGrid';
 import { NoteEditor } from '@/components/notes/NoteEditor';
 import { EmptyState } from '@/components/notes/EmptyState';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { AdOverlay } from '@/components/ads/AdOverlay';
 import { SEO } from '@/components/seo/SEO';
 
@@ -199,6 +197,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                       setSortBy={setSortBy}
                       viewMode={viewMode}
                       setViewMode={setViewMode}
+                      onCreate={handleCreateNote}
                     />
                     {currentView === 'trash' && (
                       <div className="px-4 py-2 bg-red-50 border-b border-red-100 text-red-600 text-sm flex items-center justify-center">
@@ -256,15 +255,6 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
           </main>
         </div>
       </div>
-      {/* Floating Action Button for Mobile */}
-      {['notes', 'archive'].includes(currentView) && !editingNote && (
-        <Button
-          onClick={handleCreateNote}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-300 lg:hidden"
-        >
-          <Plus className="w-6 h-6" />
-        </Button>
-      )}
 
       {/* Note Editor */}
       <NoteEditor
