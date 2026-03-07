@@ -158,7 +158,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
           {/* Smart Mode / Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full" aria-label="Toggle theme">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full" aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
             {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
           </Button>
 

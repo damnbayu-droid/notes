@@ -102,34 +102,34 @@ export default function SharedNoteView() {
         <div className="min-h-screen bg-background flex flex-col">
             {/* Header */}
             <header className="border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-50">
-                <div className="flex items-center gap-3">
-                    <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 mr-2">
+                    <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent truncate sm:overflow-visible">
                         Smart Notes
                     </span>
-                    <div className="flex items-center gap-1.5 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 px-2 py-1 rounded-full">
+                    <div className="hidden xs:flex items-center gap-1.5 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50 px-2 py-1 rounded-full shrink-0">
                         <Globe className="w-3 h-3" />
-                        <span>Public Note</span>
+                        <span className="hidden sm:inline">Public Note</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {/* Copy All — header shortcut */}
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleCopyAll(note)}
-                        className={`gap-2 transition-all ${copied ? 'border-green-400 text-green-600 bg-green-50' : ''}`}
+                        className={`h-8 sm:h-9 px-2 sm:px-3 gap-1.5 sm:gap-2 transition-all ${copied ? 'border-green-400 text-green-600 bg-green-50' : ''}`}
                     >
                         {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copied ? 'Copied!' : 'Copy All'}
+                        <span className="hidden xs:inline">{copied ? 'Copied!' : 'Copy'}</span>
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={() => window.location.href = '/'}
-                        className="gap-2"
+                        className="h-8 sm:h-9 px-2 sm:px-3 gap-1.5 sm:gap-2"
                     >
-                        Create Your Own Notes
-                        <ArrowRight className="w-3 h-3" />
+                        <span className="hidden sm:inline">Create Notes</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
                 </div>
             </header>
@@ -138,23 +138,25 @@ export default function SharedNoteView() {
             <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 space-y-8">
                 {/* Title & Meta */}
                 <div className="space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                        <h1 className="text-4xl font-bold text-foreground break-words leading-tight flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <h1 className="text-3xl sm:text-4xl font-bold text-foreground break-words leading-tight flex-1">
                             {note.title || 'Untitled Note'}
                         </h1>
                         {/* Inline Copy All CTA next to title */}
-                        <button
-                            onClick={() => handleCopyAll(note)}
-                            title="Copy everything in this note"
-                            className={`shrink-0 mt-1 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all
-                                ${copied
-                                    ? 'border-green-400 text-green-600 bg-green-50'
-                                    : 'border-gray-200 text-gray-500 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50'
-                                }`}
-                        >
-                            {copied ? <Check className="w-3.5 h-3.5" /> : <ClipboardCopy className="w-3.5 h-3.5" />}
-                            {copied ? 'Copied!' : 'Copy Note'}
-                        </button>
+                        <div className="flex sm:block">
+                            <button
+                                onClick={() => handleCopyAll(note)}
+                                title="Copy everything in this note"
+                                className={`shrink-0 flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border transition-all shadow-sm
+                                    ${copied
+                                        ? 'border-green-400 text-green-600 bg-green-50'
+                                        : 'border-border bg-background text-muted-foreground hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50'
+                                    }`}
+                            >
+                                {copied ? <Check className="w-4 h-4" /> : <ClipboardCopy className="w-4 h-4" />}
+                                {copied ? 'Content Copied!' : 'Copy Note'}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">

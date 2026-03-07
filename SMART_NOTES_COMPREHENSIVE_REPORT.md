@@ -167,4 +167,29 @@ The application adopts a feature-based folder structure within `src`:
 
 ---
 
+## [Audit Log] - 2026-03-07 13:20:00 WIB
+
+### Emergency Fix: React 19 Dispatcher Stabilization
+
+- **Issue**: "Something went wrong" crash occurring intermittently on localhost due to `TypeError: Cannot read properties of null (reading 'useState')`.
+- **Cause**: Incompatibility between `kimi-plugin-inspect-react` and React 19's internal dispatcher, compounded by redundant hook calls in the root `App` component.
+- **Resolution**: 
+    - Removed `kimi-plugin-inspect-react` from `vite.config.ts` and `package.json`.
+    - Refactored `App.tsx` and `Dashboard.tsx` to optimize hook execution and event listeners.
+
+### ✅ UI Fidelity & "Public Note" Overlap Fix
+
+- Refactored `SharedNoteView.tsx` with a mobile-first responsive header.
+- Implemented text-collapsing logic for buttons: text is hidden on small screens (`xs`) in favor of icons to prevent header compression.
+- Adjusted title and "Copy Note" button layout to stack on mobile, preventing overlap on long titles.
+
+### ✅ Performance & Speed Hardening
+
+- **Preconnect Hints**: Added `preconnect` and `dns-prefetch` for `fonts.googleapis.com`, `fonts.gstatic.com`, and `api.openai.com` in `index.html`.
+- **LCP Optimization**: Verified `Logo.webp` preload with `fetchpriority="high"`.
+- **Service Worker**: Hardened cache-fallback logic in `sw.js` for "lie-fi" connections.
+- **Accessibility**: Audited icon buttons in `Header` and `Sidebar`, adding descriptive `aria-label` attributes and ensuring icons are `aria-hidden` where text is present.
+
+---
+
 *Last updated: 2026-03-07 by Smart Notes AI Agent*

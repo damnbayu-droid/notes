@@ -122,7 +122,6 @@ export function Sidebar({
 
           <ScrollArea className="flex-1 py-4">
             <div className="px-3 space-y-6">
-              {/* Theme Toggle */}
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-100 transition-all group"
@@ -130,18 +129,18 @@ export function Sidebar({
               >
                 <div className="flex items-center gap-3">
                   {theme === 'dark' ? (
-                    <Moon className="w-5 h-5 text-violet-600 group-hover:scale-110 transition-transform" />
+                    <Moon className="w-5 h-5 text-violet-600 group-hover:scale-110 transition-transform" aria-hidden="true" />
                   ) : (
-                    <Sun className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" />
+                    <Sun className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" aria-hidden="true" />
                   )}
                   <span className="font-medium text-violet-900">
                     {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                   </span>
                 </div>
-                <div className={`
-                  w-10 h-5 rounded-full relative transition-colors duration-300
-                  ${theme === 'dark' ? 'bg-violet-600' : 'bg-gray-300'}
-                `}>
+                <div
+                  className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${theme === 'dark' ? 'bg-violet-600' : 'bg-gray-300'}`}
+                  role="presentation"
+                >
                   <div className={`
                     absolute top-1 w-3 h-3 rounded-full bg-white transition-transform duration-300
                     ${theme === 'dark' ? 'left-6' : 'left-1'}
@@ -359,8 +358,9 @@ export function Sidebar({
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
               aria-label="Sync with Google Drive"
+              title="Sync notes with Google Drive"
             >
-              <Cloud className="w-5 h-5" />
+              <Cloud className="w-5 h-5" aria-hidden="true" />
               Sync Drive
             </button>
           </div>
