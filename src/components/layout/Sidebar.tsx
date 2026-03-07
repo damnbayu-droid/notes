@@ -17,7 +17,6 @@ import {
   Mic,
   Pin,
   Settings,
-  Shield,
   Cloud,
   LogOut,
   MoreHorizontal,
@@ -336,34 +335,23 @@ export function Sidebar({
               <Settings className="w-5 h-5" />
               Settings
             </button>
-            <button
-              onClick={() => {
-                onOpenSettings('security');
-                onClose();
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <Shield className="w-5 h-5" />
-              Security
-            </button>
+
             <button
               onClick={async () => {
                 window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                  detail: { title: 'Local Sync', message: 'Connecting to Local Storage...', type: 'info' }
+                  detail: { title: 'Sync Triggered', message: 'Connecting to Online Database...', type: 'info' }
                 }));
-                const res = await (window as any).syncWithLocalStorage?.();
-                if (res) {
-                  window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                    detail: { title: 'Success', message: 'Connected to Local Storage', type: 'success' }
-                  }));
-                }
+                // Short timeout to let the notification animation play before reload
+                setTimeout(() => {
+                  window.location.reload();
+                }, 800);
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              aria-label="Sync with Local Storage"
-              title="Sync notes with Local Storage"
+              aria-label="Offline? Connect Again"
+              title="Force sync data with online database"
             >
               <Cloud className="w-5 h-5" aria-hidden="true" />
-              Sync with Local Storage
+              Offline? Connect Again
             </button>
             <div className="pt-2 text-center">
               <a

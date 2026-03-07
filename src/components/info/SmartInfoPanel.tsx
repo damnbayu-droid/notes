@@ -79,7 +79,7 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
             {/* Panel */}
             <div className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-violet-100 dark:border-violet-900/30 animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
                 {/* Header */}
-                <div className="relative p-8 sm:p-12 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white overflow-hidden">
+                <div className="relative p-6 sm:p-12 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white overflow-hidden shrink-0">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                     <Button
                         variant="ghost"
@@ -96,11 +96,11 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
                                 <Zap className="w-8 h-8 fill-white text-white" />
                             </div>
                             <div>
-                                <h2 className="text-3xl font-black uppercase tracking-tight">System Information</h2>
+                                <h2 className="text-xl sm:text-3xl font-black uppercase tracking-tight">System Information</h2>
                                 <p className="text-violet-100/80 font-bold text-xs uppercase tracking-widest leading-none mt-1">Version 2.4.0 Production Ready</p>
                             </div>
                         </div>
-                        <h1 className="text-2xl sm:text-4xl font-bold max-w-2xl mb-4 leading-tight">
+                        <h1 className="text-xl sm:text-4xl font-bold max-w-2xl mb-2 sm:mb-4 leading-tight">
                             Mastering your Smart Notes <span className="text-violet-200">Secured & Encrypted</span> Workspace.
                         </h1>
                         <p className="text-violet-100 text-sm sm:text-base max-w-xl opacity-90 leading-relaxed">
@@ -110,8 +110,8 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
                 </div>
 
                 {/* Features Grid */}
-                <div className="p-8 sm:p-12 overflow-y-auto max-h-[50vh] custom-scrollbar bg-gray-50/50 dark:bg-transparent">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="p-6 sm:p-12 overflow-y-auto max-h-[50vh] custom-scrollbar bg-gray-50/50 dark:bg-transparent">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                         {features.map((f, i) => (
                             <div
                                 key={i}
@@ -139,7 +139,7 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="px-12 py-8 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="px-6 sm:px-12 py-6 sm:py-8 bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">
                             <Shield className="w-4 h-4" />

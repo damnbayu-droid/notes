@@ -1,21 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { ExternalLink, Lock, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
-const AD_INTERVAL = 300000; // 5 Minutes in MS
 const UNLOCK_TIME = 5; // 5 Seconds countdown
 
 export function AdOverlay() {
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [countdown, setCountdown] = useState(0);
     // lastTriggered tracks the start of the current 5-minute grace period.
-    // Initializing to Date.now() ensures 5 minutes of peace after opening the app.
+    // lastTriggered tracks the start of the current grace period.
     const [lastTriggered, setLastTriggered] = useState<number>(Date.now());
+
+    // Compute interval based on auth status
+    const AD_INTERVAL = useMemo(() => {
+        if (!user) return 300000; // 5 Minutes
+        return 600000; // 10 Minutes for regular users
+    }, [user]);
 
     // Countdown logic for the next ad
     useEffect(() => {
+        // Exempt Admin
+        if (user?.email === 'damnbayu@gmail.com') {
+            window.dispatchEvent(new CustomEvent('ad-countdown-update', { detail: { hide: true } }));
+            return;
+        }
+
         if (isOpen) return;
 
         const timer = setInterval(() => {
@@ -25,7 +38,7 @@ export function AdOverlay() {
 
             // Update SearchBar via Custom Event
             window.dispatchEvent(new CustomEvent('ad-countdown-update', {
-                detail: { remaining }
+                detail: { remaining, isAdmin: false }
             }));
 
             if (remaining === 0) {
@@ -34,7 +47,7 @@ export function AdOverlay() {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [isOpen, lastTriggered]);
+    }, [isOpen, lastTriggered, user, AD_INTERVAL]);
 
     // Handle the 5-second unlock countdown when ad is active
     useEffect(() => {

@@ -14,7 +14,7 @@ import { useOfflineStorage } from '@/hooks/useOfflineStorage';
 
 export function SettingsPage({ defaultTab = 'profile', onClose }: { defaultTab?: string, onClose?: () => void }) {
     const { user, changePassword, updateProfile } = useAuth();
-    const { isStorageSupported, storageUsage, isConnectedToFolder, syncWithLocalStorage, clearAllData, exportData, importData } = useOfflineStorage();
+    const { isStorageSupported, storageUsage, isConnectedToFolder, clearAllData, exportData, importData } = useOfflineStorage();
     const [loading, setLoading] = useState(false);
 
     // Password State
@@ -146,27 +146,27 @@ export function SettingsPage({ defaultTab = 'profile', onClose }: { defaultTab?:
                                                         return;
                                                     }
 
-                                                    const fileName = `${user?.id}/${Date.now()}.webp`;
+                                                    const fileName = `${user?.id || 'guest'}/${Date.now()}.webp`;
                                                     const { error: uploadError } = await supabase.storage
-                                                        .from('app-files')
+                                                        .from('public')
                                                         .upload(fileName, optimizedFile, { upsert: true });
 
                                                     if (uploadError) throw uploadError;
 
                                                     const { data: { publicUrl } } = supabase.storage
-                                                        .from('app-files')
+                                                        .from('public')
                                                         .getPublicUrl(fileName);
 
                                                     const { error: updateError } = await updateProfile({ avatar: publicUrl });
                                                     if (updateError) throw new Error(updateError);
 
                                                     window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Success', message: "Profile picture updated!", type: 'success' }
+                                                        detail: { title: 'Upload Success', message: "Photo is Uploaded", type: 'success' }
                                                     }));
                                                 } catch (error: any) {
                                                     console.error("Upload error:", error);
                                                     window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Error', message: error.message || "Failed to upload image", type: 'error' }
+                                                        detail: { title: 'Upload Error', message: "Failed to Upload Photo", type: 'error' }
                                                     }));
                                                 } finally {
                                                     setLoading(false);
@@ -502,26 +502,25 @@ export function SettingsPage({ defaultTab = 'profile', onClose }: { defaultTab?:
                                     <div className={`p-4 border rounded-lg flex flex-col justify-between gap-4 col-span-1 md:col-span-2 transition-all ${isConnectedToFolder ? 'bg-green-50/10 border-green-500/30' : 'bg-blue-50/10 border-blue-500/30'}`}>
                                         <div className="space-y-0.5">
                                             <span className="text-sm font-medium flex items-center gap-2">
-                                                <Database className={`w-4 h-4 ${isConnectedToFolder ? 'text-green-500' : 'text-blue-500'}`} />
-                                                Sync with Local Storage
-                                                {isConnectedToFolder && <span className="text-[10px] bg-green-500/20 text-green-600 px-2 py-0.5 rounded-full uppercase font-bold ml-2">Connected</span>}
+                                                <Database className={`w-4 h-4 text-blue-500`} />
+                                                Offline? Connect Again
                                             </span>
-                                            <p className="text-xs text-muted-foreground">Connect to a folder on your device for high-speed synchronization.</p>
+                                            <p className="text-xs text-muted-foreground">Force synchronization with the online database.</p>
                                         </div>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             className="w-full"
                                             onClick={async () => {
-                                                const res = await syncWithLocalStorage();
-                                                if (res) {
-                                                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                                        detail: { title: 'Success', message: "Local Storage sync enabled!", type: 'success' }
-                                                    }));
-                                                }
+                                                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                                    detail: { title: 'Sync Triggered', message: "Connecting to Online Database...", type: 'info' }
+                                                }));
+                                                setTimeout(() => {
+                                                    window.location.reload();
+                                                }, 800);
                                             }}
                                         >
-                                            {isConnectedToFolder ? 'Reconnect Folder' : 'Connect Folder'}
+                                            Connect Now
                                         </Button>
                                     </div>
 

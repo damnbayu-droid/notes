@@ -140,7 +140,7 @@ function MainApp() {
         onSignIn={() => setShowAuth(true)}
       />
       <AIAssistant />
-      <GuestNagModal onSignupClick={() => setShowAuth(true)} />
+      {!isAuthenticated && <GuestNagModal onSignupClick={() => setShowAuth(true)} />}
 
     </Suspense>
   );

@@ -166,11 +166,16 @@ export function useAuth(): UseAuthReturn {
   const signOut = useCallback(async (): Promise<void> => {
     setState(prev => ({ ...prev, isLoading: true }));
     await supabase.auth.signOut();
+    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+      detail: { title: 'Success', message: 'Anda telah Log Out', type: 'success' }
+    }));
   }, []);
 
   const resetPassword = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
 
       if (error) {
         return { success: false, error: error.message };

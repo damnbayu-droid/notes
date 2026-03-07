@@ -64,6 +64,10 @@ export function SearchBar({
   // Listen for Ad Countdown updates
   useEffect(() => {
     const handleUpdate = (e: any) => {
+      if (e.detail.hide) {
+        setAdCountdown(null);
+        return;
+      }
       const remaining = e.detail.remaining;
       const mins = Math.floor(remaining / 60000);
       const secs = Math.floor((remaining % 60000) / 1000);

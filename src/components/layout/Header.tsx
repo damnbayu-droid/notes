@@ -49,6 +49,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
 
     const handleStatus = (e: CustomEvent) => {
       if (statusTimer) clearTimeout(statusTimer);
+      if (e.detail && 'vibrate' in navigator) navigator.vibrate(30);
       setDynamicStatus(e.detail);
       if (e.detail?.duration) {
         statusTimer = setTimeout(() => setDynamicStatus(null), e.detail.duration);
@@ -57,6 +58,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
 
     const handleNotification = (e: CustomEvent) => {
       if (notificationTimer) clearTimeout(notificationTimer);
+      if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
       setNotification(e.detail);
       notificationTimer = setTimeout(() => setNotification(null), 5000);
     };
