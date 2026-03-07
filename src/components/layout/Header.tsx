@@ -93,10 +93,10 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
         <div className="flex-1 flex justify-center relative h-14 items-center">
           <div
             className={`
-                absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
+                absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center justify-center transition-all duration-500 ease-fluid shadow-xl overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98]
                 ${isActive
-                ? 'bg-black text-white px-4 py-2 gap-1.5 min-w-[280px] max-w-[90vw] rounded-2xl' // Active/Notification State (Black Pill)
-                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-5 gap-2 min-w-[200px] max-w-[90vw] rounded-full h-10' // Default State
+                ? 'bg-black text-white px-3 py-1.5 sm:px-4 sm:py-2 gap-1.5 min-w-[200px] sm:min-w-[280px] max-w-[90vw] rounded-2xl' // Active/Notification State (Black Pill)
+                : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[90vw] rounded-full h-8 sm:h-10' // Default State
               }
               `}
             onClick={onOpenAlarm}
@@ -104,58 +104,58 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             {/* 
                 Content Management:
                 1. Dynamic Status (Mic/Scan) -> Replaces everything, Single Row.
-                2. Notification -> Stacks below Clock.
+                2. Notification -> Center-Top Overlay.
                 3. Default -> Clock only.
              */}
 
             {/* Case 1: Dynamic Status (Mic/Scan) overrides everything */}
             {dynamicStatus && (
-              <div className="flex items-center gap-3 animate-in fade-in zoom-in duration-300">
-                {dynamicStatus.type === 'record' && <Mic className="w-4 h-4 text-red-500 animate-pulse" />}
-                {dynamicStatus.type === 'scan' && <Scan className="w-4 h-4 text-blue-400" />}
-                {dynamicStatus.type === 'info' && <Bell className="w-4 h-4 text-yellow-400" />}
-                <span className="text-sm font-medium whitespace-nowrap">{dynamicStatus.text}</span>
+              <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in zoom-in duration-300">
+                {dynamicStatus.type === 'record' && <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
+                {dynamicStatus.type === 'scan' && <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />}
+                {dynamicStatus.type === 'info' && <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />}
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{dynamicStatus.text}</span>
               </div>
             )}
 
-            {/* Case 2 & 3: Clock + Centered Notification Overlay */}
+            {/* Case 2 & 3: Clock + Centered Notification Overlay (Stable Container) */}
             {!dynamicStatus && (
               <div className="flex flex-col items-center">
                 {/* Clock Row - Always Stable */}
-                <div className="flex items-center gap-3 h-10 transition-all duration-300">
+                <div className="flex items-center gap-2 sm:gap-3 h-8 sm:h-10 transition-all duration-300">
                   <BaliTimeClock headless />
-                  <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
-                  <div className="p-1.5 rounded-full text-violet-600 dark:text-violet-300 flex items-center gap-1.5">
-                    <Bell className="w-3.5 h-3.5" />
-                    <span className="text-[10px] uppercase font-bold tracking-wider">Alarm</span>
+                  <div className="h-3 sm:h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-0.5 sm:mx-1" />
+                  <div className="p-1 rounded-full text-violet-600 dark:text-violet-300 flex items-center gap-1 sm:gap-1.5">
+                    <Bell className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider">Alarm</span>
                   </div>
                 </div>
 
-                {/* Floating Notification Overlay - Appears below Dynamic Island */}
+                {/* Floating Notification Overlay - Appears smoothly below Dynamic Island */}
                 {notification && (
                   <div
-                    className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-500"
+                    className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-700"
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenAlarm(); // Click notification to open center
                     }}
                   >
-                    <div className="bg-black/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 min-w-[300px] max-w-[90vw] flex items-center gap-4 group cursor-pointer hover:bg-black transition-all">
-                      <div className="p-2 bg-white/10 rounded-full group-hover:scale-110 transition-transform">
+                    <div className="bg-black/95 backdrop-blur-md text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl shadow-2xl border border-white/10 min-w-[260px] sm:min-w-[320px] max-w-[95vw] flex items-center gap-3 sm:gap-4 group cursor-pointer hover:bg-black transition-all">
+                      <div className="p-1.5 sm:p-2 bg-white/10 rounded-xl group-hover:scale-110 transition-transform">
                         {notification.type === 'error' && <X className="w-4 h-4 text-red-500" />}
                         {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                         {(!notification.type || notification.type === 'info') && <Bell className="w-4 h-4 text-blue-400" />}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold leading-tight">{notification.title}</span>
+                      <div className="flex flex-col truncate">
+                        <span className="text-xs sm:text-sm font-bold leading-tight">{notification.title}</span>
                         {notification.message && (
-                          <span className="text-xs text-white/70 leading-tight mt-0.5 truncate max-w-[220px]">
+                          <span className="text-[10px] sm:text-xs text-white/70 leading-tight mt-0.5 truncate max-w-[180px] sm:max-w-[240px]">
                             {notification.message}
                           </span>
                         )}
                       </div>
-                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Open</div>
+                      <div className="ml-auto opacity-40 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[8px] sm:text-[10px] font-bold text-violet-400 uppercase tracking-widest">View</div>
                       </div>
                     </div>
                   </div>
