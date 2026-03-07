@@ -1,10 +1,8 @@
 import { useState } from 'react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Check } from 'lucide-react';
 
@@ -22,7 +20,6 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const passwordRequirements = [
     { label: 'At least 8 characters', met: password.length >= 8 },
@@ -33,20 +30,17 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
       window.dispatchEvent(new CustomEvent('dcpi-notification', {
         detail: { title: 'Error', message: 'Passwords do not match', type: 'error' }
       }));
       return;
     }
 
-    setError(null);
     setIsLoading(true);
 
     const result = await onSubmit(email, password, name);
 
     if (!result.success) {
-      setError(result.error || 'Failed to sign up');
       window.dispatchEvent(new CustomEvent('dcpi-notification', {
         detail: { title: 'Error', message: result.error || 'Failed to sign up', type: 'error' }
       }));
@@ -54,7 +48,6 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
       window.dispatchEvent(new CustomEvent('dcpi-notification', {
         detail: { title: 'Account Created', message: 'Please check your email to confirm your account.', type: 'success' }
       }));
-      // Check if we need to show a specific message for email confirmation
       if (result.error && result.error.includes('email')) {
         window.dispatchEvent(new CustomEvent('dcpi-notification', {
           detail: { title: 'Info', message: result.error, type: 'info' }
@@ -81,11 +74,6 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleSignIn }: Signup
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive" className="animate-fade-in">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         <div className="grid grid-cols-1 gap-3">
           <Button

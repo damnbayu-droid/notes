@@ -64,10 +64,10 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     pinnedFolders,
     togglePinFolder,
     createFolder,
-    restoreNote,
     shareNote,
     unshareNote,
   } = useNotes(user);
+
   // Listen for Voice Note creation events globally
   useEffect(() => {
     const handleCreateNote = async (event: CustomEvent) => {
@@ -99,10 +99,6 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     }
   };
   */
-
-  const handleChangeColor = async (id: string, color: Note['color']) => {
-    await updateNote(id, { color });
-  };
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -222,11 +218,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                         }}
                         onTogglePin={togglePin}
                         onDelete={deleteNote}
-                        onRestore={restoreNote}
-
                         onToggleArchive={toggleArchive}
                         onDuplicate={duplicateNote}
-                        onChangeColor={handleChangeColor}
                       />
                     )}
                   </div>

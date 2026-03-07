@@ -15,13 +15,13 @@ const SITE_NAME = 'Smart Notes';
 const BASE_URL = 'https://notes.biz.id';
 const DEFAULT_IMAGE = `${BASE_URL}/Logo.jpg`;
 
-const DEFAULT_TITLE = 'Smart Notes : Secured and Encrypted';
+const DEFAULT_TITLE = 'Smart Notes';
 const DEFAULT_DESCRIPTION =
     'Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas. Tulis, simpan, jadwalkan, dan bagikan catatan harian, reminder, jadwal & scanner dokumen. Gratis, offline, dan aman.';
 const DEFAULT_KEYWORDS = [
     // Indonesian SEO
     'catatan pintar', 'aplikasi catatan', 'catatan harian', 'catatan online', 'aplikasi produktivitas',
-    'catatan indonesia', 'buat catatan', 'notes indonesia', 'catatan offline',
+    'catatan indonesia', 'buat catatan', 'notes indonesia', 'catatan offline', 'enkripsi AES', 'catatan aman',
     // English SEO
     'smart notes', 'note taking app', 'notes app', 'ai notes', 'offline notes', 'pwa notes',
     'productivity app', 'note organizer', 'best notes app',
@@ -51,8 +51,8 @@ export function SEO({
         alternateName: 'Smart Notes Indonesia',
         applicationCategory: 'ProductivityApplication',
         applicationSubCategory: 'NotesTakingApplication',
-        operatingSystem: 'Web, Android, iOS',
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'IDR' },
+        operatingSystem: 'Web, Android, iOS, Windows, macOS',
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'IDR', availability: 'https://schema.org/InStock' },
         description,
         image,
         url: canonicalUrl,

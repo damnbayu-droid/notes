@@ -1,10 +1,8 @@
 import { useState } from 'react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 
@@ -21,17 +19,14 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     const result = await onSubmit(email, password);
 
     if (!result.success) {
-      setError(result.error || 'Failed to sign in');
       window.dispatchEvent(new CustomEvent('dcpi-notification', {
         detail: { title: 'Error', message: result.error || 'Failed to sign in', type: 'error' }
       }));
@@ -60,11 +55,6 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onForgotPassword, onGoog
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive" className="animate-fade-in">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         <div className="grid grid-cols-1 gap-3">
           <Button

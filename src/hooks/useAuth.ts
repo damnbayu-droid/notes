@@ -178,7 +178,8 @@ export function useAuth(): UseAuthReturn {
 
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message || 'An unexpected error occurred' };
+      console.error('Reset Password Error:', err);
+      return { success: false, error: err.message || 'An unexpected error occurred during password reset' };
     }
   }, []);
 

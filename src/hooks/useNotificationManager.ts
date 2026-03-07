@@ -24,7 +24,7 @@ export function useNotificationManager({ notes }: NotificationManagerProps) {
     }, []);
 
     const dispatchDynamicStatus = (text: string, type: 'info' | 'record' | 'scan' = 'info') => {
-        const event = new CustomEvent('dynamic-status', {
+        const event = new CustomEvent('dcpi-status', {
             detail: { icon: null, text, type, duration: 8000 } // 8s duration for DCPI
         });
         window.dispatchEvent(event);

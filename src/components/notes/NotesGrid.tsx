@@ -16,8 +16,6 @@ interface NotesGridProps {
   onToggleArchive: (id: string) => void | Promise<any>;
   onDuplicate: (id: string) => void | Promise<any>;
   onDelete: (id: string) => void | Promise<any>;
-  onRestore?: (id: string) => void | Promise<any>;
-  onChangeColor: (id: string, color: Note['color']) => void | Promise<any>;
 }
 
 export function NotesGrid({
@@ -31,8 +29,6 @@ export function NotesGrid({
   onToggleArchive,
   onDuplicate,
   onDelete,
-  onRestore,
-  onChangeColor,
 }: NotesGridProps) {
 
   if (notes.length === 0 && pinnedNotes.length === 0 && !searchQuery) {
@@ -55,7 +51,7 @@ export function NotesGrid({
         style={{
           display: 'grid',
           gridTemplateColumns: viewMode === 'grid'
-            ? 'repeat(auto-fill, minmax(140px, 1fr))'
+            ? 'repeat(auto-fill, minmax(110px, 1fr))'
             : '1fr',
           gap: '1rem',
           ...style,
@@ -85,7 +81,7 @@ export function NotesGrid({
             className="px-2"
             style={{
               display: 'grid',
-              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(140px, 1fr))' : '1fr',
+              gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(110px, 1fr))' : '1fr',
               gap: '1rem'
             }}
           >
@@ -98,8 +94,6 @@ export function NotesGrid({
                 onToggleArchive={onToggleArchive}
                 onDuplicate={onDuplicate}
                 onDelete={onDelete}
-                onChangeColor={onChangeColor}
-                onRestore={onRestore}
                 viewMode={viewMode}
               />
             ))}
@@ -138,8 +132,6 @@ export function NotesGrid({
                   onToggleArchive={onToggleArchive}
                   onDuplicate={onDuplicate}
                   onDelete={onDelete}
-                  onChangeColor={onChangeColor}
-                  onRestore={onRestore}
                   viewMode={viewMode}
                 />
               );

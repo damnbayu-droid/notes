@@ -25,7 +25,6 @@ import {
   Palette,
   Tag,
   X,
-  Plus,
   Save,
   Trash2,
   Calendar,
@@ -581,9 +580,10 @@ export function NoteEditor({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32 sm:pb-6 scrollbar-hide">
+        <div className="flex-1 flex flex-col overflow-hidden p-4 sm:p-6 space-y-2">
+          {/* Case: Canvas or Voice (Keeping these as is for now) */}
           {isCanvasOpen ? (
-            <div className="h-[400px] border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner flex flex-col">
+            <div className="flex-1 border border-gray-200 rounded-lg bg-white overflow-hidden shadow-inner flex flex-col">
               <CanvasEditor
                 onSave={handleSaveSketch}
                 onCancel={() => setIsCanvasOpen(false)}
@@ -593,115 +593,93 @@ export function NoteEditor({
             <>
               {/* Voice Recorder Section */}
               {isVoiceOpen && (
-                <div className="mb-4 p-4 border border-violet-100 rounded-lg bg-violet-50/30 flex flex-col gap-2 items-center justify-center">
-                  <span className="text-xs font-medium text-violet-600 mb-1">
-                    Voice Note active - Speaking will auto-transcribe
+                <div className="p-3 border border-violet-100 rounded-lg bg-violet-50/30 flex flex-col gap-2 items-center justify-center shrink-0">
+                  <span className="text-[10px] font-medium text-violet-600 uppercase">
+                    Voice Note active
                   </span>
                   <VoiceRecorder
-                    onRecordingComplete={(blob) => {
-                      console.log('Audio recorded:', blob.size);
-                      window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                        detail: { title: 'Voice Note Saved', message: 'Transcription added to note', type: 'success' }
-                      }));
+                    onRecordingComplete={(_blob) => {
                       setIsVoiceOpen(false);
                     }}
                     onTranscriptionComplete={(text) => {
                       setContent(prev => prev + text);
                     }}
                   />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsVoiceOpen(false)}
-                    className="text-xs text-gray-500 hover:text-gray-700 mt-2"
-                  >
-                    Close Voice Recorder
-                  </Button>
                 </div>
               )}
 
+              {/* Title Section - Tight & Clean */}
               <Input
-                placeholder="Title"
+                placeholder="Note Title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onBlur={handleBlur}
-                className="text-xl font-semibold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
+                className="text-lg sm:text-xl font-bold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-300 h-auto py-0 min-h-0"
               />
 
-              <Textarea
-                placeholder="Take a note..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onBlur={handleBlur}
-                className="min-h-[200px] max-h-none resize-y border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-400"
-                rows={10}
-              />
+              {/* HUGE Content Area - Fills all space */}
+              <div className="flex-1 flex flex-col min-h-0">
+                <Textarea
+                  placeholder="Start writing..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onBlur={handleBlur}
+                  className="flex-1 w-full resize-none border-0 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none px-0 placeholder:text-gray-300 text-base sm:text-lg py-1 scrollbar-hide focus-visible:ring-offset-0"
+                />
+              </div>
 
-              {/* Tags */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-500">Tags</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
+              {/* Metadata Section - Pushed to the very bottom */}
+              <div className="pt-4 space-y-3 border-t border-gray-100/50 shrink-0">
+                {/* Tags */}
+                <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
+                  <Tag className="w-3 h-3 text-gray-400 mr-0.5" />
                   {tags.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
-                      className="cursor-pointer hover:bg-red-100 transition-colors"
+                      className="cursor-pointer hover:bg-red-50 hover:text-red-600 transition-colors py-0 px-1.5 text-[9px] font-bold uppercase tracking-tighter"
                       onClick={() => handleRemoveTag(tag)}
                     >
                       {tag}
-                      <X className="w-3 h-3 ml-1" />
+                      <X className="w-2 h-2 ml-1" />
                     </Badge>
                   ))}
                   <div className="flex items-center gap-1">
                     <Input
-                      placeholder="Add tag..."
+                      placeholder="+"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyDown={handleKeyDown}
-                      className="w-32 h-8 text-sm"
+                      className="w-16 h-6 text-[10px] bg-white/40 border-dashed"
                     />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleAddTag}
-                      disabled={!newTag.trim()}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
-              </div>
 
-              {/* Metadata Controls */}
-              <div className="flex items-center gap-4">
-                {/* Folder Select */}
-                <div className="flex items-center gap-2">
-                  <Folder className="w-4 h-4 text-gray-400" />
-                  <Select value={folder} onValueChange={setFolder}>
-                    <SelectTrigger className="w-[140px] h-8 text-sm">
-                      <SelectValue placeholder="Select folder" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Main">Main</SelectItem>
-                      <SelectItem value="Google Notes">Google Notes</SelectItem>
-                      <SelectItem value="iCloud Notes">iCloud Notes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Automation & Info Controls */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 bg-white/30 px-2 py-1 rounded-md border border-gray-100/50">
+                    <Folder className="w-3 h-3 text-gray-400" />
+                    <Select value={folder} onValueChange={setFolder}>
+                      <SelectTrigger className="w-[100px] h-5 border-0 bg-transparent p-0 text-[10px] font-bold uppercase hover:bg-transparent">
+                        <SelectValue placeholder="Folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Main">Main</SelectItem>
+                        <SelectItem value="Google Notes">Google Notes</SelectItem>
+                        <SelectItem value="iCloud Notes">iCloud Notes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Date Picker (Simple Native Input for now) */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''}
-                    onChange={(e) => setReminderDate(new Date(e.target.value).toISOString())}
-                    className="w-auto h-8 text-sm"
-                  />
+                  <div className="flex items-center gap-1.5 bg-white/30 px-2 py-1 rounded-md border border-gray-100/50">
+                    <Calendar className="w-3 h-3 text-gray-400" />
+                    <Input
+                      type="datetime-local"
+                      value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setReminderDate(new Date(e.target.value).toISOString())}
+                      className="w-auto h-5 border-0 bg-transparent p-0 text-[10px] font-bold uppercase focus-visible:ring-0"
+                    />
+                  </div>
                 </div>
               </div>
             </>
@@ -740,6 +718,6 @@ export function NoteEditor({
           )}
         </div>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

@@ -7,11 +7,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <!-- ===== CORE SEO ===== -->
-  <title>Smart Notes : Secured and Encrypted</title>
+  <title>Smart Notes</title>
   <meta name="description"
-    content="Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas Anda. Tulis, simpan, dan kelola catatan harian, jadwal, tugas secara offline & online. Gratis, aman, dan canggih." />
+    content="Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas Anda. Tulis, simpan, dan kelola catatan harian, jadwal, tugas secara offline & online. Dilengkapi enkripsi AES-256, Scanner OCR, dan AI Assistant. Gratis, aman, dan canggih." />
   <meta name="keywords"
-    content="catatan pintar, smart notes, aplikasi catatan, notes app, catatan harian, catatan online, ai notes, aplikasi produktivitas, offline notes, pwa notes, catatan indonesia, note taking app" />
+    content="catatan pintar, smart notes, aplikasi catatan, notes app, catatan harian, catatan online, ai notes, aplikasi produktivitas, offline notes, pwa notes, catatan indonesia, note taking app, end-to-end encryption notes, secure notes, ocr scanner" />
   <meta name="author" content="Smart Notes" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="googlebot" content="index, follow" />
@@ -76,12 +76,17 @@
   <link rel="dns-prefetch" href="https://supabase.co" />
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="preconnect" href="https://api.openai.com" crossorigin />
 
   <!-- ===== LOGO PRELOAD (LCP) ===== -->
   <link rel="preload" as="image" href="/Logo.webp" fetchpriority="high" type="image/webp" />
 
-  <!-- ===== STRUCTURED DATA (JSON-LD) ===== -->
+  <!-- Content Security Policy for basic hardening -->
+  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+
+  <!-- Speed Optimization: Async non-critical scripts -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -110,13 +115,14 @@
         "url": "https://notes.biz.id/",
         "applicationCategory": "ProductivityApplication",
         "applicationSubCategory": "NotesTakingApplication",
-        "operatingSystem": "Web, Android, iOS",
+        "operatingSystem": "Web, Android, iOS, Windows, macOS",
         "offers": {
           "@type": "Offer",
           "price": "0",
-          "priceCurrency": "IDR"
+          "priceCurrency": "IDR",
+          "availability": "https://schema.org/InStock"
         },
-        "description": "Aplikasi catatan AI terbaik untuk produktivitas. Tulis, simpan, jadwalkan, dan bagikan catatan dengan mudah.",
+        "description": "Aplikasi catatan AI terbaik dengan keamanan tingkat militer (AES-GCM 256-bit). Tulis, simpan, jadwalkan, scan dokumen, dan transkripsikan audio secara otomatis.",
         "image": "https://notes.biz.id/Logo.webp",
         "screenshot": "https://notes.biz.id/Logo.webp",
         "featureList": [

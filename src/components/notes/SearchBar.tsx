@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,10 +59,24 @@ export function SearchBar({
   onOpenInfo,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const [adCountdown, setAdCountdown] = useState<string | null>(null);
+
+  // Listen for Ad Countdown updates
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      const remaining = e.detail.remaining;
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      setAdCountdown(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+    };
+    window.addEventListener('ad-countdown-update', handleUpdate);
+    return () => window.removeEventListener('ad-countdown-update', handleUpdate);
+  }, []);
+
   const hasFilters = searchQuery || selectedTags.length > 0;
 
   return (
-    <div className="space-y-2 px-4 py-2 bg-white/70 dark:bg-black/40 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/50 sticky top-16 z-30">
+    <div className="space-y-1.5 px-4 py-1.5 bg-white/70 dark:bg-black/40 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/50 sticky top-0 z-30">
       <div className="flex flex-col gap-2">
         {/* Search Input */}
         <div className="relative w-full">
@@ -173,6 +187,14 @@ export function SearchBar({
           </div>
 
           <div className="flex items-center gap-1.5 ml-auto">
+            {adCountdown && (
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl animate-in fade-in duration-300">
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-600 animate-pulse" />
+                <span className="text-[10px] font-black font-mono text-violet-700 dark:text-violet-300 tracking-tighter">
+                  SUPPORT {adCountdown}
+                </span>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="icon"

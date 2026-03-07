@@ -44,17 +44,21 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
 
   // Listen for global events
   useEffect(() => {
+    let statusTimer: NodeJS.Timeout;
+    let notificationTimer: NodeJS.Timeout;
+
     const handleStatus = (e: CustomEvent) => {
+      if (statusTimer) clearTimeout(statusTimer);
       setDynamicStatus(e.detail);
       if (e.detail?.duration) {
-        setTimeout(() => setDynamicStatus(null), e.detail.duration);
+        statusTimer = setTimeout(() => setDynamicStatus(null), e.detail.duration);
       }
     };
 
     const handleNotification = (e: CustomEvent) => {
+      if (notificationTimer) clearTimeout(notificationTimer);
       setNotification(e.detail);
-      // Auto-dismiss after 5 seconds
-      setTimeout(() => setNotification(null), 5000);
+      notificationTimer = setTimeout(() => setNotification(null), 5000);
     };
 
     window.addEventListener('dcpi-status' as any, handleStatus);
@@ -63,6 +67,8 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
     return () => {
       window.removeEventListener('dcpi-status' as any, handleStatus);
       window.removeEventListener('dcpi-notification' as any, handleNotification);
+      if (statusTimer) clearTimeout(statusTimer);
+      if (notificationTimer) clearTimeout(notificationTimer);
     };
   }, []);
 
@@ -106,8 +112,8 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in zoom-in duration-300">
                 {dynamicStatus.type === 'record' && <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
                 {dynamicStatus.type === 'scan' && <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />}
-                {dynamicStatus.type === 'info' && <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />}
-                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{dynamicStatus.text}</span>
+                {dynamicStatus.type === 'info' && <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />}
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap text-white">{dynamicStatus.text}</span>
               </div>
             )}
 
@@ -115,10 +121,9 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             {!dynamicStatus && (
               <div className="flex items-center gap-2 sm:gap-4 px-1">
                 <div className="flex flex-col items-start leading-[1] justify-center ml-2">
-                  <span className="text-[10px] sm:text-[11px] font-black tracking-[0.1em] uppercase text-violet-700 dark:text-violet-300">Smart Notes</span>
-                  <span className="text-[7px] sm:text-[8px] font-bold opacity-60 uppercase tracking-widest text-violet-600/80 dark:text-violet-400/80">Secured & Encrypted</span>
+                  <span className={`text-[10px] sm:text-[11px] font-black tracking-[0.1em] uppercase transition-colors duration-300 ${isActive ? 'text-white' : 'text-violet-700 dark:text-violet-300'}`}>Smart Notes</span>
                 </div>
-                <div className="h-4 w-[1px] bg-violet-200 dark:bg-violet-800 mx-0.5" />
+                <div className={`h-4 w-[1px] mx-0.5 transition-colors duration-300 ${isActive ? 'bg-white/20' : 'bg-violet-200 dark:bg-violet-800'}`} />
                 <BaliTimeClock headless />
 
                 {/* Floating Notification Overlay - Appears smoothly below Dynamic Island */}

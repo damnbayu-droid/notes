@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
 
 interface ForgotPasswordFormProps {
@@ -14,22 +13,25 @@ interface ForgotPasswordFormProps {
 export function ForgotPasswordForm({ onSubmit, onBackToLogin }: ForgotPasswordFormProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     const result = await onSubmit(email);
-    
+
     if (result.success) {
       setIsSuccess(true);
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Email Sent', message: 'Check your inbox for the reset link.', type: 'success' }
+      }));
     } else {
-      setError(result.error || 'Failed to send reset email');
+      window.dispatchEvent(new CustomEvent('dcpi-notification', {
+        detail: { title: 'Reset Failed', message: result.error || 'Could not send recovery email. Please try again.', type: 'error' }
+      }));
     }
-    
+
     setIsLoading(false);
   };
 
@@ -90,12 +92,7 @@ export function ForgotPasswordForm({ onSubmit, onBackToLogin }: ForgotPasswordFo
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {error && (
-          <Alert variant="destructive" className="animate-fade-in">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium text-gray-700">
