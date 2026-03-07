@@ -62,7 +62,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-violet-100 ring-1 ring-black/5">
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-violet-100 ring-1 ring-black/5 fixed top-4 left-1/2 -translate-x-1/2 translate-y-0 sm:top-20 animate-in slide-in-from-top-full duration-500 ease-out rounded-2xl">
                 <div className="flex flex-col h-[500px]">
                     {/* Header Tabs */}
                     <div className="flex p-1 bg-violet-50/50 border-b border-border gap-1">

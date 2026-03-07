@@ -19,6 +19,7 @@ import {
   Check,
   Tag,
   Plus,
+  Info,
 } from 'lucide-react';
 import type { SortOption } from '@/types';
 
@@ -34,6 +35,7 @@ interface SearchBarProps {
   viewMode: 'grid' | 'list';
   setViewMode: (mode: 'grid' | 'list') => void;
   onCreate: () => void;
+  onOpenInfo?: () => void;
 }
 
 const sortOptions: { value: SortOption; label: string }[] = [
@@ -54,13 +56,14 @@ export function SearchBar({
   viewMode,
   setViewMode,
   onCreate,
+  onOpenInfo,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
   const hasFilters = searchQuery || selectedTags.length > 0;
 
   return (
-    <div className="space-y-4 px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/50 sticky top-16 z-30">
-      <div className="flex flex-col gap-3">
+    <div className="space-y-2 px-4 py-2 bg-white/70 dark:bg-black/40 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/50 sticky top-16 z-30">
+      <div className="flex flex-col gap-2">
         {/* Search Input */}
         <div className="relative w-full">
           <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${isFocused ? 'text-violet-600' : 'text-muted-foreground opacity-50'}`} />
@@ -83,7 +86,7 @@ export function SearchBar({
         </div>
 
         {/* Controls Row */}
-        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
           <div className="flex items-center gap-2">
             {/* Sort Dropdown */}
             <DropdownMenu>
@@ -169,15 +172,25 @@ export function SearchBar({
             </div>
           </div>
 
-          {/* CREATE BUTTON (Mobile Hero) - Always on the right row */}
-          <button
-            onClick={onCreate}
-            className="h-10 w-10 sm:w-auto sm:px-4 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110 active:brightness-90"
-            aria-label="Create New Note"
-          >
-            <Plus className="w-5 h-5 font-black" />
-            <span className="hidden sm:inline text-xs font-black uppercase tracking-[0.1em]">New Note</span>
-          </button>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenInfo}
+              className="h-10 w-10 text-violet-600 hover:bg-violet-50 rounded-xl border border-violet-100 dark:border-violet-900"
+              title="Smart Notes Info"
+            >
+              <Info className="w-5 h-5" />
+            </Button>
+            <button
+              onClick={onCreate}
+              className="h-10 w-10 sm:w-auto sm:px-4 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110 active:brightness-90"
+              aria-label="Create New Note"
+            >
+              <Plus className="w-5 h-5 font-black" />
+              <span className="hidden sm:inline text-xs font-black uppercase tracking-[0.1em]">New Note</span>
+            </button>
+          </div>
         </div>
       </div>
 

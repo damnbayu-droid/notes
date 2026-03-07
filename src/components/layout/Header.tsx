@@ -23,7 +23,6 @@ import {
   CheckCircle2,
   Mic,
   Scan,
-  Info,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -34,10 +33,9 @@ interface HeaderProps {
   onOpenSettings: (tab?: string) => void;
   onSignIn: () => void;
   onOpenAlarm: () => void;
-  onOpenInfo?: () => void;
 }
 
-export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm, onOpenInfo }: HeaderProps) {
+export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   // dynamicStatus = Active modes like Mic/Scan (Replaces Clock)
   const [dynamicStatus, setDynamicStatus] = useState<{ icon: any, text: string, type: 'info' | 'record' | 'scan' } | null>(null);
@@ -47,10 +45,6 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
   // Listen for global events
   useEffect(() => {
     const handleStatus = (e: CustomEvent) => {
-      if (e.detail === 'info' && onOpenInfo) {
-        onOpenInfo();
-        return;
-      }
       setDynamicStatus(e.detail);
       if (e.detail?.duration) {
         setTimeout(() => setDynamicStatus(null), e.detail.duration);
@@ -70,7 +64,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
       window.removeEventListener('dcpi-status' as any, handleStatus);
       window.removeEventListener('dcpi-notification' as any, handleNotification);
     };
-  }, [onOpenInfo]);
+  }, []);
 
   // Determine container state
   const isActive = !!dynamicStatus || !!notification;
@@ -105,7 +99,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
                 : 'bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 border border-violet-200 dark:border-violet-800 text-violet-900 dark:text-violet-100 px-3 sm:px-5 gap-1.5 sm:gap-2 min-w-[140px] sm:min-w-[200px] max-w-[calc(100vw-140px)] sm:max-w-[400px] rounded-full h-8 sm:h-10' // Default State
               }
               `}
-            onClick={() => isActive ? onOpenAlarm() : onOpenInfo?.()}
+            onClick={() => onOpenAlarm()}
           >
             {/* Case 1: Dynamic Status (Mic/Scan) overrides everything */}
             {dynamicStatus && (
@@ -120,14 +114,9 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             {/* Case 2 & 3: Clock + Centered Notification Overlay (Stable Container) */}
             {!dynamicStatus && (
               <div className="flex items-center gap-2 sm:gap-4 px-1">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1 rounded-full bg-violet-600/10 dark:bg-violet-400/10">
-                    <Info className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <div className="flex flex-col items-start leading-[1] justify-center">
-                    <span className="text-[10px] sm:text-[11px] font-black tracking-[0.1em] uppercase text-violet-700 dark:text-violet-300">Smart Notes</span>
-                    <span className="text-[7px] sm:text-[8px] font-bold opacity-60 uppercase tracking-widest text-violet-600/80 dark:text-violet-400/80">Secured & Encrypted</span>
-                  </div>
+                <div className="flex flex-col items-start leading-[1] justify-center ml-2">
+                  <span className="text-[10px] sm:text-[11px] font-black tracking-[0.1em] uppercase text-violet-700 dark:text-violet-300">Smart Notes</span>
+                  <span className="text-[7px] sm:text-[8px] font-bold opacity-60 uppercase tracking-widest text-violet-600/80 dark:text-violet-400/80">Secured & Encrypted</span>
                 </div>
                 <div className="h-4 w-[1px] bg-violet-200 dark:bg-violet-800 mx-0.5" />
                 <BaliTimeClock headless />

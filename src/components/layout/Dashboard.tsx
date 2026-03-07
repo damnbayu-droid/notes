@@ -133,8 +133,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             setSettingsTab(tab || 'profile');
             setCurrentView('settings');
           }}
-          onOpenAlarm={() => { }} // Disabled as requested
-          onOpenInfo={() => setIsInfoPanelOpen(true)}
+          onOpenAlarm={() => setIsNotificationCenterOpen(true)}
         />
         <div className="flex-1 flex overflow-hidden relative">
           <Sidebar
@@ -201,6 +200,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                       viewMode={viewMode}
                       setViewMode={setViewMode}
                       onCreate={handleCreateNote}
+                      onOpenInfo={() => setIsInfoPanelOpen(true)}
                     />
                     {currentView === 'trash' && (
                       <div className="px-4 py-2 bg-red-50 border-b border-red-100 text-red-600 text-sm flex items-center justify-center">

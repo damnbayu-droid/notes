@@ -223,14 +223,15 @@ The focus of this phase was to streamline the Settings experience, restore criti
     - **Image Optimization**: Integrated automatic WebP conversion for profile picture uploads to minimize storage and maximize speed.
 
 - **Dynamic Island & Info Core**:
-    - **Interactive Restore**: Re-enabled click interaction on the Dynamic Island to open the new Feature Documentation.
-    - **"i" Icon Integration**: Added a modern info icon to the Dynamic Island default state for better discoverability.
-    - **SmartInfoPanel**: Developed a premium, glassmorphic documentation panel detailing encryption, AI, storage, and specialized modes (Book/Scanner/Recorder).
+    - **Notification Focus**: Restored the Dynamic Island's primary function for notification display and status updates.
+    - **Info Icon Relocation**: Moved the "i" info icon to the SearchBar (next to "New Note") to prevent overlap and improve discoverability.
+    - **Slide-Down Sync**: Connected Dynamic Island click events to a nueva "slide-down" notification center effect.
+    - **SmartInfoPanel**: Integrated a premium documentation panel showing encryption and AI features.
 
 - **UI Hardening**:
-    - **Compact Productivity**: Reduced Note Card size by 50% (min-width 140px), allowing for 2-3 columns even on smaller mobile devices.
-    - **Premium SearchBar**: Redesigned the search and filter header with a "sticky" mobile-optimized layout, ensuring the "New Note" CTA is always accessible and aligned with sorting/tags.
-    - **Mobile Safe Areas**: Hardened `NoteEditor.tsx` padding at the bottom to prevent overlap with OS gesture bars and floating footers.
+    - **SearchBar "Gap 2"**: Reduced internal vertical spacing in the SearchBar to a precise "Gap 2" (space-y-2), fixing the "too low" positioning feedback.
+    - **Compact Productivity**: Reduced Note Card size by 50% for high information density.
+    - **Mobile Safe Areas**: Hardened `NoteEditor.tsx` padding at the bottom.
 
 ---
 
