@@ -57,7 +57,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
       setTimeout(() => setNotification(null), 5000);
     };
 
-    window.addEventListener('dynamic-status' as any, handleStatus);
+    window.addEventListener('dcpi-status' as any, handleStatus);
     window.addEventListener('dcpi-notification' as any, handleNotification);
 
     return () => {
