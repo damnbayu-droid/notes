@@ -86,7 +86,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </Button>
 
           <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-purple-600 hidden sm:block">
-            Smart Notes
+            Smart Notes | save and secured encrypted
           </span>
         </div>
 
