@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 import { useNotes } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
@@ -57,10 +58,12 @@ function MainApp() {
 
   // Notification Logic
   useEffect(() => {
-    // Request permission on load
+    // Automatic permission request removed to improve page speed and prevent blocking
+    /*
     if (Notification.permission === 'default') {
       Notification.requestPermission();
     }
+    */
 
     const checkReminders = () => {
       const savedNotes = localStorage.getItem('notes');
@@ -105,6 +108,12 @@ function MainApp() {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Spinner className="size-8 text-primary" />
         <p className="text-sm text-muted-foreground animate-pulse">Initializing Smart Notes...</p>
+        <div className="mt-8 flex flex-col items-center gap-2 animate-in fade-in duration-1000 slide-in-from-bottom-2">
+          <p className="text-xs text-muted-foreground opacity-50">Taking too long?</p>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+            Reload Page
+          </Button>
+        </div>
       </div>
     );
   }

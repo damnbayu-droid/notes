@@ -34,7 +34,7 @@ export function useAuth(): UseAuthReturn {
         console.warn('Auth check timed out, forcing loading false');
         setState(prev => ({ ...prev, isLoading: false }));
       }
-    }, 5000);
+    }, 3000);
 
     const initAuth = async () => {
       try {
@@ -99,6 +99,8 @@ export function useAuth(): UseAuthReturn {
       subscription.unsubscribe();
     };
   }, []);
+  // Removed automatic notification request to prevent blocking on first open
+  /*
   useEffect(() => {
     if (state.isAuthenticated && 'Notification' in window) {
       if (Notification.permission === 'default') {
@@ -106,6 +108,7 @@ export function useAuth(): UseAuthReturn {
       }
     }
   }, [state.isAuthenticated]);
+  */
 
   const signUp = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     setState(prev => ({ ...prev, isLoading: true }));

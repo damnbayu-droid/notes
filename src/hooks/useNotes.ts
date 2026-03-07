@@ -198,6 +198,43 @@ export function useNotes(user: User | null): UseNotesReturn {
     fetchNotes();
   }, [fetchNotes]);
 
+  // Realtime Subscription for multi-device sync
+  useEffect(() => {
+    if (!user || isOffline) return;
+
+    const channel = supabase
+      .channel('any')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notes',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newNote = payload.new as Note;
+            setNotes((prev) => {
+              if (prev.find((n) => n.id === newNote.id)) return prev;
+              return [newNote, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedNote = payload.new as Note;
+            setNotes((prev) => prev.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
+          } else if (payload.eventType === 'DELETE') {
+            const id = (payload.old as any).id;
+            setNotes((prev) => prev.filter((n) => n.id !== id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isOffline]);
+
 
   // Helper to generate UUID
   const generateUUID = () => {

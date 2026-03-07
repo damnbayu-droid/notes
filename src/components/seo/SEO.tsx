@@ -15,7 +15,7 @@ const SITE_NAME = 'Smart Notes';
 const BASE_URL = 'https://notes.biz.id';
 const DEFAULT_IMAGE = `${BASE_URL}/Logo.jpg`;
 
-const DEFAULT_TITLE = 'Smart Notes - Aplikasi Catatan Pintar & Produktivitas | Notes App Indonesia';
+const DEFAULT_TITLE = 'Smart Notes | save and secured encrypted';
 const DEFAULT_DESCRIPTION =
     'Smart Notes adalah aplikasi catatan AI terbaik untuk produktivitas. Tulis, simpan, jadwalkan, dan bagikan catatan harian, reminder, jadwal & scanner dokumen. Gratis, offline, dan aman.';
 const DEFAULT_KEYWORDS = [
