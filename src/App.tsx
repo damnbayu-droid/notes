@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 
-import { useNotes } from '@/hooks/useNotes';
+
 import { useTheme } from '@/hooks/useTheme';
 import { SEO } from '@/components/seo/SEO';
 import { Spinner } from '@/components/ui/spinner';
@@ -22,24 +22,12 @@ const TermsPage = lazy(() => import('@/components/legal/TermsPage'));
 
 function MainApp() {
   const { user, isLoading, isAuthenticated, signIn, signUp, signOut, resetPassword, signInWithGoogle } = useAuth();
-  const { createNote } = useNotes(user);
+  // Removed global useNotes(user) call here as it's already handled inside lazy-loaded Dashboard.
+  // This reduces dispatcher overhead during initialization.
   const [showAuth, setShowAuth] = useState(false);
 
   // ... (Effects remain same) ...
-  // Listen for Voice Note creation events
-  useEffect(() => {
-    const handleCreateNote = async (event: CustomEvent) => {
-      if (event.detail && event.detail.title && event.detail.content) {
-        await createNote({
-          title: event.detail.title,
-          content: event.detail.content,
-          folder: 'Main' // Default folder
-        });
-      }
-    };
-    window.addEventListener('create-new-note' as any, handleCreateNote);
-    return () => window.removeEventListener('create-new-note' as any, handleCreateNote);
-  }, [createNote]);
+
 
   // Register Service Worker for offline support
   useEffect(() => {

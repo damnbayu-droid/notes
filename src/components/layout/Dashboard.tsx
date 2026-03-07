@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
@@ -68,6 +68,20 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     shareNote,
     unshareNote,
   } = useNotes(user);
+  // Listen for Voice Note creation events globally
+  useEffect(() => {
+    const handleCreateNote = async (event: CustomEvent) => {
+      if (event.detail && event.detail.title && event.detail.content) {
+        await createNote({
+          title: event.detail.title,
+          content: event.detail.content,
+          folder: 'Main' // Default folder
+        });
+      }
+    };
+    window.addEventListener('create-new-note' as any, handleCreateNote);
+    return () => window.removeEventListener('create-new-note' as any, handleCreateNote);
+  }, [createNote]);
 
   const handleCreateNote = () => {
     setEditingNote(null);
