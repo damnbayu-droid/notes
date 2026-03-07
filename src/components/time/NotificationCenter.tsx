@@ -65,28 +65,30 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             <DialogContent className="sm:max-w-md p-0 overflow-hidden border-violet-100 ring-1 ring-black/5">
                 <div className="flex flex-col h-[500px]">
                     {/* Header Tabs */}
-                    <div className="flex border-b border-border bg-violet-50/50">
+                    <div className="flex p-1 bg-violet-50/50 border-b border-border gap-1">
                         <button
                             onClick={() => setActiveTab('notifications')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'notifications' ? 'bg-white text-violet-600 border-b-2 border-violet-600' : 'text-muted-foreground hover:bg-white/50'}`}
+                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-lg transition-all ${activeTab === 'notifications' ? 'bg-white text-violet-600 shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-white/50'}`}
                         >
                             <History className="w-3.5 h-3.5" />
                             Inbox
                         </button>
                         <button
                             onClick={() => setActiveTab('alarms')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'alarms' ? 'bg-white text-violet-600 border-b-2 border-violet-600' : 'text-muted-foreground hover:bg-white/50'}`}
+                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-lg transition-all ${activeTab === 'alarms' ? 'bg-white text-violet-600 shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-white/50'}`}
                         >
                             <Clock className="w-3.5 h-3.5" />
                             Alarms
                         </button>
                         <button
                             onClick={() => setActiveTab('schedule')}
-                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'schedule' ? 'bg-white text-violet-600 border-b-2 border-violet-600' : 'text-muted-foreground hover:bg-white/50'}`}
+                            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 rounded-lg transition-all ${activeTab === 'schedule' ? 'bg-white text-violet-600 shadow-sm ring-1 ring-black/5' : 'text-muted-foreground hover:bg-white/50'}`}
                         >
                             <Calendar className="w-3.5 h-3.5" />
                             Schedule
                         </button>
+                        {/* Space for Dialog Close Button */}
+                        <div className="w-10 shrink-0" />
                     </div>
 
                     <ScrollArea className="flex-1 p-4">

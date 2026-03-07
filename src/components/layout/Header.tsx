@@ -118,31 +118,45 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
               </div>
             )}
 
-            {/* Case 2 & 3: Clock + Slide-down Notification */}
+            {/* Case 2 & 3: Clock + Centered Notification Overlay */}
             {!dynamicStatus && (
               <div className="flex flex-col items-center">
-                {/* Clock Row - Always Visible or Primary */}
-                <div className={`flex items-center gap-3 transition-all duration-300 ${notification ? 'h-8' : 'h-10'}`}>
+                {/* Clock Row - Always Stable */}
+                <div className="flex items-center gap-3 h-10 transition-all duration-300">
                   <BaliTimeClock headless />
                   <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1" />
-                  <div
-                    className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-violet-600 dark:text-violet-300 flex items-center gap-1.5"
-                    aria-label="Set Alarm"
-                  >
+                  <div className="p-1.5 rounded-full text-violet-600 dark:text-violet-300 flex items-center gap-1.5">
                     <Bell className="w-3.5 h-3.5" />
                     <span className="text-[10px] uppercase font-bold tracking-wider">Alarm</span>
                   </div>
                 </div>
 
-                {/* Notification Row - Slide Down Effect */}
+                {/* Floating Notification Overlay - Appears below Dynamic Island */}
                 {notification && (
-                  <div className="flex items-center gap-2 animate-in slide-in-from-top-4 fade-in duration-500 pb-2 border-t border-white/10 w-full justify-center mt-1 pt-1">
-                    {notification.type === 'error' && <X className="w-3.5 h-3.5 text-red-500" />}
-                    {notification.type === 'success' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
-                    {(!notification.type || notification.type === 'info') && <Bell className="w-3.5 h-3.5 text-blue-400" />}
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] font-bold leading-tight">{notification.title}</span>
-                      {notification.message && <span className="text-[9px] opacity-80 leading-tight truncate max-w-[200px]">{notification.message}</span>}
+                  <div
+                    className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenAlarm(); // Click notification to open center
+                    }}
+                  >
+                    <div className="bg-black/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 min-w-[300px] max-w-[90vw] flex items-center gap-4 group cursor-pointer hover:bg-black transition-all">
+                      <div className="p-2 bg-white/10 rounded-full group-hover:scale-110 transition-transform">
+                        {notification.type === 'error' && <X className="w-4 h-4 text-red-500" />}
+                        {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                        {(!notification.type || notification.type === 'info') && <Bell className="w-4 h-4 text-blue-400" />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold leading-tight">{notification.title}</span>
+                        {notification.message && (
+                          <span className="text-xs text-white/70 leading-tight mt-0.5 truncate max-w-[220px]">
+                            {notification.message}
+                          </span>
+                        )}
+                      </div>
+                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Open</div>
+                      </div>
                     </div>
                   </div>
                 )}
