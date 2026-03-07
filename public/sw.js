@@ -40,6 +40,16 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Helper for fetching with timeout
+const fetchWithTimeout = (request, timeout = 3000) => {
+    return Promise.race([
+        fetch(request),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Fetch timeout')), timeout)
+        )
+    ]);
+};
+
 // Fetch event - Optimized Strategy
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
@@ -49,10 +59,10 @@ self.addEventListener('fetch', (event) => {
         return; // Let browser handle normally
     }
 
-    // Network-First strategy for index.html and root to prevent ChunkLoadErrors after deploy
+    // Network-First strategy with timeout for index.html and root
     if (url.pathname === '/' || url.pathname === '/index.html') {
         event.respondWith(
-            fetch(event.request)
+            fetchWithTimeout(event.request, 3000)
                 .then((response) => {
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {

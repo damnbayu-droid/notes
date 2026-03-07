@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { Note, SortOption, User } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { generateShareSlug } from '@/lib/shareUtils';
@@ -83,6 +83,8 @@ export function useNotes(user: User | null): UseNotesReturn {
     return [];
   });
 
+  const isSyncingRef = useRef(false);
+
   const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -123,19 +125,33 @@ export function useNotes(user: User | null): UseNotesReturn {
     };
   }, []);
 
-  // Process Sync Queue
-  const processSyncQueue = useCallback(async () => {
-    if (syncQueue.length === 0 || isOffline) return;
-
-    // Clone queue to avoid mutation issues during iteration? 
-    // Actually we process one by one or batch.
-    // Let's try processing efficiently.
-    const queue = [...syncQueue];
-    const remainingQueue: SyncAction[] = [];
+  // Initial Fetch
+  const fetchNotes = useCallback(async () => {
+    if (!user || isOffline) return;
 
     setIsLoading(true);
+    const { data, error } = await supabase.from('notes').select('*');
 
-    for (const action of queue) {
+    if (data && !error) {
+      setNotes(data as Note[]);
+    }
+    setIsLoading(false);
+  }, [user, isOffline]);
+
+  // Process Sync Queue
+  const processSyncQueue = useCallback(async () => {
+    if (isSyncingRef.current || isOffline) return;
+
+    // Get current queue without creating a dependency on syncQueue state
+    const currentQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+    if (currentQueue.length === 0) return;
+
+    isSyncingRef.current = true;
+    setIsLoading(true);
+
+    const remainingQueue: SyncAction[] = [];
+
+    for (const action of currentQueue) {
       try {
         let error = null;
 
@@ -156,7 +172,6 @@ export function useNotes(user: User | null): UseNotesReturn {
 
         if (error) {
           console.error('Sync failed for action:', action, error);
-          // If error is permanent (4xx), maybe discard? For now keep retrying if it might be transient.
           remainingQueue.push(action);
         }
       } catch (err) {
@@ -167,32 +182,19 @@ export function useNotes(user: User | null): UseNotesReturn {
 
     setSyncQueue(remainingQueue);
     setIsLoading(false);
+    isSyncingRef.current = false;
 
     // After sync, fetch latest to ensure consistency
     if (remainingQueue.length === 0) {
       fetchNotes();
     }
-  }, [syncQueue, isOffline]);
+  }, [isOffline, fetchNotes]);
 
-  // Trigger sync when online
   useEffect(() => {
     if (!isOffline) {
       processSyncQueue();
     }
   }, [isOffline, processSyncQueue]);
-
-  // Initial Fetch
-  const fetchNotes = useCallback(async () => {
-    if (!user || isOffline) return;
-
-    setIsLoading(true);
-    const { data, error } = await supabase.from('notes').select('*');
-
-    if (data && !error) {
-      setNotes(data as Note[]);
-    }
-    setIsLoading(false);
-  }, [user, isOffline]);
 
   useEffect(() => {
     fetchNotes();
