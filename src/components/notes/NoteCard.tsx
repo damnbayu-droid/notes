@@ -45,9 +45,19 @@ export function NoteCard({
 
   const colorOption = NOTE_COLORS.find(c => c.value === note.color) || NOTE_COLORS[0];
 
+  const stripHtml = (html: string) => {
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || "";
+    } catch (e) {
+      return html;
+    }
+  };
+
   const truncateContent = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength).trim() + '...';
+    const plainText = stripHtml(content);
+    if (plainText.length <= maxLength) return plainText;
+    return plainText.substring(0, maxLength).trim() + '...';
   };
 
   return (

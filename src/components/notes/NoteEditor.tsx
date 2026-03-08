@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Document from '@tiptap/extension-document';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Image from '@tiptap/extension-image';
 import type { Note, NoteColor } from '@/types';
 import { NOTE_COLORS } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +56,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+const CustomDocument = Document.extend({
+  content: 'heading block*',
+});
 
 interface NoteEditorProps {
   note: Note | null;
@@ -79,8 +87,8 @@ export function NoteEditor({
   isExpanded = false,
   onToggleExpand,
 }: NoteEditorProps) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [editorHtml, setEditorHtml] = useState('');
+  const [editorText, setEditorText] = useState('');
   const [color, setColor] = useState<NoteColor>('default');
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
@@ -98,7 +106,7 @@ export function NoteEditor({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Track initial state to avoid auto-save on mount if nothing changed
-  const lastSavedState = useRef({ title: '', content: '', color: '', tags: [] as string[], folder: '', reminderDate: '' });
+  const lastSavedState = useRef({ html: '', color: '', tags: [] as string[], folder: '', reminderDate: '' });
   const isCreatingRef = useRef(false);
   // Internal state fallback if prop not provided (though Dashboard provides it)
   const [internalExpanded, setInternalExpanded] = useState(false);
@@ -108,10 +116,63 @@ export function NoteEditor({
 
   const isNewNote = !note;
 
+  const editor = useEditor({
+    extensions: [
+      CustomDocument,
+      StarterKit.configure({
+        document: false,
+      }),
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          class: 'text-violet-500 underline decoration-violet-500/30 underline-offset-4 hover:decoration-violet-500 transition-colors cursor-pointer',
+          target: '_blank',
+          rel: 'noopener noreferrer'
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: 'rounded-lg max-w-full bg-gray-50 border border-gray-100 shadow-sm my-4',
+        },
+      }),
+      Placeholder.configure({
+        placeholder: ({ node }) => {
+          if (node.type.name === 'heading') {
+            return 'Note Title (First Line)';
+          }
+          return 'Start writing...';
+        },
+      }),
+    ],
+    content: '',
+    onUpdate: ({ editor }) => {
+      setEditorHtml(editor.getHTML());
+      setEditorText(editor.getText());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose-base focus:outline-none w-full max-w-none prose-headings:mt-0 prose-headings:mb-2 prose-h1:text-xl sm:prose-h1:text-2xl prose-h1:font-bold prose-p:leading-relaxed prose-p:my-1 text-foreground border-0',
+      },
+    },
+  });
+
   useEffect(() => {
     if (note) {
-      setTitle(note.title);
-      setContent(note.content);
+      let initialHtml = '';
+      if (note.content && (note.content.startsWith('<h1') || note.content.startsWith('<p'))) {
+        initialHtml = note.content;
+      } else {
+        initialHtml = `<h1>${note.title || ''}</h1><p>${(note.content || '').replace(/\n/g, '<br>')}</p>`;
+      }
+
+      setEditorHtml(initialHtml);
+      if (editor) {
+        editor.commands.setContent(initialHtml);
+        setEditorText(editor.getText());
+      }
+
       setColor(note.color);
       setIsPinned(note.is_pinned);
       setIsArchived(note.is_archived);
@@ -121,18 +182,19 @@ export function NoteEditor({
       setIsShared(note.is_shared || false);
       setShareSlug(note.share_slug);
 
-      // Update last saved state to CURRENT state to avoid immediate auto-save
       lastSavedState.current = {
-        title: note.title,
-        content: note.content,
+        html: initialHtml,
         color: note.color,
         tags: [...note.tags],
         folder: note.folder || 'Main',
         reminderDate: note.reminder_date || ''
       };
     } else {
-      setTitle('');
-      setContent('');
+      setEditorHtml('');
+      setEditorText('');
+      if (editor) {
+        editor.commands.setContent('<h1></h1>');
+      }
       setColor('default');
       setIsPinned(false);
       setIsArchived(false);
@@ -143,8 +205,7 @@ export function NoteEditor({
       setShareSlug(undefined);
 
       lastSavedState.current = {
-        title: '',
-        content: '',
+        html: '',
         color: 'default',
         tags: [],
         folder: 'Main',
@@ -154,11 +215,11 @@ export function NoteEditor({
     setNewTag('');
     setIsCanvasOpen(false);
     setSaveStatus('idle');
-  }, [note, isOpen]);
+  }, [note, isOpen, editor]);
 
   // Debounce the state for auto-save
-  const debouncedTitle = useDebounce(title, 1000);
-  const debouncedContent = useDebounce(content, 1000);
+  const debouncedHtml = useDebounce(editorHtml, 1000);
+  const debouncedText = useDebounce(editorText, 1000);
   const debouncedColor = useDebounce(color, 1000);
   const debouncedFolder = useDebounce(folder, 1000);
   const debouncedTags = useDebounce(tags, 1000);
@@ -169,23 +230,24 @@ export function NoteEditor({
     if (!isOpen) return;
 
     const hasChanged =
-      debouncedTitle !== lastSavedState.current.title ||
-      debouncedContent !== lastSavedState.current.content ||
+      debouncedHtml !== lastSavedState.current.html ||
       debouncedColor !== lastSavedState.current.color ||
       debouncedFolder !== lastSavedState.current.folder ||
       debouncedReminderDate !== lastSavedState.current.reminderDate ||
       JSON.stringify(debouncedTags) !== JSON.stringify(lastSavedState.current.tags);
 
-    if (hasChanged && (debouncedTitle.trim() || debouncedContent.trim())) {
+    if (hasChanged && debouncedText.trim()) {
       if (isNewNote && isCreatingRef.current) return;
       if (isNewNote) isCreatingRef.current = true;
 
       setSaveStatus('saving');
 
+      const parsedTitle = debouncedText.split('\n')[0]?.trim() || 'Untitled Note';
+
       // We don't want to use handleSave here because it closes the dialog
       onUpdate({
-        title: debouncedTitle.trim() || 'Untitled Note',
-        content: debouncedContent.trim(),
+        title: parsedTitle.substring(0, 100),
+        content: debouncedHtml,
         color: debouncedColor,
         is_pinned: isPinned,
         is_archived: isArchived,
@@ -195,8 +257,7 @@ export function NoteEditor({
       });
 
       lastSavedState.current = {
-        title: debouncedTitle,
-        content: debouncedContent,
+        html: debouncedHtml,
         color: debouncedColor,
         tags: [...debouncedTags],
         folder: debouncedFolder,
@@ -206,24 +267,27 @@ export function NoteEditor({
       setTimeout(() => setSaveStatus('saved'), 500);
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [debouncedTitle, debouncedContent, debouncedColor, debouncedFolder, debouncedTags, debouncedReminderDate, isOpen, isPinned, isArchived, onUpdate]);
+  }, [debouncedHtml, debouncedText, debouncedColor, debouncedFolder, debouncedTags, debouncedReminderDate, isOpen, isPinned, isArchived, onUpdate]);
 
   const handleSaveSketch = (dataUrl: string) => {
-    const imageMarkdown = `\n![Sketch](${dataUrl})\n`;
-    setContent(prev => prev + imageMarkdown);
+    if (editor) {
+      editor.chain().focus().setImage({ src: dataUrl }).run();
+    }
     setIsCanvasOpen(false);
   };
 
   const handleSave = useCallback(() => {
-    if (!title.trim() && !content.trim()) {
+    if (!editorText.trim()) {
       onClose();
       return;
     }
 
+    const parsedTitle = editorText.split('\n')[0]?.trim() || 'Untitled Note';
+
     // Force immediate save of current local state
     onUpdate({
-      title: title.trim() || 'Untitled Note',
-      content: content.trim(),
+      title: parsedTitle.substring(0, 100),
+      content: editorHtml,
       color,
       is_pinned: isPinned,
       is_archived: isArchived,
@@ -234,20 +298,21 @@ export function NoteEditor({
 
     // Update last saved state to prevent the auto-save effect from firing redundant update
     lastSavedState.current = {
-      title, content, color, tags: [...tags], folder, reminderDate
+      html: editorHtml, color, tags: [...tags], folder, reminderDate
     };
 
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus('idle'), 2000);
     onClose();
-  }, [title, content, color, isPinned, isArchived, tags, reminderDate, folder, onUpdate, onClose]);
+  }, [editorText, editorHtml, color, isPinned, isArchived, tags, reminderDate, folder, onUpdate, onClose]);
 
   // Handle immediate save on blur
   const handleBlur = () => {
-    if (title !== lastSavedState.current.title || content !== lastSavedState.current.content) {
+    if (editorHtml !== lastSavedState.current.html) {
+      const parsedTitle = editorText.split('\n')[0]?.trim() || 'Untitled Note';
       onUpdate({
-        title: title.trim() || 'Untitled Note',
-        content: content.trim(),
+        title: parsedTitle.substring(0, 100),
+        content: editorHtml,
         color,
         is_pinned: isPinned,
         is_archived: isArchived,
@@ -255,7 +320,7 @@ export function NoteEditor({
         reminder_date: reminderDate || undefined,
         folder,
       });
-      lastSavedState.current = { ...lastSavedState.current, title, content };
+      lastSavedState.current = { ...lastSavedState.current, html: editorHtml };
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 1000);
     }
@@ -379,7 +444,7 @@ export function NoteEditor({
                 className={`h-9 w-9 ${textCopied ? 'text-green-600 bg-green-50' : 'text-gray-500 hover:text-gray-700'}`}
                 title="Copy all text"
                 onClick={() => {
-                  const fullText = [title, content].filter(Boolean).join('\n\n');
+                  const fullText = editorText;
                   navigator.clipboard.writeText(fullText);
                   setTextCopied(true);
                   setTimeout(() => setTextCopied(false), 2000);
@@ -602,29 +667,23 @@ export function NoteEditor({
                       setIsVoiceOpen(false);
                     }}
                     onTranscriptionComplete={(text) => {
-                      setContent(prev => prev + text);
+                      if (editor) {
+                        editor.chain().focus().insertContent(text).run();
+                      }
                     }}
                   />
                 </div>
               )}
 
-              {/* Title Section - Tight & Clean */}
-              <Input
-                placeholder="Note Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleBlur}
-                className="text-lg sm:text-xl font-bold border-0 bg-transparent focus-visible:ring-0 px-0 placeholder:text-gray-300 h-auto py-0 min-h-0"
-              />
-
-              {/* HUGE Content Area - Fills all space */}
-              <div className="flex-1 flex flex-col min-h-0">
-                <Textarea
-                  placeholder="Start writing..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
+              {/* TIPTAP RICH TEXT EDITOR */}
+              <div
+                className="flex-1 flex flex-col min-h-0 cursor-text px-1 overflow-y-auto"
+                onClick={() => { if (editor) editor.commands.focus(); }}
+              >
+                <EditorContent
+                  editor={editor}
+                  className="flex-1"
                   onBlur={handleBlur}
-                  className="flex-1 w-full resize-none border-0 bg-transparent focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none px-0 placeholder:text-gray-300 text-base sm:text-lg py-1 scrollbar-hide focus-visible:ring-offset-0"
                 />
               </div>
 
