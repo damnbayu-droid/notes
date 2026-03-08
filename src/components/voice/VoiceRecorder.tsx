@@ -5,11 +5,12 @@ import { Mic, Square, RefreshCcw } from 'lucide-react';
 
 interface VoiceRecorderProps {
     onRecordingComplete: (audioBlob: Blob) => void;
-    onTranscriptionComplete?: (text: string) => void;
+    onTranscriptionChunk?: (text: string) => void;
+    onInterimTranscription?: (text: string) => void;
     className?: string;
 }
 
-export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, className }: VoiceRecorderProps) {
+export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInterimTranscription, className }: VoiceRecorderProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [isTranscribing, setIsTranscribing] = useState(false);
@@ -30,13 +31,23 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, cl
 
             recognitionRef.current.onresult = (event: any) => {
                 let finalTranscript = '';
+                let interimTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                if (finalTranscript && onTranscriptionComplete) {
-                    onTranscriptionComplete(finalTranscript + ' ');
+
+                if (interimTranscript && onInterimTranscription) {
+                    onInterimTranscription(interimTranscript);
+                } else if (!interimTranscript && onInterimTranscription) {
+                    onInterimTranscription(''); // Clear interim when finalized
+                }
+
+                if (finalTranscript && onTranscriptionChunk) {
+                    onTranscriptionChunk(finalTranscript + ' ');
                 }
             };
 
@@ -54,7 +65,7 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, cl
             if (timerRef.current) clearInterval(timerRef.current);
             if (recognitionRef.current) recognitionRef.current.stop();
         };
-    }, [onTranscriptionComplete]);
+    }, [onTranscriptionChunk, onInterimTranscription]);
 
     const startRecording = async () => {
         try {
@@ -80,7 +91,7 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionComplete, cl
             mediaRecorder.start();
 
             // Speech Recognition
-            if (recognitionRef.current && onTranscriptionComplete) {
+            if (recognitionRef.current && (onTranscriptionChunk || onInterimTranscription)) {
                 try {
                     recognitionRef.current.start();
                     setIsTranscribing(true);

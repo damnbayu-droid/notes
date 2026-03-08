@@ -8,8 +8,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, Square, Send, RefreshCcw, Globe, Download, FileText, File, FilePenLine } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { Mic, Square, Send, RefreshCcw, Globe, Download, FileText, File, FilePenLine, Loader2 } from 'lucide-react';
+import { formatDictation } from '@/lib/openai';
 
 import {
     DropdownMenu,
@@ -27,6 +27,8 @@ interface AdvancedVoiceDialogProps {
 export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoiceDialogProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
+    const [interimTranscript, setInterimTranscript] = useState('');
+    const [isFormatting, setIsFormatting] = useState(false);
     const [language, setLanguage] = useState('en-US');
     const [recordingTime, setRecordingTime] = useState(0);
 
@@ -70,6 +72,7 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
                 if (finalTranscript) {
                     setTranscript(prev => prev + ' ' + finalTranscript);
                 }
+                setInterimTranscript(interimTranscript);
             };
 
             recognitionRef.current.onerror = (event: any) => {
@@ -108,6 +111,7 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
 
     const startRecording = () => {
         setTranscript(''); // Clear previous
+        setInterimTranscript('');
         try {
             recognitionRef.current?.start();
             setIsRecording(true);
@@ -218,14 +222,21 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
                     </div>
 
                     {/* Transcript Area */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative">
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Transcript</label>
-                        <Textarea
-                            value={transcript}
-                            onChange={(e) => setTranscript(e.target.value)}
-                            placeholder="Your speech will appear here..."
-                            className="min-h-[100px] border-violet-100 focus:border-violet-300 bg-white/50 resize-none text-base"
-                        />
+                        <div className="relative min-h-[120px] max-h-[200px] overflow-y-auto border border-violet-100 focus-within:border-violet-300 bg-white/50 rounded-lg p-3 text-base shadow-inner">
+                            {isFormatting ? (
+                                <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex flex-col items-center justify-center text-violet-600 gap-2 z-10 animate-pulse">
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                    <span className="text-sm font-semibold">AI is structuring your note...</span>
+                                </div>
+                            ) : null}
+                            <div className="whitespace-pre-wrap outline-none" contentEditable suppressContentEditableWarning onInput={(e) => setTranscript(e.currentTarget.textContent || '')}>
+                                {transcript}
+                                <span className="text-gray-400">{transcript && interimTranscript ? ' ' : ''}{interimTranscript}</span>
+                                {!transcript && !interimTranscript && <span className="text-gray-400 italic pointer-events-none">Your speech will appear here...</span>}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -305,17 +316,20 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
                                 </DropdownMenu>
 
                                 <Button
-                                    onClick={() => {
+                                    onClick={async () => {
+                                        setIsFormatting(true);
+                                        const finalFormatted = await formatDictation(transcript);
                                         // Dispatch event to create note
                                         window.dispatchEvent(new CustomEvent('create-new-note', {
-                                            detail: { title: 'Voice Note', content: transcript }
+                                            detail: { title: 'Voice Note', content: finalFormatted }
                                         }));
+                                        setIsFormatting(false);
                                         handleClose();
                                         window.dispatchEvent(new CustomEvent('dcpi-notification', {
                                             detail: { title: 'Success', message: 'Note Created!', type: 'success' }
                                         }));
                                     }}
-                                    disabled={!transcript}
+                                    disabled={!transcript || isFormatting}
                                     variant="secondary"
                                     className="bg-violet-100 text-violet-700 hover:bg-violet-200 w-full sm:w-auto"
                                 >

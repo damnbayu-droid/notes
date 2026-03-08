@@ -94,3 +94,47 @@ export async function askAI(
         return { role: 'assistant', content: `Error: ${error.message}`, refusal: null };
     }
 }
+
+export async function formatDictation(rawText: string): Promise<string> {
+    const localApiKey = localStorage.getItem('openai_api_key');
+    const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const finalApiKey = localApiKey || envApiKey;
+
+    if (!finalApiKey) {
+        // Fallback to raw text if no API key is present
+        return rawText;
+    }
+
+    const openai = new OpenAI({
+        apiKey: finalApiKey,
+        dangerouslyAllowBrowser: true
+    });
+
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "system",
+                    content: `You are an expert transcription editor. Your job is to take raw, unpunctuated voice dictation text and format it perfectly.
+- Add proper punctuation (periods, commas, question marks).
+- Fix minor logical dictation errors or homophones.
+- Format into paragraphs if the speech implies distinct ideas.
+- Remove filler words like "um", "ah", or repetitive stutters.
+- Output ONLY the formatted text. Do not add conversational padding like "Here is the text".
+- Preserve the exact language spoken (e.g., Indonesian to Indonesian, English to English).`
+                },
+                {
+                    role: "user",
+                    content: rawText
+                }
+            ],
+            temperature: 0.2, // Low temperature for high fidelity to original meaning
+        });
+
+        return completion.choices[0]?.message?.content || rawText;
+    } catch (error) {
+        console.error("Transcription Formatting Error:", error);
+        return rawText; // Fallback to raw text on error
+    }
+}

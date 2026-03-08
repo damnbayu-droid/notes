@@ -233,7 +233,7 @@ export default function AIChatWindow({ onClose, initialMessage, onClearInitialMe
                 <CardFooter className="p-3 bg-white border-t border-gray-100 shrink-0">
                     <div className="flex w-full gap-2 items-center">
                         <VoiceRecorder
-                            onTranscriptionComplete={(text) => {
+                            onTranscriptionChunk={(text) => {
                                 setInput(prev => prev + text);
                             }}
                             onRecordingComplete={() => {

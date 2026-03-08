@@ -44,8 +44,10 @@ import {
   Copy,
   Check,
   Shield,
+  Loader2,
 } from 'lucide-react';
 import { buildShareUrl } from '@/lib/shareUtils';
+import { formatDictation } from '@/lib/openai';
 import { CanvasEditor } from './CanvasEditor';
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
 
@@ -104,6 +106,11 @@ export function NoteEditor({
   const [shareCopied, setShareCopied] = useState(false);
   const [textCopied, setTextCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  // Dictation States
+  const [liveDictationChunks, setLiveDictationChunks] = useState('');
+  const [liveDictationInterim, setLiveDictationInterim] = useState('');
+  const [isFormattingDictation, setIsFormattingDictation] = useState(false);
 
   // Track initial state to avoid auto-save on mount if nothing changed
   const lastSavedState = useRef({ html: '', color: '', tags: [] as string[], folder: '', reminderDate: '' });
@@ -658,20 +665,72 @@ export function NoteEditor({
             <>
               {/* Voice Recorder Section */}
               {isVoiceOpen && (
-                <div className="p-3 border border-violet-100 rounded-lg bg-violet-50/30 flex flex-col gap-2 items-center justify-center shrink-0">
-                  <span className="text-[10px] font-medium text-violet-600 uppercase">
-                    Voice Note active
-                  </span>
-                  <VoiceRecorder
-                    onRecordingComplete={(_blob) => {
-                      setIsVoiceOpen(false);
-                    }}
-                    onTranscriptionComplete={(text) => {
-                      if (editor) {
-                        editor.chain().focus().insertContent(text).run();
-                      }
-                    }}
-                  />
+                <div className="p-4 border border-violet-100 rounded-2xl bg-gradient-to-br from-violet-50/50 to-purple-50/50 flex flex-col gap-4 shrink-0 shadow-sm animate-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-violet-600 uppercase tracking-widest flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                      </span>
+                      Voice Dictation
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-violet-400 hover:text-violet-700 hover:bg-violet-100/50 rounded-full"
+                      onClick={() => setIsVoiceOpen(false)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <VoiceRecorder
+                      onTranscriptionChunk={(text) => {
+                        setLiveDictationChunks(prev => prev + text);
+                      }}
+                      onInterimTranscription={(text) => {
+                        setLiveDictationInterim(text);
+                      }}
+                      onRecordingComplete={async (_blob) => {
+                        const fullText = liveDictationChunks + liveDictationInterim;
+                        if (!fullText.trim()) {
+                          setIsVoiceOpen(false);
+                          return;
+                        }
+
+                        setIsFormattingDictation(true);
+                        try {
+                          // AI Post-processing
+                          const formatted = await formatDictation(fullText);
+                          if (editor) {
+                            editor.chain().focus().insertContent(formatted + ' ').run();
+                          }
+                        } finally {
+                          setIsFormattingDictation(false);
+                          setIsVoiceOpen(false);
+                          setLiveDictationChunks('');
+                          setLiveDictationInterim('');
+                        }
+                      }}
+                    />
+
+                    <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-xl border border-violet-100/50 p-3 min-h-[60px] text-sm text-gray-700 shadow-inner overflow-y-auto max-h-[150px]">
+                      {isFormattingDictation ? (
+                        <div className="flex items-center justify-center h-full text-violet-600 gap-2 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-xs font-medium">AI Formatting...</span>
+                        </div>
+                      ) : !liveDictationChunks && !liveDictationInterim ? (
+                        <span className="text-gray-400 italic text-xs flex items-center h-full">Start speaking...</span>
+                      ) : (
+                        <p className="leading-relaxed">
+                          {liveDictationChunks}
+                          <span className="text-gray-400">{liveDictationInterim}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
