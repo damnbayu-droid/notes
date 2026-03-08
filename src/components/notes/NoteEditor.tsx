@@ -541,6 +541,8 @@ export function NoteEditor({
                                 navigator.clipboard.writeText(url);
                                 setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
                                 window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Public Link Created', message: 'Standard link copied to clipboard', type: 'success' } }));
+                              } else if (result && !result.success) {
+                                window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Share Failed', message: result.error || 'Unknown error occurred. Did you run the SQL script for Phase 50?', type: 'error' } }));
                               }
                               setIsSharing(false);
                             }}
@@ -575,6 +577,8 @@ export function NoteEditor({
                                     navigator.clipboard.writeText(url);
                                     setShareCopied(true); setTimeout(() => setShareCopied(false), 2000);
                                     window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Password Set', message: 'Note encrypted with password', type: 'success' } }));
+                                  } else if (result && !result.success) {
+                                    window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Share Failed', message: result.error || 'Unknown error occurred. Have you run the SQL script?', type: 'error' } }));
                                   }
                                   setIsSharing(false);
                                 }}
@@ -605,6 +609,8 @@ export function NoteEditor({
                                     type: 'success'
                                   }
                                 }));
+                              } else if (result && !result.success) {
+                                window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Share Failed', message: result.error || 'Unknown error occurred. Have you run the SQL script?', type: 'error' } }));
                               }
                               setIsSharing(false);
                             }}

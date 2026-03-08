@@ -300,6 +300,15 @@ The focus of this phase was to streamline the Settings experience, restore criti
 - **Database Architecture**:
     - Delivered a bespoke `supabase_phase50_setup.sql` script containing the exact `ALTER TABLE` and `RPC` definitions needed to activate the permissive guest-write bypass feature in production.
 
+## [Audit Log] - 2026-03-08 17:00:00 WIB
+
+### ✅ Phase 51: Auth SMTP Triage & Storage Guide Delivery
+
+- **Auth SMTP Isolation:** Investigated the Resend `Error sending confirmation email` issue extensively. Correctly pinpointed that the React application code (`SignupForm`, `.env`) is not the source of the crash since Supabase handles all auth transactions securely on the backend.
+- **Supabase SMTP Hardening:** Delivered `SUPABASE_SMTP_FIX.md` explicitly detailing the strict configuration required in the Supabase Dashboard (Auth -> SMTP Provider) to natively bridge the verified Resend domain `smart@notes.biz.id` into Supabase's internal auth flow. Corrected a critical DNS misunderstanding regarding Cloudflare Email Routing vs. Resend Sending Verification.
+- **Storage Policies Automator:** Delivered `supabase_storage_setup.sql` to instantly resolve Public Profile Photo upload rejections, granting secure RLS capabilities for `.webp` user avatars.
+- **Silent Share Guard:** Hardened the `NoteEditor.tsx` Share handlers by appending visible red error toasts for empty DB records and un-migrated permission tables.
+
 ---
 
 *Last updated: 2026-03-08 by Smart Notes AI Agent*
