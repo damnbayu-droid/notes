@@ -281,6 +281,25 @@ The focus of this phase was to streamline the Settings experience, restore criti
     - Discovered a stale React state closure that caused the `SpeechRecognition` engine to silently abort continuous dictation when the user paused speaking.
     - Implemented a robust `useRef`-based architecture (`isRecordingRef`) in both inline `VoiceRecorder` and `AdvancedVoiceDialog` to guarantee the engine automatically re-engages and streams real-time text chunks without interruption.
 
+## [Audit Log] - 2026-03-08 15:15:00 WIB
+
+### ✅ Phase 50: Advanced Share System & Link Detection
+
+- **Link Auto-Detection**:
+    - Enhanced the `NoteEditor` initialization to use a Regex pre-processor that scans raw text content lacking proper HTML tags.
+    - All raw `http/https` URLs in legacy notes are now automatically converted into clickable `<a>` tags before Tiptap mounts, instantly fixing old unlinked URLs.
+- **Advanced Share Permissions ('Read'/'Write')**:
+    - Added a `share_permission` column to the `Note` schema.
+    - Expanded the `Share Note` Dialog inside `NoteEditor` to include explicit toggles for **"View Only"** and **"Can Edit"**.
+    - Updated `useNotes.ts` to push the designated permission flag to Supabase when a public link is generated.
+- **Interactive SharedNoteView Environment**:
+    - Completely overhauled the public `SharedNoteView` page.
+    - **Read Mode (`share_permission: 'read'`)**: Fixed HTML layout bugs by rendering rich text dynamically via `dangerouslySetInnerHTML`.
+    - **Write Mode (`share_permission: 'write'`)**: Embedded a fully functioning **Tiptap Editor** directly within the public view page, labeled "Guest Edit Mode".
+    - Writable notes feature a **"Save Changes"** button synced directly to a customized Supabase RPC (`update_shared_note`) allowing non-authorized users (Guests) to cooperatively edit and save the content safely without compromising the author's primary RLS security policies.
+- **Database Architecture**:
+    - Delivered a bespoke `supabase_phase50_setup.sql` script containing the exact `ALTER TABLE` and `RPC` definitions needed to activate the permissive guest-write bypass feature in production.
+
 ---
 
 *Last updated: 2026-03-08 by Smart Notes AI Agent*

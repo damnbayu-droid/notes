@@ -5,7 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Globe, Calendar, Tag, ArrowRight, Lock, Copy, Check, ClipboardCopy, Shield, Key } from 'lucide-react';
+import { Globe, Calendar, Tag, ArrowRight, Lock, Copy, Check, ClipboardCopy, Shield, Key, Save, Loader2, FilePenLine } from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 
 export default function SharedNoteView() {
     const { id, slug } = useParams();
@@ -14,6 +17,7 @@ export default function SharedNoteView() {
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Encryption state
     const [isLocked, setIsLocked] = useState(false);
@@ -21,6 +25,46 @@ export default function SharedNoteView() {
     const [isDecrypting, setIsDecrypting] = useState(false);
     const [decryptionError, setDecryptionError] = useState('');
     const [rawNote, setRawNote] = useState<Note | null>(null);
+
+    const editor = useEditor({
+        extensions: [
+            StarterKit,
+            Link.configure({ openOnClick: true, HTMLAttributes: { class: 'text-violet-500 underline decoration-violet-500/30' } })
+        ],
+        content: '',
+        editable: false,
+        editorProps: {
+            attributes: {
+                class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[50vh] text-foreground'
+            }
+        }
+    });
+
+    useEffect(() => {
+        if (editor && note) {
+            editor.commands.setContent(note.content || '');
+            editor.setEditable(note.share_permission === 'write');
+        }
+    }, [note, editor]);
+
+    const handleSave = async () => {
+        if (!editor || !note || !slug) return;
+        setIsSaving(true);
+        try {
+            const { error } = await supabase.rpc('update_shared_note', {
+                p_share_slug: slug,
+                p_title: note.title,
+                p_content: editor.getHTML()
+            });
+            if (error) throw error;
+            window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Saved', message: 'Guest edits saved to author.', type: 'success' } }));
+        } catch (err: any) {
+            console.error(err);
+            window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Save Failed', message: err.message, type: 'error' } }));
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const handleDecrypt = async (pwd?: string) => {
         if (!rawNote) return;
@@ -298,9 +342,26 @@ export default function SharedNoteView() {
                 <hr className="border-border" />
 
                 {/* Body */}
-                <div className="prose prose-lg dark:prose-invert max-w-none text-foreground whitespace-pre-wrap leading-relaxed break-words text-base">
-                    {note.content || <span className="text-muted-foreground italic">This note has no content.</span>}
-                </div>
+                {note.share_permission === 'write' ? (
+                    <div className="border border-violet-100 dark:border-violet-900/50 rounded-2xl p-6 bg-card shadow-sm mt-8 transition-shadow focus-within:ring-2 focus-within:ring-violet-200">
+                        <div className="flex items-center gap-2 mb-4 text-xs font-semibold text-violet-600 bg-violet-50 dark:bg-violet-900/30 w-fit px-3 py-1.5 rounded-full">
+                            <FilePenLine className="w-3.5 h-3.5" />
+                            Guest Edit Mode
+                        </div>
+                        <EditorContent editor={editor} />
+                        <div className="mt-8 flex justify-end border-t border-border pt-4">
+                            <Button onClick={handleSave} disabled={isSaving} className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 shadow-md flex-1 sm:flex-none">
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Save Changes
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <div
+                        className="prose prose-lg dark:prose-invert max-w-none text-foreground leading-relaxed break-words text-base mt-8 tiptap-content"
+                        dangerouslySetInnerHTML={{ __html: note.content || '<span class="text-muted-foreground italic">This note has no content.</span>' }}
+                    />
+                )}
 
                 {/* Bottom copy CTA — big and clear after reading */}
                 <div className="pt-6 border-t border-border">

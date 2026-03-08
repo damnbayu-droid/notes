@@ -70,7 +70,7 @@ interface NoteEditorProps {
   onDelete?: (id: string) => void;
   onTogglePin?: (id: string) => void;
   onToggleArchive?: (id: string) => void;
-  onShareNote?: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string) => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
+  onShareNote?: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string, permission?: 'read' | 'write') => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
   onUnshareNote?: (id: string) => Promise<{ success: boolean; error?: string }>;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -104,6 +104,7 @@ export function NoteEditor({
   const [shareSlug, setShareSlug] = useState<string | undefined>();
   const [isSharing, setIsSharing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [sharePermission, setSharePermission] = useState<'read' | 'write'>('read');
   const [textCopied, setTextCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -171,7 +172,16 @@ export function NoteEditor({
       if (note.content && (note.content.startsWith('<h1') || note.content.startsWith('<p'))) {
         initialHtml = note.content;
       } else {
-        initialHtml = `<h1>${note.title || ''}</h1><p>${(note.content || '').replace(/\n/g, '<br>')}</p>`;
+        // Auto-linkify raw text that wasn't previously HTML
+        let contentToProcess = note.content || '';
+        if (!contentToProcess.includes('<') && contentToProcess.includes('http')) {
+          // Simple regex to convert raw urls to a tags
+          const urlRegex = /(https?:\/\/[^\s]+)/g;
+          contentToProcess = contentToProcess.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+          // Convert newlines to breaks to preserve layout
+          contentToProcess = contentToProcess.replace(/\n/g, '<br>');
+        }
+        initialHtml = `<h1>${note.title || ''}</h1><p>${contentToProcess}</p>`;
       }
 
       setEditorHtml(initialHtml);
@@ -497,6 +507,24 @@ export function NoteEditor({
 
                     {!isShared ? (
                       <div className="space-y-3 pt-2 border-t border-gray-100">
+                        <div className="flex bg-muted p-1 rounded-lg">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`flex-1 h-8 text-xs ${sharePermission === 'read' ? 'bg-white shadow-sm' : ''}`}
+                            onClick={() => setSharePermission('read')}
+                          >
+                            View Only
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`flex-1 h-8 text-xs ${sharePermission === 'write' ? 'bg-white shadow-sm' : ''}`}
+                            onClick={() => setSharePermission('write')}
+                          >
+                            Can Edit
+                          </Button>
+                        </div>
                         <div className="grid grid-cols-1 gap-2">
                           <Button
                             variant="outline"
@@ -506,7 +534,7 @@ export function NoteEditor({
                             onClick={async () => {
                               if (!note || !onShareNote) return;
                               setIsSharing(true);
-                              const result = await onShareNote?.(note.id, 'public');
+                              const result = await onShareNote?.(note.id, 'public', undefined, sharePermission);
                               if (result && result.success && result.slug) {
                                 setIsShared(true); setShareSlug(result.slug);
                                 const url = buildShareUrl(result.slug);
@@ -540,7 +568,7 @@ export function NoteEditor({
                                   const pwd = (document.getElementById('share-password') as HTMLInputElement)?.value;
                                   if (!pwd) return;
                                   setIsSharing(true);
-                                  const result = await onShareNote?.(note!.id, 'password', pwd);
+                                  const result = await onShareNote?.(note!.id, 'password', pwd, sharePermission);
                                   if (result && result.success && result.slug) {
                                     setIsShared(true); setShareSlug(result.slug);
                                     const url = buildShareUrl(result.slug);
@@ -564,7 +592,7 @@ export function NoteEditor({
                             onClick={async () => {
                               if (!note || !onShareNote) return;
                               setIsSharing(true);
-                              const result = await onShareNote?.(note.id, 'encrypted');
+                              const result = await onShareNote?.(note.id, 'encrypted', undefined, sharePermission);
                               if (result && result.success && result.slug && result.key) {
                                 setIsShared(true); setShareSlug(result.slug);
                                 const url = `${buildShareUrl(result.slug)}#${result.key}`;

@@ -36,7 +36,7 @@ interface UseNotesReturn {
   createFolder: (name: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
   restoreNote: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteForever: (id: string) => Promise<{ success: boolean; error?: string }>;
-  shareNote: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string) => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
+  shareNote: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string, permission?: 'read' | 'write') => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
   unshareNote: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -686,7 +686,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
       }
       return { success: true };
     },
-    shareNote: async (id: string, type: 'public' | 'password' | 'encrypted' = 'public', password?: string) => {
+    shareNote: async (id: string, type: 'public' | 'password' | 'encrypted' = 'public', password?: string, permission: 'read' | 'write' = 'read') => {
       const note = notes.find(n => n.id === id);
       if (!note) return { success: false, error: 'Note not found' };
 
@@ -718,6 +718,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
           is_shared: true,
           share_slug: slug,
           share_type: type,
+          share_permission: permission,
           is_password_protected,
           password_salt: salt,
           is_encrypted,
