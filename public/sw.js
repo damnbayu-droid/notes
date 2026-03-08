@@ -59,10 +59,10 @@ self.addEventListener('fetch', (event) => {
         return; // Let browser handle normally
     }
 
-    // Network-First strategy with timeout for index.html and root
-    if (url.pathname === '/' || url.pathname === '/index.html') {
+    // Strictly Network-First for index.html to prevent stale build errors
+    if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/share/')) {
         event.respondWith(
-            fetchWithTimeout(event.request, 3000)
+            fetch(event.request)
                 .then((response) => {
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {

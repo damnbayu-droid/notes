@@ -23,6 +23,25 @@ export class ErrorBoundary extends Component<Props, State> {
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('Uncaught error:', error, errorInfo);
+
+        // Auto-recovery for ChunkLoadErrors (Common during new deployments)
+        const errorMessage = error.message || '';
+        if (
+            errorMessage.includes('Failed to fetch dynamically imported module') ||
+            errorMessage.includes('chunk') ||
+            errorMessage.includes('Loading chunk') ||
+            errorMessage.includes('Load chunk')
+        ) {
+            console.warn('Deployment mismatch detected. Forcing page refresh for recovery...');
+            const lastReload = sessionStorage.getItem('last_chunk_error_reload');
+            const now = Date.now();
+
+            // Only reload once to avoid infinite loops if it's a real persistent error
+            if (!lastReload || now - parseInt(lastReload) > 30000) {
+                sessionStorage.setItem('last_chunk_error_reload', now.toString());
+                window.location.reload();
+            }
+        }
     }
 
     public render() {
