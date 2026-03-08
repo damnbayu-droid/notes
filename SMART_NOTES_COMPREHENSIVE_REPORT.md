@@ -235,4 +235,23 @@ The focus of this phase was to streamline the Settings experience, restore criti
 
 ---
 
-*Last updated: 2026-03-07 by Smart Notes AI Agent*
+## [Audit Log] - 2026-03-08 14:00:00 WIB
+
+### ✅ Phase 47: Global Time, Trash Logic, and UI Polish
+
+- **Timezone Adjustment**:
+    - Removed hardcoded 'Asia/Makassar' reliance across `BaliTimeClock`, `AIChatWindow`, `NotificationCenter`, and `useNotificationManager`.
+    - Implemented `Intl.DateTimeFormat().resolvedOptions().timeZone` to detect and respect the user's localized device time by default.
+- **Trash Folder Logic**:
+    - Implemented a "soft-delete" mechanism: clicking delete now moves the note to the "Trash" folder instead of immediately removing it from the database.
+    - Added the "Trash" view to the Sidebar's Menu navigation.
+    - Updated `useNotes.ts` filtering: "All Notes" now strictly displays notes residing in the "Main" folder, preventing deleted or archived notes from appearing in the main list.
+- **Sidebar Refinements**:
+    - Removed the redundant "FOLDERS" label from the Sidebar view.
+    - Wrapped the Navigation and Folder list in a dedicated `ScrollArea` to ensure robust scrolling on devices with limited vertical estate.
+- **DCPI Loading States**:
+    - Added robust progress indication via the Dynamic Island UI. Actions like creating, updating, and deleting notes now dispatch a `dcpi-status` event with a loading indicator to provide immediate user feedback during backend sync operations.
+
+---
+
+*Last updated: 2026-03-08 by Smart Notes AI Agent*

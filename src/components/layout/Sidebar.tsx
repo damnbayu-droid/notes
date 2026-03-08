@@ -75,6 +75,7 @@ export function Sidebar({
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
+    { id: 'trash' as ViewType, label: 'Trash', icon: Trash2, count: 0 },
     { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },
     { id: 'voice-note' as any, label: 'Voice Note', icon: Mic, count: 0, onClick: () => setIsVoiceOpen(true) },
   ];
@@ -195,11 +196,6 @@ export function Sidebar({
 
               {/* Folders */}
               <div className="space-y-1">
-                <div className="flex items-center justify-between px-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Folders
-                  </p>
-                </div>
                 <div className="space-y-0.5">
                   {sortedFolders.map(folder => folder !== 'Google Drive' && (
                     <div key={folder} className="group flex items-center justify-between pr-2 rounded-lg hover:bg-accent transition-colors">

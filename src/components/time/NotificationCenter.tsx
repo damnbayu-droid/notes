@@ -164,7 +164,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
 
                     <div className="p-3 border-t border-border bg-gray-50/50 text-[9px] text-center text-muted-foreground font-medium flex items-center justify-center gap-1">
                         <Settings className="w-3 h-3" />
-                        SYSTEM TIME (BALI/WITA): {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Makassar', hour12: false, hour: '2-digit', minute: '2-digit' })}
+                        SYSTEM TIME (LOCAL): {new Date().toLocaleTimeString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' })}
                     </div>
                 </div>
             </DialogContent>

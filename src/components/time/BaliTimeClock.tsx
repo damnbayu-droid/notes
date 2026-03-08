@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { formatInTimeZone } from 'date-fns-tz';
 import { Clock } from 'lucide-react';
 
-const BALI_TIMEZONE = 'Asia/Makassar'; // UTC+8 (Bali/WITA)
-
+const DEVICE_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Makassar'; // Fallback only
 interface BaliTimeClockProps {
     headless?: boolean;
 }
@@ -34,13 +33,13 @@ export function BaliTimeClock({ headless = false }: BaliTimeClockProps) {
 
     const formattedTime = formatInTimeZone(
         currentTime,
-        BALI_TIMEZONE,
+        DEVICE_TIMEZONE,
         'HH:mm:ss'
     );
 
     const formattedDate = formatInTimeZone(
         currentTime,
-        BALI_TIMEZONE,
+        DEVICE_TIMEZONE,
         'EEEE, dd MMMM yyyy'
     );
 
@@ -53,11 +52,11 @@ export function BaliTimeClock({ headless = false }: BaliTimeClockProps) {
                 </div>
                 {headless ? (
                     <div className="hidden sm:block text-[8px] leading-tight text-inherit opacity-80">
-                        {formattedDate} (Bali)
+                        {formattedDate} ({DEVICE_TIMEZONE.split('/')[1]?.replace('_', ' ') || 'Local'})
                     </div>
                 ) : (
                     <div className="text-xs leading-tight text-violet-600 dark:text-violet-400">
-                        {formattedDate} (Bali)
+                        {formattedDate} ({DEVICE_TIMEZONE.split('/')[1]?.replace('_', ' ') || 'Local'})
                     </div>
                 )}
             </div>

@@ -35,7 +35,7 @@ export function useNotificationManager({ notes }: NotificationManagerProps) {
         if (!hasPermission) return;
 
         const now = new Date();
-        const BALI_TZ = 'Asia/Makassar';
+        const DEVICE_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
         // 1. Check Notes Reminders
         if (notes && notes.length > 0) {
@@ -51,24 +51,24 @@ export function useNotificationManager({ notes }: NotificationManagerProps) {
             });
         }
 
-        // 2. Check Alarms (Bali Time)
+        // 2. Check Alarms (Local Time)
         // Read from localStorage to get latest
         try {
             const savedAlarms = JSON.parse(localStorage.getItem('alarms') || '[]');
-            const currentBaliTime = formatInTimeZone(now, BALI_TZ, 'HH:mm');
+            const currentLocalTime = formatInTimeZone(now, DEVICE_TZ, 'HH:mm');
             // AlarmDialog uses: 0-6. Let's assume 0=Sun, 1=Mon...
             // date-fns format 'i' returns ISO day of week (1-7). 7 is Sunday.
             // Let's adjust: if 'i' is 7, use 0. Else use 'i'.
-            const isoDay = parseInt(formatInTimeZone(now, BALI_TZ, 'i'));
+            const isoDay = parseInt(formatInTimeZone(now, DEVICE_TZ, 'i'));
             const dayIndex = isoDay === 7 ? 0 : isoDay;
 
             savedAlarms.forEach((alarm: any) => {
-                if (alarm.enabled && alarm.time === currentBaliTime && alarm.days.includes(dayIndex)) {
+                if (alarm.enabled && alarm.time === currentLocalTime && alarm.days.includes(dayIndex)) {
                     // Create unique ID for this instance (ID + Date + Time)
-                    const instanceId = `${alarm.id}-${formatInTimeZone(now, BALI_TZ, 'yyyy-MM-dd-HH-mm')}`;
+                    const instanceId = `${alarm.id}-${formatInTimeZone(now, DEVICE_TZ, 'yyyy-MM-dd-HH-mm')}`;
 
                     if (!processedAlarms.has(instanceId)) {
-                        triggerNotification(`Alarm: ${alarm.label}`, `It is ${alarm.time} (Bali Time)`, instanceId);
+                        triggerNotification(`Alarm: ${alarm.label}`, `It is ${alarm.time} (Local Time)`, instanceId);
                         // Add to processed set
                         setProcessedAlarms(prev => {
                             const newSet = new Set(prev);

@@ -73,25 +73,24 @@ export default function AIChatWindow({ onClose, initialMessage, onClearInitialMe
         setInput('');
         setIsLoading(true);
 
-        // Get Bali Time (Asia/Makassar)
-        const baliTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Makassar', hour12: true });
-        const baliDate = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Makassar', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
+        // Get Local Time
+        const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        const localTime = new Date().toLocaleString('en-US', { timeZone: deviceTz, hour12: true });
+        const localDate = new Date().toLocaleDateString('en-US', { timeZone: deviceTz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const contextMessages: any[] = [
             {
                 role: 'system',
                 content: `You are Note Ai, the intelligent OS for Smart Notes. You can manage notes and schedules directly.
-            
-            Current Time (Bali/WITA): ${baliDate}, ${baliTime}
+            Current Time (Local): ${localDate}, ${localTime}
             
             Tools available:
             - create_note(title, content, folder): Create a new note.
             - schedule_reminder(task, datetime_iso): Schedule a reminder.
             
             scheduling_rules:
-            - You MUST use the provided Bali Time as "now".
-            - If user says "tomorrow", add 1 day to the Bali date.
-            - If user says "at 5 PM", use 5:00 PM Bali time.
+            - You MUST use the provided Local Time as "now".
+            - If user says "tomorrow", add 1 day to the Local date.
+            - If user says "at 5 PM", use 5:00 PM local time.
             - Always prefer ISO 8601 format for dates.
             - "on device" means simple notification.
             

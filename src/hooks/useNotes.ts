@@ -296,6 +296,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
   // --- CRUD Operations ---
 
   const createNote = useCallback(async (noteData: Partial<Note>): Promise<{ success: boolean; note?: Note; error?: string }> => {
+    window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'loading', text: 'Creating note...', type: 'info', duration: 3000 } }));
     // Guest mode or Auth mode - both allow creation
     // if (!user) return { success: false, error: 'User not authenticated' };
 
@@ -320,6 +321,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
     // Update Queue
     if (isOffline) {
       setSyncQueue(prev => [...prev, { type: 'CREATE', payload: newNote }]);
+      window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'success', text: 'Note created (offline)', type: 'success', duration: 2000 } }));
       return { success: true, note: newNote };
     }
 
@@ -331,12 +333,16 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
       // return success because we queued it? Or error?
       // For offline-first, queuing IS success from UI perspective.
       console.error('Create failed, queued:', error);
+      window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'error', text: 'Create failed, queued for sync', type: 'error', duration: 3000 } }));
+    } else {
+      window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'success', text: 'Note created!', type: 'success', duration: 2000 } }));
     }
 
     return { success: true, note: newNote };
   }, [user, isOffline]);
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>): Promise<{ success: boolean; error?: string }> => {
+    window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'loading', text: 'Saving...', type: 'info', duration: 2000 } }));
     // Optimistic
     setNotes(prev => prev.map(note =>
       note.id === id
@@ -381,6 +387,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
   }, [isOffline]);
 
   const deleteNote = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
+    window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'loading', text: 'Deleting...', type: 'info', duration: 2000 } }));
     const note = notes.find(n => n.id === id);
     if (!note) return { success: false, error: 'Note not found' };
 
@@ -518,8 +525,13 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
   // Same as before
   const filterNotes = useCallback((notesToFilter: Note[]) => {
     return notesToFilter.filter(note => {
-      // Folder Filter
-      if (activeFolder !== 'All Notes' && activeFolder !== 'Favorites' && activeFolder !== 'Trash') {
+      // NEVER show Trash notes unless explicitly viewing Trash
+      if (activeFolder !== 'Trash' && note.folder === 'Trash') return false;
+
+      // Folder Filter: If "All Notes" is selected, ONLY show "Main" folder notes
+      if (activeFolder === 'All Notes') {
+        if (note.folder !== 'Main') return false;
+      } else if (activeFolder !== 'Favorites' && activeFolder !== 'Trash') {
         if (note.folder !== activeFolder) return false;
       }
 
