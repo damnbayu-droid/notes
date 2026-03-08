@@ -15,8 +15,7 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInt
     const [recordingTime, setRecordingTime] = useState(0);
     const [isTranscribing, setIsTranscribing] = useState(false);
 
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const chunksRef = useRef<Blob[]>([]);
+    const isRecordingRef = useRef(false);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const recognitionRef = useRef<any>(null);
 
@@ -59,6 +58,17 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInt
                     }));
                 }
             };
+
+            recognitionRef.current.onend = () => {
+                // Auto-restart if still recording
+                if (isRecordingRef.current) {
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+            };
         }
 
         return () => {
@@ -69,26 +79,8 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInt
 
     const startRecording = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-            // Audio Recording
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            chunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    chunksRef.current.push(e.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                onRecordingComplete(blob);
-                stream.getTracks().forEach(track => track.stop());
-            };
-
-            mediaRecorder.start();
+            // Request permissions just in case, but rely purely on SpeechRecognition
+            await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // Speech Recognition
             if (recognitionRef.current && (onTranscriptionChunk || onInterimTranscription)) {
@@ -107,6 +99,7 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInt
             }, 1000);
 
             setIsRecording(true);
+            isRecordingRef.current = true;
         } catch (error) {
             console.error('Error starting recording:', error);
             window.dispatchEvent(new CustomEvent('dcpi-notification', {
@@ -116,14 +109,15 @@ export function VoiceRecorder({ onRecordingComplete, onTranscriptionChunk, onInt
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
+        if (isRecordingRef.current) {
+            setIsRecording(false);
+            isRecordingRef.current = false;
             if (timerRef.current) clearInterval(timerRef.current);
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
                 setIsTranscribing(false);
             }
-            setIsRecording(false);
+            onRecordingComplete(new Blob()); // Dummy blob since we removed MediaRecorder
         }
     };
 

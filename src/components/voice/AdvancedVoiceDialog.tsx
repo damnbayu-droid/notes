@@ -34,6 +34,7 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
 
     const recognitionRef = useRef<any>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const isRecordingRef = useRef(false);
 
     // Supported Languages
     const languages = [
@@ -87,7 +88,7 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
 
             recognitionRef.current.onend = () => {
                 // Auto-restart if still recording (for continuous listening)
-                if (isRecording) {
+                if (isRecordingRef.current) {
                     try {
                         recognitionRef.current.start();
                     } catch (e) {
@@ -115,6 +116,7 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
         try {
             recognitionRef.current?.start();
             setIsRecording(true);
+            isRecordingRef.current = true;
             setRecordingTime(0);
             window.dispatchEvent(new CustomEvent('dynamic-status', {
                 detail: { type: 'record', text: 'Recording Voice...', duration: 0 }
@@ -131,9 +133,10 @@ export function AdvancedVoiceDialog({ isOpen, onClose, onSendToAI }: AdvancedVoi
     };
 
     const stopRecording = () => {
-        if (isRecording) {
+        if (isRecordingRef.current) {
             recognitionRef.current?.stop();
             setIsRecording(false);
+            isRecordingRef.current = false;
             if (timerRef.current) clearInterval(timerRef.current);
             window.dispatchEvent(new CustomEvent('dynamic-status', { detail: null }));
         }

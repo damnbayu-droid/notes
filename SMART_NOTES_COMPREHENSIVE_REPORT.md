@@ -270,6 +270,17 @@ The focus of this phase was to streamline the Settings experience, restore criti
     - Added interim visualization into the standalone Sidebar Voice Note modal.
     - Attached the `formatDictation` filter dynamically when saving standalone dictation notes.
 
+## [Audit Log] - 2026-03-08 14:30:00 WIB
+
+### ✅ Phase 49: Voice Note Architecture Optimization & Bug Fixes
+
+- **Memory/Local Storage Optimization**:
+    - Completely removed the heavy `MediaRecorder` dependency from the `VoiceRecorder` component.
+    - Voice Notes now operate *strictly* on pure Native `SpeechRecognition` text streaming, reducing RAM consumption to near-zero and nullifying the need to store large temporary Audio Blobs.
+- **Real-Time Continuity Bug Fix**:
+    - Discovered a stale React state closure that caused the `SpeechRecognition` engine to silently abort continuous dictation when the user paused speaking.
+    - Implemented a robust `useRef`-based architecture (`isRecordingRef`) in both inline `VoiceRecorder` and `AdvancedVoiceDialog` to guarantee the engine automatically re-engages and streams real-time text chunks without interruption.
+
 ---
 
 *Last updated: 2026-03-08 by Smart Notes AI Agent*
