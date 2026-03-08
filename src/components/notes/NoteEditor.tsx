@@ -285,7 +285,7 @@ export function NoteEditor({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleSave()}>
       <DialogContent
-        className={`${isMaximized ? 'w-full h-full sm:max-w-[95vw] sm:h-[95vh]' : 'w-full sm:max-w-2xl h-full sm:h-auto max-h-screen sm:max-h-[90vh]'} flex flex-col p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300 overflow-hidden shadow-2xl`}
+        className={`${isMaximized ? 'w-full h-[100dvh] sm:max-w-[100vw] sm:h-[100vh] rounded-none' : 'w-full h-[100dvh] sm:w-[95vw] sm:max-w-[700px] md:max-w-[850px] lg:max-w-[1100px] sm:h-[85vh] lg:h-[90vh] sm:rounded-2xl'} flex flex-col p-0 gap-0 ${colorOption.bg} border ${colorOption.border} transition-all duration-300 overflow-hidden shadow-2xl`}
       >
         <DialogHeader className="p-4 pb-2 border-b border-gray-100">
           {/* 3-column layout: [left: expand] [center: actions] [right: close] */}
