@@ -185,6 +185,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                 ) : (
                   <div className="h-full flex flex-col">
                     <SearchBar
+                      activeFolder={activeFolder}
                       searchQuery={searchQuery}
                       setSearchQuery={setSearchQuery}
                       selectedTags={selectedTags}

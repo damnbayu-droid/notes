@@ -93,7 +93,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
           </Button>
 
           <div className="hidden sm:flex items-center gap-2">
-            <img src="/logo.webp" alt="Smart Notes" className="w-7 h-7 object-contain drop-shadow-sm" />
+            <img src="/Logo.webp" alt="Smart Notes" className="w-8 h-auto object-contain drop-shadow-sm" />
             <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-purple-600">
               Smart Notes
             </span>

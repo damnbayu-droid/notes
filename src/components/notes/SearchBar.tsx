@@ -24,6 +24,7 @@ import {
 import type { SortOption } from '@/types';
 
 interface SearchBarProps {
+  activeFolder?: string;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedTags: string[];
@@ -45,6 +46,7 @@ const sortOptions: { value: SortOption; label: string }[] = [
 ];
 
 export function SearchBar({
+  activeFolder,
   searchQuery,
   setSearchQuery,
   selectedTags,
@@ -86,7 +88,7 @@ export function SearchBar({
         <div className="relative w-full">
           <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${isFocused ? 'text-violet-600' : 'text-muted-foreground opacity-50'}`} />
           <Input
-            placeholder="Search your secured notes..."
+            placeholder={activeFolder && activeFolder !== 'All Notes' && activeFolder !== 'Main' ? `Search in ${activeFolder}...` : "Search your secured notes..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
@@ -103,9 +105,15 @@ export function SearchBar({
           )}
         </div>
 
-        {/* Controls Row */}
         <div className="flex items-center justify-between gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
           <div className="flex items-center gap-2">
+            {/* Active Folder Badge */}
+            {activeFolder && activeFolder !== 'All Notes' && activeFolder !== 'Main' && (
+               <Badge variant="secondary" className="bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 pointer-events-none whitespace-nowrap border-0 shrink-0">
+                 {activeFolder}
+               </Badge>
+            )}
+
             {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

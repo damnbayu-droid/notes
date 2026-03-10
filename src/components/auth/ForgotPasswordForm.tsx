@@ -79,8 +79,8 @@ export function ForgotPasswordForm({ onSubmit, onBackToLogin }: ForgotPasswordFo
   return (
     <Card className="w-full max-w-md border-0 shadow-2xl bg-white/80 backdrop-blur-xl">
       <CardHeader className="space-y-4 text-center pb-8">
-        <div className="mx-auto w-16 h-16 flex items-center justify-center mb-2">
-          <img src="/logo.webp" alt="Smart Notes Logo" className="w-full h-full object-contain drop-shadow-xl hover:scale-105 transition-transform" />
+        <div className="mx-auto w-20 h-auto flex items-center justify-center mb-2">
+          <img src="/Logo.webp" alt="Smart Notes Logo" className="w-full h-full object-contain drop-shadow-xl hover:scale-105 transition-transform" />
         </div>
         <div className="space-y-2">
           <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">
