@@ -31,9 +31,9 @@
             "url": "/?action=new-note",
             "icons": [
                 {
-                    "src": "/Logo.webp",
-                    "sizes": "96x96",
-                    "type": "image/webp"
+                    "src": "/favicon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
                 }
             ]
         },
@@ -44,49 +44,49 @@
             "url": "/schedule",
             "icons": [
                 {
-                    "src": "/Logo.webp",
-                    "sizes": "96x96",
-                    "type": "image/webp"
+                    "src": "/favicon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
                 }
             ]
         }
     ],
     "icons": [
         {
-            "src": "/Logo.webp",
+            "src": "/favicon-192.png",
             "sizes": "192x192",
-            "type": "image/webp",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/Logo.webp",
+            "src": "/favicon-512.png",
             "sizes": "512x512",
-            "type": "image/webp",
+            "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/Logo.webp",
+            "src": "/favicon.webp",
             "sizes": "any",
             "type": "image/webp",
             "purpose": "maskable"
         },
         {
-            "src": "/Logo.jpg",
-            "sizes": "any",
-            "type": "image/jpeg",
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png",
             "purpose": "any"
         }
     ],
     "screenshots": [
         {
-            "src": "/Logo.webp",
+            "src": "/logo.webp",
             "sizes": "1280x720",
             "type": "image/webp",
             "form_factor": "wide",
             "label": "Smart Notes - Desktop View"
         },
         {
-            "src": "/Logo.webp",
+            "src": "/logo.webp",
             "sizes": "390x844",
             "type": "image/webp",
             "form_factor": "narrow",

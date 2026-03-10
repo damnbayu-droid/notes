@@ -13,7 +13,7 @@ interface SEOProps {
 
 const SITE_NAME = 'Smart Notes';
 const BASE_URL = 'https://notes.biz.id';
-const DEFAULT_IMAGE = `${BASE_URL}/Logo.jpg`;
+const DEFAULT_IMAGE = `${BASE_URL}/og-image.webp`;
 
 const DEFAULT_TITLE = 'Smart Notes';
 const DEFAULT_DESCRIPTION =
@@ -127,8 +127,8 @@ export function SEO({
             <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
             <meta name="application-name" content={SITE_NAME} />
             <meta name="msapplication-TileColor" content="#7c3aed" />
-            <meta name="msapplication-TileImage" content="/Logo.webp" />
-            <link rel="apple-touch-icon" href="/Logo.webp" />
+            <meta name="msapplication-TileImage" content="/favicon-192.png" />
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
             {/* ===== STRUCTURED DATA (JSON-LD) ===== */}
             <script type="application/ld+json">
