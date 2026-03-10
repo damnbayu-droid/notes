@@ -110,7 +110,7 @@ export function Sidebar({
       `}>
         <div className="flex-none flex items-center justify-between h-14 px-4 border-b border-border">
           <div className="flex items-center gap-2 lg:hidden">
-            <img src="/Logo.webp" alt="Smart Notes" className="w-8 h-auto object-contain drop-shadow-sm" />
+            <img src="/Logo.webp?v=2" alt="Smart Notes" className="w-8 h-auto object-contain drop-shadow-sm" />
             <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
               Smart Notes
             </span>
