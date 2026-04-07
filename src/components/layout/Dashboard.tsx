@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
@@ -99,6 +99,11 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     }
   };
   */
+
+  const handleNoteClick = useCallback((note: Note) => {
+    setEditingNote(note);
+    setIsEditorOpen(false); // Start unexpanded
+  }, []);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -213,10 +218,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                         searchQuery={searchQuery}
                         onCreate={handleCreateNote}
                         viewMode={viewMode}
-                        onNoteClick={(note) => {
-                          setEditingNote(note);
-                          setIsEditorOpen(false); // Start unexpanded
-                        }}
+                        onNoteClick={handleNoteClick}
                         onTogglePin={togglePin}
                         onDelete={deleteNote}
                         onToggleArchive={toggleArchive}

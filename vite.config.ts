@@ -1,19 +1,33 @@
 import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import viteCompression from "vite-plugin-compression"
 
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
   plugins: [
-
-    react()
+    react(),
+    // Gzip Compression (Sustainability: smaller payloads)
+    viteCompression({
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+    // Brotli Compression (Sustainability: even smaller payloads)
+    viteCompression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+    }),
   ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  esbuild: {
+    // Hardening: Drop all console and debugger statements in production
+    drop: ['console', 'debugger'],
   },
   build: {
     // Target modern browsers — es2020 enables native optional chaining/nullish

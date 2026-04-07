@@ -83,8 +83,20 @@
   <!-- ===== LOGO PRELOAD (LCP) ===== -->
   <link rel="preload" as="image" href="/logo.webp" fetchpriority="high" type="image/webp" />
 
-  <!-- Content Security Policy for basic hardening -->
-  <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+  <!-- Hardening: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob: https://*.supabase.co;
+    connect-src 'self' https://*.supabase.co https://api.openai.com wss://*.supabase.co;
+    frame-src 'self' https://accounts.google.com;
+    object-src 'none';
+    upgrade-insecure-requests;
+  " />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 
   <!-- Speed Optimization: Async non-critical scripts -->
   <script type="application/ld+json">

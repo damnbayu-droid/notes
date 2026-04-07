@@ -1,5 +1,6 @@
 import { useParams, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { sanitizeHtml } from '@/lib/sanitization';
 import type { Note } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -359,7 +360,9 @@ export default function SharedNoteView() {
                 ) : (
                     <div
                         className="prose prose-lg dark:prose-invert max-w-none text-foreground leading-relaxed break-words text-base mt-8 tiptap-content"
-                        dangerouslySetInnerHTML={{ __html: note.content || '<span class="text-muted-foreground italic">This note has no content.</span>' }}
+                        dangerouslySetInnerHTML={{ 
+                            __html: note.content ? sanitizeHtml(note.content) : '<span class="text-muted-foreground italic">This note has no content.</span>' 
+                        }}
                     />
                 )}
 

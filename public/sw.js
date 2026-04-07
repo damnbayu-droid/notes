@@ -1,10 +1,11 @@
-// Service Worker for offline support
-const CACHE_NAME = 'smart-notes-v1';
+// Service Worker for offline support - Smart Notes
+const CACHE_NAME = 'smart-notes-v2-hardening'; // Increment version for hardening
 const urlsToCache = [
     '/',
     '/index.html',
-    '/vite.svg',
+    '/favicon.webp',
     '/manifest.json',
+    '/logo.webp',
 ];
 
 // Routes that should always be Network-First or ignored by SW
@@ -12,7 +13,9 @@ const IGNORE_ROUTES = [
     'supabase.co',
     'api.openai.com',
     '/auth/v1/',
-    '/rest/v1/'
+    '/rest/v1/',
+    'googletagmanager.com',
+    'google-analytics.com'
 ];
 
 // Install event - cache essential files
@@ -24,7 +27,7 @@ self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up old caches (Hardening: ensure no stale cache)
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -40,26 +43,16 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Helper for fetching with timeout
-const fetchWithTimeout = (request, timeout = 3000) => {
-    return Promise.race([
-        fetch(request),
-        new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Fetch timeout')), timeout)
-        )
-    ]);
-};
-
-// Fetch event - Optimized Strategy
+// Fetch event - Optimized Strategy for Sustainability & Performance
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Skip caching for API calls and dynamic routes
-    if (IGNORE_ROUTES.some(route => url.href.includes(route))) {
-        return; // Let browser handle normally
+    // Skip caching for API calls, Analytics, and dynamic login routes
+    if (IGNORE_ROUTES.some(route => url.href.includes(route)) || event.request.method !== 'GET') {
+        return;
     }
 
-    // Strictly Network-First for index.html to prevent stale build errors
+    // 1. Strictly Network-First for HTML (Sustainability: Always get the latest build metadata)
     if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/share/')) {
         event.respondWith(
             fetch(event.request)
@@ -75,26 +68,44 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Cache-First (with Network fallback and update) for static assets
+    // 2. Stale-While-Revalidate for Images and Fonts (Sustainability: Save bandwidth, fast UI)
+    if (
+        event.request.destination === 'image' || 
+        event.request.destination === 'font' || 
+        url.href.includes('fonts.gstatic.com')
+    ) {
+        event.respondWith(
+            caches.open(CACHE_NAME).then((cache) => {
+                return cache.match(event.request).then((cachedResponse) => {
+                    const fetchedResponse = fetch(event.request).then((networkResponse) => {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    }).catch(() => null);
+
+                    return cachedResponse || fetchedResponse;
+                });
+            })
+        );
+        return;
+    }
+
+    // 3. Cache-First for other static assets (JS/CSS chunks)
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                if (response) {
-                    return response;
-                }
+                if (response) return response;
 
-                const fetchRequest = event.request.clone();
-                return fetch(fetchRequest).then((response) => {
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                        return response;
+                return fetch(event.request).then((networkResponse) => {
+                    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                        return networkResponse;
                     }
 
-                    const responseToCache = response.clone();
+                    const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseToCache);
                     });
 
-                    return response;
+                    return networkResponse;
                 });
             })
     );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import type { Note } from '@/types';
 import { NOTE_COLORS } from '@/types';
 import { Card } from '@/components/ui/card';
@@ -32,7 +32,7 @@ interface NoteCardProps {
   onDelete: (id: string) => void;
 }
 
-export function NoteCard({
+export const NoteCard = memo(function NoteCard({
   note,
   viewMode,
   onEdit,
@@ -43,22 +43,31 @@ export function NoteCard({
 }: NoteCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const colorOption = NOTE_COLORS.find(c => c.value === note.color) || NOTE_COLORS[0];
+  const colorOption = useMemo(() => 
+    NOTE_COLORS.find(c => c.value === note.color) || NOTE_COLORS[0],
+    [note.color]
+  );
 
-  const stripHtml = (html: string) => {
-    try {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      return doc.body.textContent || "";
-    } catch (e) {
-      return html;
-    }
-  };
+  const truncatedContent = useMemo(() => {
+    const stripHtml = (html: string) => {
+      if (!html) return "";
+      // Fast regex-based HTML stripping for note previews
+      // This is much faster than DOMParser for repeated renders
+      return html
+        .replace(/<[^>]*>?/gm, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
 
-  const truncateContent = (content: string, maxLength: number = 150) => {
-    const plainText = stripHtml(content);
+    const plainText = stripHtml(note.content);
+    const maxLength = 60;
     if (plainText.length <= maxLength) return plainText;
     return plainText.substring(0, maxLength).trim() + '...';
-  };
+  }, [note.content]);
 
   return (
     <Card
@@ -98,7 +107,7 @@ export function NoteCard({
 
         {/* Content */}
         <p className={`text-muted-foreground text-[10px] leading-relaxed whitespace-pre-wrap ${viewMode === 'grid' ? 'line-clamp-3' : 'line-clamp-1'}`}>
-          {truncateContent(note.content, 60)}
+          {truncatedContent}
         </p>
 
         {/* Tags */}
@@ -169,4 +178,4 @@ export function NoteCard({
       </div>
     </Card>
   );
-}
+});
