@@ -10,6 +10,8 @@ import './App.css';
 
 // Lazy load all major components
 const Dashboard = lazy(() => import('@/components/layout/Dashboard').then(module => ({ default: module.Dashboard })));
+const DiscoveryPage = lazy(() => import('@/components/notes/DiscoveryPage').then(module => ({ default: module.DiscoveryPage })));
+const FeaturePage = lazy(() => import('@/components/seo/FeaturePage'));
 const AuthPage = lazy(() => import('@/components/auth/AuthPage').then(module => ({ default: module.AuthPage })));
 const AIAssistant = lazy(() => import('@/components/ai/AIAssistant').then(module => ({ default: module.AIAssistant })));
 const GuestNagModal = lazy(() => import('@/components/auth/GuestNagModal').then(module => ({ default: module.GuestNagModal })));
@@ -209,6 +211,30 @@ function App() {
               </div>
             }>
               <ContactPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/discovery"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <DiscoveryPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/f/:slug"
+          element={
+            <Suspense fallback={
+              <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              </div>
+            }>
+              <FeaturePage />
             </Suspense>
           }
         />

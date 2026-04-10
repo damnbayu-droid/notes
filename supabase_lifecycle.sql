@@ -60,10 +60,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- Delete notes that are marked as deleted and updated more than 30 days ago
+  -- Delete notes that are in the Trash folder and updated more than 7 days ago
   DELETE FROM notes 
-  WHERE is_deleted = TRUE 
-  AND updated_at < (NOW() - INTERVAL '30 days');
+  WHERE folder = 'Trash'
+  AND updated_at < (NOW() - INTERVAL '7 days');
 END;
 $$ LANGUAGE plpgsql;
 

@@ -5,16 +5,46 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, MessageSquare, Mail, Phone, ExternalLink, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 
 export default function ContactPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent('dcpi-notification', {
-            detail: { title: 'Success', message: 'Support ticket submitted!', type: 'success' }
-        }));
-        (e.target as HTMLFormElement).reset();
+        setIsSubmitting(true);
+        const form = e.target as HTMLFormElement;
+        const formData = new FormData(form);
+
+        try {
+            const { error } = await supabase
+                .from('support_messages')
+                .insert({
+                    user_id: user?.id || null,
+                    email: formData.get('email') as string,
+                    subject: formData.get('subject') as string,
+                    message: formData.get('message') as string,
+                    status: 'unread'
+                });
+
+            if (error) throw error;
+
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Success', message: 'Support ticket submitted! Our team will contact you shortly.', type: 'success' }
+            }));
+            form.reset();
+        } catch (err: any) {
+            console.error('Error submitting ticket:', err);
+            window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                detail: { title: 'Error', message: 'Failed to send message. Please try again.', type: 'error' }
+            }));
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -50,18 +80,18 @@ export default function ContactPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email</Label>
-                                    <Input id="email" type="email" placeholder="your@email.com" required />
+                                    <Input id="email" name="email" type="email" placeholder="your@email.com" required defaultValue={user?.email || ''} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="subject">Subject</Label>
-                                    <Input id="subject" placeholder="How can we help?" required />
+                                    <Input id="subject" name="subject" placeholder="How can we help?" required />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="message">Message</Label>
-                                    <Textarea id="message" placeholder="Write your message here..." className="min-h-[150px]" required />
+                                    <Textarea id="message" name="message" placeholder="Write your message here..." className="min-h-[150px]" required />
                                 </div>
-                                <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 h-12 text-lg">
-                                    Send Message
+                                <Button type="submit" disabled={isSubmitting} className="w-full bg-violet-600 hover:bg-violet-700 h-12 text-lg">
+                                    {isSubmitting ? 'Sending...' : 'Send Message'}
                                 </Button>
                             </form>
                         </div>

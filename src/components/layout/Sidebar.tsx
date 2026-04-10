@@ -9,7 +9,6 @@ import {
   Archive,
   Plus,
   X,
-  Scan,
   Calendar,
   Moon,
   Sun,
@@ -18,10 +17,14 @@ import {
   Pin,
   Settings,
   Cloud,
-  LogOut,
   MoreHorizontal,
   Pencil,
   Trash2,
+  Compass,
+  Crown,
+  Zap,
+  FileEdit,
+  Shield,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,12 +33,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin' | 'discovery';
 
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
-  onCreateNote: () => void;
+  user: any;
   isOpen: boolean;
   onClose: () => void;
   folders: string[];
@@ -47,12 +50,14 @@ interface SidebarProps {
   deleteFolder: (folderName: string) => Promise<{ success: boolean; error?: string }>;
   togglePinFolder: (folderName: string) => void;
   pinnedFolders: string[];
+  subscriptionTier?: string;
+  onUpgrade?: () => void;
 }
 
 export function Sidebar({
   currentView,
   onViewChange,
-  onCreateNote,
+  user,
   isOpen,
   onClose,
   folders,
@@ -63,7 +68,9 @@ export function Sidebar({
   renameFolder,
   deleteFolder,
   pinnedFolders,
-  togglePinFolder
+  togglePinFolder,
+  subscriptionTier = 'free',
+  onUpgrade
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -72,12 +79,14 @@ export function Sidebar({
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
+    { id: 'discovery' as ViewType, label: 'Discovery', icon: Compass, count: 0 },
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
     { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
     { id: 'trash' as ViewType, label: 'Trash', icon: Trash2, count: 0 },
-    { id: 'scanner' as ViewType, label: 'Scanner', icon: Scan, count: 0 },
+    { id: 'scanner' as ViewType, label: 'PDF Editor', icon: FileEdit, count: 0 },
     { id: 'voice-note' as any, label: 'Voice Note', icon: Mic, count: 0, onClick: () => setIsVoiceOpen(true) },
+    ...(user?.email === 'damnbayu@gmail.com' ? [{ id: 'admin' as ViewType, label: 'Admin Panel', icon: Shield, count: 0 }] : []),
   ];
 
   const sortedFolders = useMemo(() => {
@@ -148,17 +157,27 @@ export function Sidebar({
               </div>
             </button>
 
-            {/* Create Button */}
-            <Button
-              onClick={onCreateNote}
-              className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-violet-200 transition-all hover:shadow-xl hover:shadow-violet-300"
-              aria-label="Create new note"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              New Note
-            </Button>
 
-            {/* Navigation */}
+            {/* Subscription Badge/Button */}
+            <div className="px-3">
+              {subscriptionTier === 'full_access' ? (
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+                  <Crown className="w-5 h-5 text-emerald-600" />
+                  <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">PRO Account</span>
+                </div>
+              ) : (
+                <button
+                  onClick={onUpgrade}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:brightness-110 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-95 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <Crown className="w-5 h-5 text-white animate-pulse" />
+                    <span className="text-xs font-black uppercase tracking-widest text-white">Go Premium</span>
+                  </div>
+                  <Zap className="w-4 h-4 text-violet-200 group-hover:text-white transition-colors" />
+                </button>
+              )}
+            </div>
             <div className="space-y-1">
               <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Menu
@@ -169,6 +188,8 @@ export function Sidebar({
                   onClick={() => {
                     if (item.onClick) {
                       item.onClick();
+                    } else if (item.id === 'discovery') {
+                      onViewChange('discovery');
                     } else {
                       onViewChange(item.id);
                     }
@@ -304,19 +325,42 @@ export function Sidebar({
           </div>
         </ScrollArea>      {/* Footer */}
         <div className="flex-none p-4 border-t border-border space-y-2 bg-background pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-          {currentView !== 'notes' && (
+          {/* Main Dashboard CTA (Always accessible point of return) */}
+          <button
+            onClick={() => {
+              onViewChange('notes');
+              onClose();
+            }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all border shadow-sm mb-2 ${
+              currentView === 'notes' 
+              ? 'bg-violet-600 text-white border-violet-700 shadow-violet-500/20' 
+              : 'bg-violet-50 text-violet-600 border-violet-100 hover:bg-violet-100'
+            }`}
+            aria-label="Back to Dashboard"
+          >
+            <LayoutGrid className="w-5 h-5" />
+            Main Dashboard
+          </button>
+
+          {/* Admin Dashboard CTA (Only for Admin) */}
+          {user?.email === 'damnbayu@gmail.com' && (
             <button
               onClick={() => {
-                onViewChange('notes');
+                onViewChange('admin');
                 onClose();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-100 shadow-sm mb-2"
-              aria-label="Exit to Notes"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all border shadow-sm mb-2 ${
+                currentView === 'admin' 
+                ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-500/20' 
+                : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
+              }`}
+              aria-label="System Administration"
             >
-              <LogOut className="w-5 h-5 rotate-180" />
-              Exit to Notes
+              <Shield className="w-5 h-5" />
+              System Admin
             </button>
           )}
+
           <button
             onClick={() => {
               onOpenSettings('profile');

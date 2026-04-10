@@ -1,4 +1,4 @@
-import { X, Shield, Bot, Database, Book, Scan, Mic, Clock, Zap } from 'lucide-react';
+import { X, Shield, Bot, Database, Book, Scan, Mic, Zap, Compass, Share2, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SmartInfoPanelProps {
@@ -12,30 +12,65 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
     const features = [
         {
             icon: Shield,
-            title: "Secured & Encrypted",
-            description: "Military-grade AES-GCM 256-bit encryption. Your data is encrypted locally before ever touching the cloud.",
+            title: "Military Encryption",
+            description: "Industry-standard AES-GCM 256-bit encryption. Your keys never leave your device. Privacy in its purest form.",
             color: "text-blue-600",
             bg: "bg-blue-50 dark:bg-blue-900/20"
         },
         {
             icon: Bot,
-            title: "Advanced AI Mastery",
-            description: "Intelligent note summaries, auto-tagging, and real-time voice-to-text transcription powered by Note Ai.",
+            title: "Note AI Intelligence",
+            description: "Intelligent note summaries, auto-tagging, and real-time voice-to-text transcription powered by WK_Ai.",
             color: "text-violet-600",
             bg: "bg-violet-50 dark:bg-violet-900/20"
         },
         {
-            icon: Database,
-            title: "Local-First Sync",
-            description: "Connect directly to your device storage. Perfect for users who demand 100% data ownership and privacy.",
+            icon: Compass,
+            title: "Discovery Library",
+            description: "Explore a global library of shared intelligence. Like GitHub, but for your personal and community knowledge.",
+            color: "text-emerald-600",
+            bg: "bg-emerald-50 dark:bg-emerald-900/20"
+        },
+        {
+            icon: Github,
+            title: "Smart Filing Integration",
+            description: "Native link to GitHub and external repositories. Sync your notes with codebase changes and external documents.",
             color: "text-indigo-600",
             bg: "bg-indigo-50 dark:bg-indigo-900/20"
         },
         {
-            icon: Clock,
-            title: "Reminders & Alarms",
-            description: "Integrated status notifications and Bali-Time alarms. Never miss a deadline with the Dynamic Notification Center.",
-            color: "text-amber-600",
+            icon: Scan,
+            title: "Ultra OCR Scanner",
+            description: "High-performance camera scanner with OCR. Capture text from physical documents instantly into your library.",
+            color: "text-orange-600",
+            bg: "bg-orange-50 dark:bg-orange-900/20"
+        },
+        {
+            icon: Mic,
+            title: "Smart Voice Notes",
+            description: "Lossless voice recording with dynamic visual feedback and AI-driven punctuation refinement.",
+            color: "text-red-600",
+            bg: "bg-red-50 dark:bg-red-900/20"
+        },
+        {
+            icon: Share2,
+            title: "Collaborative Sync",
+            description: "Real-time presence and multi-user editing. Share notes with granular 'Read' and 'Write' permissions.",
+            color: "text-pink-600",
+            bg: "bg-pink-50 dark:bg-pink-900/20"
+        },
+        {
+            icon: Database,
+            title: "Local-First Privacy",
+            description: "Full offline support and local storage fallback. 100% data ownership for users who demand absolute control.",
+            color: "text-teal-600",
+            bg: "bg-teal-50 dark:bg-teal-900/20"
+        },
+        {
+            icon: Zap,
+            title: "Dynamic Status Pill",
+            description: "Real-time system updates, recording status, and smart notifications delivered through an interactive Dynamic Island.",
+            color: "text-amber-500",
             bg: "bg-amber-50 dark:bg-amber-900/20"
         },
         {
@@ -97,7 +132,7 @@ export function SmartInfoPanel({ isOpen, onClose }: SmartInfoPanelProps) {
                             </div>
                             <div>
                                 <h2 className="text-xl sm:text-3xl font-black uppercase tracking-tight">System Information</h2>
-                                <p className="text-violet-100/80 font-bold text-xs uppercase tracking-widest leading-none mt-1">Version 2.4.0 Production Ready</p>
+                                <p className="text-violet-100/80 font-bold text-xs uppercase tracking-widest leading-none mt-1">Version 2.5.0 STABLE</p>
                             </div>
                         </div>
                         <h1 className="text-xl sm:text-4xl font-bold max-w-2xl mb-2 sm:mb-4 leading-tight">

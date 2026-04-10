@@ -18,8 +18,8 @@ import {
   ArrowUpDown,
   Check,
   Tag,
-  Plus,
   Info,
+  FileEdit,
 } from 'lucide-react';
 import type { SortOption } from '@/types';
 
@@ -35,7 +35,6 @@ interface SearchBarProps {
   setSortBy: (sort: SortOption) => void;
   viewMode: 'grid' | 'list';
   setViewMode: (mode: 'grid' | 'list') => void;
-  onCreate: () => void;
   onOpenInfo?: () => void;
 }
 
@@ -57,7 +56,6 @@ export function SearchBar({
   setSortBy,
   viewMode,
   setViewMode,
-  onCreate,
   onOpenInfo,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -208,6 +206,18 @@ export function SearchBar({
               </div>
             )}
             <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                // We'll trigger a view change to scanner (PDF Editor)
+                window.dispatchEvent(new CustomEvent('change-view', { detail: 'scanner' }));
+              }}
+              className="h-10 w-10 text-teal-600 hover:bg-teal-50 rounded-xl border border-teal-100 dark:border-teal-900"
+              title="Add or Edit PDF File"
+            >
+              <FileEdit className="w-5 h-5" />
+            </Button>
+            <Button
               variant="ghost"
               size="icon"
               onClick={onOpenInfo}
@@ -216,14 +226,6 @@ export function SearchBar({
             >
               <Info className="w-5 h-5" />
             </Button>
-            <button
-              onClick={onCreate}
-              className="h-10 w-10 sm:w-auto sm:px-4 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-lg shadow-violet-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110 active:brightness-90"
-              aria-label="Create New Note"
-            >
-              <Plus className="w-5 h-5 font-black" />
-              <span className="hidden sm:inline text-xs font-black uppercase tracking-[0.1em]">New Note</span>
-            </button>
           </div>
         </div>
       </div>

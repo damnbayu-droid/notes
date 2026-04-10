@@ -6,6 +6,11 @@ import viteCompression from "vite-plugin-compression"
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+  },
   base: '/',
   plugins: [
     react(),
@@ -114,10 +119,11 @@ export default defineConfig({
       '@supabase/supabase-js',
       'clsx',
       'tailwind-merge',
+      'pdf-lib',
+      'pako',
     ],
     // Exclude heavy libs from pre-bundling — they're lazy loaded
     exclude: [
-      'pdf-lib',
       'jspdf',
       'html2canvas',
       'browser-image-compression',

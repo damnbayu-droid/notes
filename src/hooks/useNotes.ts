@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import type { Note, SortOption, User } from '@/types';
+import type { Note, SortOption, User, NoteLog, NoteCollaborator, NoteComment } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { generateShareSlug } from '@/lib/shareUtils';
 
@@ -36,8 +36,23 @@ interface UseNotesReturn {
   createFolder: (name: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
   restoreNote: (id: string) => Promise<{ success: boolean; error?: string }>;
   deleteForever: (id: string) => Promise<{ success: boolean; error?: string }>;
-  shareNote: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string, permission?: 'read' | 'write') => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
+  emptyTrash: () => Promise<{ success: boolean; error?: string }>;
+  shareNote: (id: string, type?: 'public' | 'password' | 'encrypted', password?: string, permission?: 'read' | 'write', isDiscoverable?: boolean) => Promise<{ success: boolean; slug?: string; key?: string; error?: string }>;
   unshareNote: (id: string) => Promise<{ success: boolean; error?: string }>;
+  // Collaboration / Logs
+  logs: NoteLog[];
+  collaborators: NoteCollaborator[];
+  fetchLogs: (noteId: string) => Promise<void>;
+  fetchCollaborators: (noteId: string) => Promise<void>;
+  addCollaborator: (noteId: string, email: string, permission: 'read' | 'write') => Promise<{ success: boolean; error?: string }>;
+  removeCollaborator: (noteId: string, email: string) => Promise<{ success: boolean; error?: string }>;
+  addLog: (noteId: string, action: string, details?: any) => Promise<void>;
+  // Ratings & Comments
+  rateNote: (noteId: string, rating: number) => Promise<{ success: boolean; error?: string }>;
+  fetchRatings: (noteId: string) => Promise<{ average: number; count: number }>;
+  addComment: (noteId: string, content: string, parentId?: string) => Promise<{ success: boolean; comment?: NoteComment; error?: string }>;
+  fetchComments: (noteId: string) => Promise<NoteComment[]>;
+  deleteComment: (commentId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 type SyncAction =
@@ -133,6 +148,9 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
     return [];
   });
 
+  const [logs, setLogs] = useState<NoteLog[]>([]);
+  const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([]);
+
   useEffect(() => {
     localStorage.setItem('pinnedFolders', JSON.stringify(pinnedFolders));
   }, [pinnedFolders]);
@@ -173,7 +191,10 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
     if (!user || isOffline) return;
 
     setIsLoading(true);
-    const { data, error } = await supabase.from('notes').select('*');
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .eq('user_id', user.id);
 
     if (data && !error) {
       setNotes(data as Note[]);
@@ -311,6 +332,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
       tags: noteData.tags || [],
       reminder_date: noteData.reminder_date,
       folder: noteData.folder || 'Main',
+      note_type: noteData.note_type || 'text',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -336,6 +358,14 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
       window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'error', text: 'Create failed, queued for sync', type: 'error', duration: 3000 } }));
     } else {
       window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'success', text: 'Note created!', type: 'success', duration: 2000 } }));
+      // Record log (No await to keep it non-blocking)
+      supabase.from('note_logs').insert({
+        note_id: newNote.id,
+        user_id: user?.id,
+        user_email: user?.email,
+        action: 'CREATE_NOTE',
+        details: { title: newNote.title }
+      });
     }
 
     return { success: true, note: newNote };
@@ -361,6 +391,15 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
     if (error) {
       setSyncQueue(prev => [...prev, action]);
       console.error('Update failed, queued:', error);
+    } else {
+       // Log update
+       supabase.from('note_logs').insert({
+         note_id: id,
+         user_id: user?.id,
+         user_email: user?.email,
+         action: 'UPDATE_NOTE',
+         details: { fields: Object.keys(updates) }
+       });
     }
 
     return { success: true };
@@ -649,6 +688,31 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
     deleteFolder,
     pinnedFolders,
     togglePinFolder,
+    emptyTrash: async () => {
+      window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'loading', text: 'Emptying Trash...', type: 'info', duration: 3000 } }));
+      
+      // Optimistic delete
+      setNotes(prev => prev.filter(note => note.folder !== 'Trash'));
+
+      if (isOffline) {
+        const trashNotes = notes.filter(n => n.folder === 'Trash');
+        const deleteActions = trashNotes.map(n => ({ type: 'DELETE' as const, payload: { id: n.id } }));
+        setSyncQueue(prev => [...prev, ...deleteActions]);
+        window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'success', text: 'Trash emptied (offline)', type: 'success', duration: 2000 } }));
+        return { success: true };
+      }
+
+      const { error } = await supabase.from('notes').delete().eq('folder', 'Trash').eq('user_id', user?.id);
+      
+      if (error) {
+         console.error('Empty trash failed:', error);
+         window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'error', text: 'Failed to empty Trash', type: 'error', duration: 3000 } }));
+         return { success: false, error: error.message };
+      }
+
+      window.dispatchEvent(new CustomEvent('dcpi-status', { detail: { icon: 'success', text: 'Trash emptied successfully', type: 'success', duration: 2000 } }));
+      return { success: true };
+    },
     createFolder: async (name: string) => {
       // Create a welcome note to initialize the folder
       return createNote({
@@ -686,7 +750,13 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
       }
       return { success: true };
     },
-    shareNote: async (id: string, type: 'public' | 'password' | 'encrypted' = 'public', password?: string, permission: 'read' | 'write' = 'read') => {
+    shareNote: async (
+      id: string,
+      type: 'public' | 'password' | 'encrypted' = 'public',
+      password?: string,
+      permission: 'read' | 'write' = 'read',
+      isDiscoverable: boolean = false
+    ) => {
       const note = notes.find(n => n.id === id);
       if (!note) return { success: false, error: 'Note not found' };
 
@@ -719,6 +789,7 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
           share_slug: slug,
           share_type: type,
           share_permission: permission,
+          is_discoverable: isDiscoverable,
           is_password_protected,
           password_salt: salt,
           is_encrypted,
@@ -744,6 +815,16 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
           .eq('id', id);
 
         if (error) throw error;
+        
+        // Log share
+        supabase.from('note_logs').insert({
+          note_id: id,
+          user_id: user?.id,
+          user_email: user?.email,
+          action: 'SHARE_NOTE',
+          details: { type, permission }
+        });
+
         return { success: true, slug, key };
       } catch (err: any) {
         // Revert optimistic update
@@ -772,5 +853,125 @@ Try creating your first note by clicking the "+" button. Enjoy your productivity
         return { success: false, error: err.message };
       }
     },
+
+    // Collaboration & Logs
+    logs,
+    collaborators,
+    fetchLogs: async (noteId: string) => {
+      if (isOffline) return;
+      const { data, error } = await supabase
+        .from('note_logs')
+        .select('*')
+        .eq('note_id', noteId)
+        .order('created_at', { ascending: false });
+      if (data && !error) setLogs(data as NoteLog[]);
+    },
+    fetchCollaborators: async (noteId: string) => {
+      if (isOffline) return;
+      const { data, error } = await supabase
+        .from('note_collaborators')
+        .select('*')
+        .eq('note_id', noteId);
+      if (data && !error) setCollaborators(data as NoteCollaborator[]);
+    },
+    addCollaborator: async (noteId: string, email: string, permission: 'read' | 'write') => {
+      if (isOffline) return { success: false, error: 'Offline' };
+      const { error } = await supabase
+        .from('note_collaborators')
+        .upsert({ note_id: noteId, email, permission });
+
+      if (!error) {
+        // Record log
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        await supabase.from('note_logs').insert({
+          note_id: noteId,
+          user_id: authUser?.id,
+          user_email: authUser?.email,
+          action: 'ADD_COLLABORATOR',
+          details: { collaborator: email, permission }
+        });
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    },
+    removeCollaborator: async (noteId: string, email: string) => {
+      if (isOffline) return { success: false, error: 'Offline' };
+      const { error } = await supabase
+        .from('note_collaborators')
+        .delete()
+        .eq('note_id', noteId)
+        .eq('email', email);
+
+      if (!error) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        await supabase.from('note_logs').insert({
+          note_id: noteId,
+          user_id: authUser?.id,
+          user_email: authUser?.email,
+          action: 'REMOVE_COLLABORATOR',
+          details: { collaborator: email }
+        });
+        return { success: true };
+      }
+      return { success: false, error: error.message };
+    },
+    addLog: async (noteId: string, action: string, details: any = {}) => {
+      if (isOffline) return;
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await supabase.from('note_logs').insert({
+        note_id: noteId,
+        user_id: authUser?.id,
+        user_email: authUser?.email,
+        action,
+        details
+      });
+    },
+    rateNote: async (noteId: string, rating: number) => {
+      if (!user) return { success: false, error: 'Auth required' };
+      const { error } = await supabase
+        .from('note_ratings')
+        .upsert({ note_id: noteId, user_id: user.id, rating, created_at: new Date().toISOString() });
+      return { success: !error, error: error?.message };
+    },
+    fetchRatings: async (noteId: string) => {
+      const { data } = await supabase
+        .from('note_ratings')
+        .select('rating')
+        .eq('note_id', noteId);
+      if (!data || data.length === 0) return { average: 0, count: 0 };
+      const avg = data.reduce((acc, curr) => acc + curr.rating, 0) / data.length;
+      return { average: Math.round(avg * 10) / 10, count: data.length };
+    },
+    addComment: async (noteId: string, content: string, parentId?: string) => {
+      if (!user) return { success: false, error: 'Auth required' };
+      const { data, error } = await supabase
+        .from('note_comments')
+        .insert({
+          note_id: noteId,
+          user_id: user.id,
+          user_email: user.email,
+          content,
+          parent_id: parentId,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      return { success: !error, comment: data as NoteComment, error: error?.message };
+    },
+    fetchComments: async (noteId: string) => {
+      const { data } = await supabase
+        .from('note_comments')
+        .select('*')
+        .eq('note_id', noteId)
+        .order('created_at', { ascending: true });
+      return (data || []) as NoteComment[];
+    },
+    deleteComment: async (commentId: string) => {
+      const { error } = await supabase
+        .from('note_comments')
+        .delete()
+        .eq('id', commentId);
+      return { success: !error, error: error?.message };
+    }
   };
 }

@@ -23,9 +23,61 @@ export interface Note {
   is_shared?: boolean; // true if the note is publicly accessible
   share_type?: 'public' | 'password' | 'encrypted'; // type of sharing
   share_permission?: 'read' | 'write'; // guest access level
+  is_discoverable?: boolean; // true if the note is publicly listed in /discovery
   is_password_protected?: boolean;
   password_salt?: string; // salt for key derivation
   is_encrypted?: boolean; // true if content is encrypted (AES-GCM)
+  note_type?: 'text' | 'pdf' | 'spreadsheet' | 'google_doc' | 'github_clone';
+  external_meta?: {
+    url?: string;
+    file_id?: string;
+    repo_url?: string;
+    last_synced?: string;
+    is_snapshot?: boolean;
+    [key: string]: any;
+  };
+  external_source_url?: string;
+  external_source_type?: string;
+  external_source_title?: string;
+  category?: NoteCategory;
+}
+
+export type NoteCategory = 'General' | 'Education' | 'Work' | 'Code' | 'Personal' | 'Other';
+
+export interface NoteRating {
+  id: string;
+  note_id: string;
+  user_id: string;
+  rating: number;
+  created_at: string;
+}
+
+export interface NoteComment {
+  id: string;
+  note_id: string;
+  user_id: string;
+  user_email?: string;
+  content: string;
+  parent_id?: string;
+  created_at: string;
+}
+
+export interface NoteLog {
+  id: string;
+  note_id: string;
+  user_id?: string;
+  user_email?: string;
+  action: string;
+  details: any;
+  created_at: string;
+}
+
+export interface NoteCollaborator {
+  id: string;
+  note_id: string;
+  email: string;
+  permission: 'read' | 'write';
+  created_at: string;
 }
 
 export type NoteColor =

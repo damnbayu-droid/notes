@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CameraView } from './CameraView';
-import { PDFTools } from './PDFTools';
+import { PDFStudio } from './PDFStudio';
 import { Button } from '@/components/ui/button';
 import { PDFDocument } from 'pdf-lib';
 import { X, FileImage, FileText, Loader2, Share2, Settings2, FileStack, Scissors, Minimize } from 'lucide-react';
@@ -290,7 +290,9 @@ export function ScannerPage() {
                     </div>
 
                     {/* Existing PDFTools if needed, or replace/merge */}
-                    <PDFTools />
+                    <div className="pt-4 border-t border-gray-100">
+                        <PDFStudio />
+                    </div>
                 </div>
             </div>
         </div>
