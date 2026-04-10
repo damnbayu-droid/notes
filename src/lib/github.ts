@@ -23,11 +23,15 @@ export class GitHubService {
   /**
    * Parse a GitHub URL to extract owner, repo, and path.
    * Format: https://github.com/owner/repo/blob/branch/path/to/file
+   * Also supports: https://github.com/owner/repo/raw/branch/path/to/file
    */
   public parseUrl(url: string) {
     try {
-      const regex = /github\.com\/([^/]+)\/([^/]+)(?:\/blob\/([^/]+)\/(.+))?/;
-      const match = url.match(regex);
+      // Clean URL: remove query params and trailing slashes
+      const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+      
+      const regex = /github\.com\/([^/]+)\/([^/]+)(?:\/(?:blob|raw)\/([^/]+)\/(.+))?/;
+      const match = cleanUrl.match(regex);
       if (!match) return null;
 
       const [, owner, repo, branch, path] = match;
@@ -42,12 +46,18 @@ export class GitHubService {
    */
   public async fetchFileContent(owner: string, repo: string, path: string, branch: string = "main"): Promise<string> {
     try {
-      // Use the raw.githubusercontent.com for simpler text retrieval
+      if (!path) throw new Error('No path provided. Please link to a specific file.');
+
+      // Try raw.githubusercontent.com first
       const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
       const response = await fetch(rawUrl);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch file: ${response.statusText}`);
+        // Fallback: Try 'master' if 'main' fails
+        if (branch === 'main') {
+          return this.fetchFileContent(owner, repo, path, 'master');
+        }
+        throw new Error(`Failed to fetch file (${response.status}): ${response.statusText}. Ensure the file is public.`);
       }
       
       return await response.text();

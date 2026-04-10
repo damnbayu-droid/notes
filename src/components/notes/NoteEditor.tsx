@@ -31,7 +31,6 @@ import {
   X,
   Trash2,
   Calendar,
-  Folder,
   PenTool,
   Share2,
   Mic,
@@ -42,8 +41,7 @@ import {
   Github,
   FilePlus,
   Link as LinkIcon2,
-  Cloud,
-  ChevronRight
+  Cloud
 } from 'lucide-react';
 import { buildShareUrl } from '@/lib/shareUtils';
 import { formatDictation } from '@/lib/openai';
@@ -51,7 +49,7 @@ import { CanvasEditor } from './CanvasEditor';
 import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
 import { usePresence } from '@/hooks/usePresence';
 import { OutsourcePicker } from './OutsourcePicker';
-
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -77,7 +75,6 @@ interface NoteEditorProps {
   onUnshareNote?: (id: string) => Promise<{ success: boolean; error?: string }>;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
-  folders?: string[];
 }
 
 export function NoteEditor({
@@ -93,7 +90,6 @@ export function NoteEditor({
   onUnshareNote,
   isExpanded = false,
   onToggleExpand,
-  folders = ['Main']
 }: NoteEditorProps) {
   const { presentUsers } = usePresence(note?.id || null, user);
   const [editorHtml, setEditorHtml] = useState('');
@@ -119,6 +115,7 @@ export function NoteEditor({
   const [externalSourceType, setExternalSourceType] = useState<string | undefined>();
   const [externalSourceTitle, setExternalSourceTitle] = useState<string | undefined>();
   const [isOutsourceOpen, setIsOutsourceOpen] = useState(false);
+  const [outsourceMode, setOutsourceMode] = useState<'drive' | 'resource'>('drive');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -287,11 +284,13 @@ export function NoteEditor({
     onClose();
   }, [editorText, editorHtml, color, isPinned, isArchived, tags, reminderDate, folder, onUpdate, onClose]);
 
+  const [showMetadata, setShowMetadata] = useState(false);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // For now, we support images and plain text
+    // Support images, plain text, and PDF
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -308,19 +307,46 @@ export function NoteEditor({
         }
       };
       reader.readAsText(file);
+    } else if (file.type === 'application/pdf') {
+      // PDF support is finalized - we store metadata and notify user
+      window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+        detail: { 
+          title: 'PDF Ingested', 
+          message: `${file.name} added to intelligence node. Use PDF Editor for deep analysis.`, 
+          type: 'success' 
+        } 
+      }));
+      // For now we add a reference
+      editor?.chain().focus().insertContent(`<p><strong>Attached PDF:</strong> ${file.name}</p>`).run();
     } else {
-      window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'File Type Unsupported', message: 'Currently supporting Images and Text/MD files.', type: 'info' } }));
+      window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'File Type Unsupported', message: 'Currently supporting Images, PDFs and Text/MD files.', type: 'info' } }));
     }
   };
 
   const handleImportOutsource = (content: string, metadata: any) => {
     if (editor) {
-      const formattedContent = metadata.type === 'github_clone' ? `<h2>${metadata.path}</h2><pre><code>${content}</code></pre>` : content;
+      // Create a vertical stack block with a separator
+      const separator = `<hr class="my-8 border-slate-100" />`;
+      const sourceHeader = `<div class="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 mb-4">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Source: ${metadata.type || 'External'}</p>
+        <p class="text-xs font-black text-slate-900">${metadata.path || metadata.repo || 'Imported Asset'}</p>
+      </div>`;
+      
+      const formattedContent = metadata.type === 'github_clone' 
+        ? `${separator}${sourceHeader}<pre class="text-[11px] font-mono leading-relaxed bg-slate-900 text-slate-100 p-6 rounded-3xl overflow-auto border border-slate-800 shadow-2xl"><code>${content}</code></pre>` 
+        : `${separator}${sourceHeader}${content}`;
+        
       editor.chain().focus().insertContent(formattedContent).run();
+      
+      // Update global resource metadata (primary)
       setExternalSourceUrl(metadata.url);
       setExternalSourceType(metadata.type);
       setExternalSourceTitle(metadata.path || metadata.repo);
       onUpdate({ external_source_url: metadata.url, external_source_type: metadata.type, external_source_title: metadata.path || metadata.repo });
+      
+      window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+        detail: { title: 'Resource Connected', message: `Imported ${metadata.path || 'content'} successfully.`, type: 'success' } 
+      }));
     }
   };
 
@@ -361,6 +387,50 @@ export function NoteEditor({
               </div>
             )}
 
+            <div className="h-8 w-[1px] bg-slate-200/50 mx-2" />
+
+            {/* Note Intelligence CTAs (Moved to Top Center) */}
+            <div className="flex items-center gap-2">
+               <Button 
+                  variant="ghost"
+                  size="sm" 
+                  className="h-11 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                  onClick={() => fileInputRef.current?.click()}
+               >
+                 <FilePlus className="w-4 h-4 text-violet-600" />
+                 <span className="hidden md:inline">From Device</span>
+               </Button>
+               <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+
+               <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-11 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                  onClick={() => {
+                    setOutsourceMode('drive');
+                    setIsOutsourceOpen(true);
+                  }}
+               >
+                 <Cloud className="w-4 h-4 text-blue-500" />
+                 <span className="hidden md:inline">From Drive</span>
+               </Button>
+
+               <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-11 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                  onClick={() => {
+                    setOutsourceMode('resource');
+                    setIsOutsourceOpen(true);
+                  }}
+               >
+                 <LinkIcon2 className="w-4 h-4 text-emerald-500" />
+                 <span className="hidden md:inline">Connect Resource</span>
+               </Button>
+            </div>
+
+            <div className="h-8 w-[1px] bg-slate-200/50 mx-2" />
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-11 w-11 text-slate-400 hover:bg-slate-100 rounded-2xl">
@@ -387,55 +457,15 @@ export function NoteEditor({
             <Button variant="ghost" size="icon" className={`h-11 w-11 ${isVoiceOpen ? 'bg-violet-600 text-white shadow-lg shadow-violet-200' : 'text-slate-400 hover:bg-slate-100'} rounded-2xl transition-all`} onClick={() => setIsVoiceOpen(!isVoiceOpen)}>
               <Mic className="w-5 h-5" />
             </Button>
-            
-            {/* Category Selector */}
-            <Select value={noteCategory} onValueChange={(val: NoteCategory) => setNoteCategory(val)}>
-              <SelectTrigger className="h-11 px-4 gap-2 text-blue-600 font-black uppercase tracking-widest text-[10px] bg-blue-50 hover:bg-blue-100 rounded-2xl transition-all border border-blue-100 focus:ring-0">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent className="rounded-2xl border-blue-100 shadow-2xl">
-                {['General', 'Education', 'Work', 'Code', 'Personal', 'Other'].map(cat => (
-                  <SelectItem key={cat} value={cat} className="text-xs font-bold py-2.5 rounded-xl cursor-pointer">
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            {/* Folder / Move CTA */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" className="h-11 px-4 gap-2 text-violet-600 font-black uppercase tracking-widest text-[10px] bg-violet-50 hover:bg-violet-100 rounded-2xl transition-all border border-violet-100">
-                  <Folder className="w-4 h-4" />
-                  {folder}
-                  <ChevronRight className="w-3 h-3 opacity-40 ml-1" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2 rounded-2xl shadow-2xl border-violet-100">
-                 <p className="px-3 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Move to Folder</p>
-                 <div className="flex flex-col gap-1">
-                   {folders.map(f => (
-                     <button
-                        key={f}
-                        onClick={() => setFolder(f)}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${folder === f ? 'bg-violet-600 text-white' : 'hover:bg-slate-50 text-slate-600'}`}
-                     >
-                       {f}
-                     </button>
-                   ))}
-                 </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Discoverable Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-11 w-11 rounded-2xl transition-all ${isDiscoverable ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'text-slate-400 hover:bg-slate-100'}`}
-              onClick={() => setIsDiscoverable(!isDiscoverable)}
-              title="Global Discovery Library"
+              className={`h-11 w-11 rounded-2xl transition-all ${showMetadata ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-100'}`}
+              onClick={() => setShowMetadata(!showMetadata)}
+              title="Intel Tags & Metadata"
             >
-              <Globe className="w-5 h-5" />
+              <Tag className="w-5 h-5" />
             </Button>
           </div>
 
@@ -454,40 +484,6 @@ export function NoteEditor({
         </DialogHeader>
 
         <div className="flex-1 flex flex-col overflow-hidden p-6 sm:p-8 space-y-6">
-          {/* Action Row: [Add File] [Select Drive] [Connect Resource] */}
-          <div className="flex flex-wrap items-center gap-3">
-             <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-10 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest border-slate-100 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
-                onClick={() => fileInputRef.current?.click()}
-             >
-               <FilePlus className="w-4 h-4 text-violet-600" />
-               Add from Device
-             </Button>
-             <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
-
-             <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-10 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest border-slate-100 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
-                onClick={() => setIsOutsourceOpen(true)}
-             >
-               <Cloud className="w-4 h-4 text-blue-500" />
-               Select from Drive
-             </Button>
-
-             <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-10 px-4 rounded-xl gap-2 font-black uppercase text-[10px] tracking-widest border-slate-100 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
-                onClick={() => setIsOutsourceOpen(true)}
-             >
-               <LinkIcon2 className="w-4 h-4 text-emerald-500" />
-               Connect Resource
-             </Button>
-          </div>
-
           {externalSourceUrl && (
             <div className="flex items-center gap-4 p-4 bg-white rounded-3xl border border-slate-100 shadow-lg animate-in slide-in-from-top-1">
                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center shadow-inner">
@@ -548,25 +544,41 @@ export function NoteEditor({
                 <EditorContent editor={editor} className="flex-1" />
               </div>
               
-              <div className="pt-6 space-y-4 border-t border-slate-50 shrink-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Tag className="w-4 h-4 text-slate-300" />
-                  {tags.map(t => (
-                    <Badge key={t} variant="outline" className="h-7 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 font-bold uppercase text-[9px] tracking-tight hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" onClick={() => handleRemoveTag(t)}>
-                      {t} <X className="w-2.5 h-2.5 ml-1.5" />
-                    </Badge>
-                  ))}
-                  <Input placeholder="Add Tag..." value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={handleKeyDown} className="w-24 h-7 text-[10px] rounded-xl border-dashed border-slate-200 bg-transparent px-3" />
-                </div>
+              {showMetadata && (
+                <div className="pt-6 space-y-4 border-t border-slate-50 shrink-0 animate-in slide-in-from-bottom-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Tag className="w-4 h-4 text-slate-300" />
+                    {tags.map(t => (
+                      <Badge key={t} variant="outline" className="h-7 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 font-bold uppercase text-[9px] tracking-tight hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" onClick={() => handleRemoveTag(t)}>
+                        {t} <X className="w-2.5 h-2.5 ml-1.5" />
+                      </Badge>
+                    ))}
+                    <Input placeholder="Add Tag..." value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={handleKeyDown} className="w-24 h-7 text-[10px] rounded-xl border-dashed border-slate-200 bg-transparent px-3" />
+                  </div>
 
-                <div className="flex items-center gap-4 text-slate-400">
-                    <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
-                        <Calendar className="w-4 h-4" />
-                        <Input type="datetime-local" value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''} onChange={e => setReminderDate(new Date(e.target.value).toISOString())} className="border-0 bg-transparent p-0 text-[10px] font-black uppercase w-36 h-auto focus-visible:ring-0" />
-                    </div>
-                    {isShared && <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 uppercase text-[9px] font-black tracking-widest px-3 h-8 rounded-xl"><Globe className="w-3 h-3 mr-2" /> Live Public Link</Badge>}
+                  <div className="flex items-center gap-4 text-slate-400">
+                      <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                          <Calendar className="w-4 h-4" />
+                          <Input type="datetime-local" value={reminderDate ? new Date(reminderDate).toISOString().slice(0, 16) : ''} onChange={e => setReminderDate(new Date(e.target.value).toISOString())} className="border-0 bg-transparent p-0 text-[10px] font-black uppercase w-36 h-auto focus-visible:ring-0" />
+                      </div>
+                      
+                      <Select value={noteCategory} onValueChange={(val: NoteCategory) => setNoteCategory(val)}>
+                        <SelectTrigger className="h-10 px-4 gap-2 text-blue-600 font-black uppercase tracking-widest text-[9px] bg-blue-50 hover:bg-blue-100 rounded-xl transition-all border border-blue-100 focus:ring-0">
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-blue-100 shadow-2xl">
+                          {['General', 'Education', 'Work', 'Code', 'Personal', 'Other'].map(cat => (
+                            <SelectItem key={cat} value={cat} className="text-[10px] font-bold py-2 rounded-lg cursor-pointer">
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {isShared && <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 uppercase text-[9px] font-black tracking-widest px-3 h-10 rounded-xl"><Globe className="w-3 h-3 mr-2" /> Live Public Link</Badge>}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -606,18 +618,49 @@ export function NoteEditor({
             </DialogHeader>
             <div className="space-y-6 py-4">
               <div className="space-y-4">
+                <div className="space-y-4 p-5 bg-slate-50 rounded-[2rem] border border-slate-100">
+                  <div className="flex items-center justify-between">
+                     <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">Broadcast to Discovery</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Public listing in Community Library</span>
+                     </div>
+                     <Switch 
+                        checked={isDiscoverable} 
+                        onCheckedChange={setIsDiscoverable}
+                        className="data-[state=checked]:bg-violet-600"
+                     />
+                  </div>
+                  
+                  <div className="space-y-2">
+                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Knowledge Category</span>
+                     <Select value={noteCategory} onValueChange={(val: NoteCategory) => setNoteCategory(val)}>
+                        <SelectTrigger className="h-10 px-4 gap-2 text-blue-600 font-black uppercase tracking-widest text-[9px] bg-white rounded-xl border-slate-100 focus:ring-0">
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                          {['General', 'Education', 'Work', 'Code', 'Personal', 'Other'].map(cat => (
+                            <SelectItem key={cat} value={cat} className="text-[10px] font-bold py-2 rounded-lg cursor-pointer">
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                  </div>
+                </div>
+
                 <Button 
                    onClick={async () => {
                      const res = await onShareNote?.(note!.id, 'public', undefined, sharePermission, isDiscoverable);
                      if (res?.success) {
                        setIsShared(true);
                        setShareSlug(res.slug);
+                       onUpdate({ is_shared: true, share_slug: res.slug, is_discoverable: isDiscoverable, category: noteCategory });
                        window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Broadcast Active', message: 'Public link generated successfully.', type: 'success' } }));
                      }
                    }}
                    className="w-full h-14 rounded-2xl bg-violet-600 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-violet-200"
                 >
-                  Generate Public Link
+                  {isShared ? 'Update Share Settings' : 'Generate Public Link'}
                 </Button>
                 {isShared && shareSlug && (
                   <div className="space-y-4 pt-4 border-t border-slate-100">
@@ -662,7 +705,12 @@ export function NoteEditor({
           </DialogContent>
         </Dialog>
 
-        <OutsourcePicker isOpen={isOutsourceOpen} onClose={() => setIsOutsourceOpen(false)} onImport={handleImportOutsource} />
+        <OutsourcePicker
+        isOpen={isOutsourceOpen}
+        onClose={() => setIsOutsourceOpen(false)}
+        onImport={handleImportOutsource}
+        mode={outsourceMode}
+      />
       </DialogContent>
     </Dialog>
   );

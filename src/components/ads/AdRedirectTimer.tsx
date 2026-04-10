@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Zap, ShieldCheck } from 'lucide-react';
 
+import { supabase } from '@/lib/supabase';
+import type { User } from '@/types';
+
 interface AdRedirectTimerProps {
   hasAds: boolean;
+  user: User | null;
   onUpgrade: () => void;
 }
 
-export function AdRedirectTimer({ hasAds, onUpgrade }: AdRedirectTimerProps) {
+export function AdRedirectTimer({ hasAds, user, onUpgrade }: AdRedirectTimerProps) {
   const [, setTimeLeft] = useState(15 * 60); // 15 minutes
   const [showInterstitial, setShowInterstitial] = useState(false);
 
@@ -62,12 +66,27 @@ export function AdRedirectTimer({ hasAds, onUpgrade }: AdRedirectTimerProps) {
           <Button
             size="lg"
             className="h-14 bg-black dark:bg-violet-600 hover:brightness-110 text-white font-black uppercase tracking-widest rounded-2xl gap-3 text-xs w-full shadow-xl transition-all active:scale-95"
-            onClick={() => {
+            onClick={async () => {
                 window.open('https://indonesianvisas.com', '_blank');
                 setShowInterstitial(false);
-                window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                    detail: { title: 'Thank You!', message: 'Ad break complete. Enjoy your session.', type: 'success' } 
-                }));
+                
+                if (user) {
+                  // Permanent ad-blocking reward for engagement
+                  const { error } = await supabase
+                    .from('profiles')
+                    .update({ ads_disabled: true })
+                    .eq('id', user.id);
+                  
+                  if (!error) {
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                        detail: { title: 'Neural Access Granted', message: 'Ads disabled. Thank you for your support!', type: 'success' } 
+                    }));
+                  }
+                } else {
+                  window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                      detail: { title: 'Thank You!', message: 'Ad break complete. Enjoy your session.', type: 'info' } 
+                  }));
+                }
             }}
           >
             Support & Continue <ExternalLink className="w-4 h-4" />

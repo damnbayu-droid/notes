@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Search, Trash2, Mail, Shield, ShieldAlert, User as UserIcon } from 'lucide-react';
+import { Search, Trash2, Mail, Shield, ShieldAlert, User as UserIcon, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,8 +75,6 @@ export function AdminUserList() {
         const { error } = await supabase.auth.admin.deleteUser(userId);
         
         if (error) {
-            // If admin delete fails (which it might if not run from a service role)
-            // we at least remove them from our profiles list or handle accordingly
             console.error('Error deleting user:', error);
             window.dispatchEvent(new CustomEvent('dcpi-notification', { 
                 detail: { title: 'DANGER', message: 'Auth deletion requires Service Role. Please use Supabase Dashboard.', type: 'error' } 
@@ -101,14 +99,26 @@ export function AdminUserList() {
                     <CardTitle className="text-2xl font-black uppercase tracking-tighter">Command Center: User Grid</CardTitle>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{users.length} Active Neural Nodes Detected</p>
                 </div>
-                <div className="relative w-72">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input 
-                        placeholder="Search Identity..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-11 h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-violet-500"
-                    />
+                <div className="flex items-center gap-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={fetchUsers} 
+                      disabled={isLoading}
+                      className="rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest h-10 px-6 gap-2 hover:bg-slate-50"
+                    >
+                      <Database className="w-3.5 h-3.5" />
+                      Sync Registry
+                    </Button>
+                    <div className="relative w-72">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input 
+                            placeholder="Search Identity..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-11 h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-violet-500"
+                        />
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="p-0">
@@ -171,14 +181,18 @@ export function AdminUserList() {
                                         </TableCell>
                                         <TableCell className="px-8 text-right">
                                             <div className="flex items-center justify-end gap-6">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-[8px] font-black text-muted-foreground uppercase mb-1.5 leading-none tracking-widest">Protocol: Ads</span>
-                                                    <Switch 
-                                                        checked={profile.ads_disabled} 
-                                                        onCheckedChange={() => toggleAds(profile.id, profile.ads_disabled)}
-                                                        className="data-[state=checked]:bg-emerald-500"
-                                                    />
-                                                </div>
+                                                 <div className="flex flex-col items-center">
+                                                     <span className="text-[8px] font-black text-muted-foreground uppercase mb-1.5 leading-none tracking-widest">Neural Ads Access</span>
+                                                     <div className="flex items-center gap-2">
+                                                        <span className={`text-[8px] font-black uppercase ${!profile.ads_disabled ? 'text-rose-500' : 'text-slate-300'}`}>Ads ON</span>
+                                                        <Switch 
+                                                            checked={profile.ads_disabled} 
+                                                            onCheckedChange={() => toggleAds(profile.id, profile.ads_disabled)}
+                                                            className="data-[state=checked]:bg-emerald-500"
+                                                        />
+                                                        <span className={`text-[8px] font-black uppercase ${profile.ads_disabled ? 'text-emerald-500' : 'text-slate-300'}`}>Block Ads</span>
+                                                     </div>
+                                                 </div>
                                                 
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>

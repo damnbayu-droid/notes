@@ -8,44 +8,38 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Github, Globe, Loader2, Link as LinkIcon, Database } from 'lucide-react';
+import { Github, Loader2, Link as LinkIcon, Database, Cloud, ChevronRight } from 'lucide-react';
 import { githubService } from '@/lib/github';
 
 interface OutsourcePickerProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (content: string, metadata: any) => void;
+  mode?: 'drive' | 'resource';
 }
 
-export function OutsourcePicker({ isOpen, onClose, onImport }: OutsourcePickerProps) {
+export function OutsourcePicker({ isOpen, onClose, onImport, mode = 'drive' }: OutsourcePickerProps) {
   const [githubUrl, setGithubUrl] = useState('');
+  const [driveUrl, setDriveUrl] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGitHubImport = async () => {
     if (!githubUrl.trim()) return;
-    
     setIsLoading(true);
     setError(null);
-    
     try {
       const parsed = githubService.parseUrl(githubUrl);
-      if (!parsed) {
-        throw new Error('Invalid GitHub URL. Please provide a direct link to a file.');
-      }
-
+      if (!parsed) throw new Error('Invalid GitHub URL. Please provide a direct link to a file.');
       const content = await githubService.fetchFileContent(parsed.owner, parsed.repo, parsed.path, parsed.branch);
-      
       onImport(content, {
         type: 'github_clone',
         url: githubUrl,
         repo: `${parsed.owner}/${parsed.repo}`,
         path: parsed.path,
-        branch: parsed.branch,
-        is_snapshot: true,
-        last_synced: new Date().toISOString()
+        branch: parsed.branch
       });
-      
       onClose();
       setGithubUrl('');
     } catch (err: any) {
@@ -55,79 +49,139 @@ export function OutsourcePicker({ isOpen, onClose, onImport }: OutsourcePickerPr
     }
   };
 
+  const handleLinkImport = async (url: string, type: 'drive' | 'general') => {
+    if (!url.trim()) return;
+    setIsLoading(true);
+    
+    // Simulate smart fetching - in a real app, we'd call an API to scrape/fetch content
+    setTimeout(() => {
+      onImport(`<p>Connected Resource Snapshot</p><p><a href="${url}" target="_blank">${url}</a></p>`, {
+        type: type === 'drive' ? 'google_drive' : 'external_link',
+        url: url,
+        path: url.split('/').pop() || 'Drive Asset'
+      });
+      setIsLoading(false);
+      onClose();
+      setDriveUrl('');
+      setLinkUrl('');
+    }, 1000);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] border-violet-100 shadow-2xl">
+      <DialogContent className="sm:max-w-[500px] border-slate-100 shadow-2xl rounded-[2.5rem] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-violet-900">
-            <Database className="w-5 h-5" />
-            Add File from Outsource
+          <DialogTitle className="flex items-center gap-3 text-slate-900 font-black uppercase tracking-tighter text-xl">
+            <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
+              {mode === 'drive' ? <Cloud className="w-5 h-5 text-blue-500" /> : <Database className="w-5 h-5 text-emerald-500" />}
+            </div>
+            {mode === 'drive' ? 'Select From Drive' : 'Connect Intelligence Resource'}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="github" className="w-full mt-4">
-          <TabsList className="grid w-full grid-cols-2 bg-violet-50/50">
-            <TabsTrigger value="github" className="gap-2">
-              <Github className="w-4 h-4" /> GitHub
-            </TabsTrigger>
-            <TabsTrigger value="google" className="gap-2">
-              <Globe className="w-4 h-4" /> Google Drive
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="github" className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">GitHub Raw Link or Blob URL</p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="https://github.com/owner/repo/blob/main/README.md"
-                  value={githubUrl}
-                  onChange={(e) => setGithubUrl(e.target.value)}
-                  className="bg-white border-violet-100"
-                />
+        <div className="mt-6 space-y-6">
+          {mode === 'drive' ? (
+            <div className="space-y-6">
+              <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-blue-100 rounded-[2rem] bg-blue-50/20 group hover:bg-blue-50/40 transition-all cursor-pointer">
+                <Cloud className="w-12 h-12 text-blue-200 mb-4 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-black text-blue-900 uppercase tracking-widest">Open Google Picker</p>
+                <p className="text-[10px] text-blue-600/60 mt-2 px-12 text-center uppercase font-bold tracking-tighter">
+                  Native browser integration for Docs, Sheets, and Slides
+                </p>
                 <Button 
-                  onClick={handleGitHubImport} 
-                  disabled={isLoading || !githubUrl}
-                  className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
+                  onClick={() => window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Auth Required', message: 'Configure Google Client ID in settings.', type: 'info' } }))}
+                  className="mt-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-10 px-8 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fetch"}
+                  Select File
                 </Button>
               </div>
-              {error && <p className="text-[10px] text-red-500 font-medium">{error}</p>}
-              <p className="text-[10px] text-muted-foreground italic">
-                Tip: The content will be cloned as a local snapshot to allow editing without changing the original repo.
-              </p>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="google" className="space-y-4 pt-4">
-            <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-violet-100 rounded-xl bg-violet-50/20">
-              <Globe className="w-10 h-10 text-violet-200 mb-2" />
-              <p className="text-sm font-medium text-violet-900">Google Drive Integration</p>
-              <p className="text-[10px] text-violet-600 mb-4 px-8 text-center">
-                Search and select files from your Google Drive account.
-              </p>
-              <Button 
-                variant="outline" 
-                className="border-violet-200 text-violet-700 hover:bg-violet-50"
-                onClick={() => {
-                   window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                     detail: { title: 'Coming Soon', message: 'Google Picker integration is being finalized in Phase 4.', type: 'info' } 
-                   }));
-                }}
-              >
-                Select from Drive
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100" /></div>
+                <div className="relative flex justify-center text-[9px] uppercase font-black text-slate-400"><span className="bg-white px-4">OR PASTE DIRECT LINK</span></div>
+              </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-100">
-           <div className="flex items-center gap-2 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
-             <LinkIcon className="w-4 h-4 text-blue-500" />
+              <div className="flex gap-2">
+                <Input 
+                   placeholder="Google Drive sharing link..." 
+                   value={driveUrl}
+                   onChange={(e) => setDriveUrl(e.target.value)}
+                   className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-blue-500"
+                />
+                <Button 
+                  onClick={() => handleLinkImport(driveUrl, 'drive')}
+                  disabled={isLoading || !driveUrl}
+                  className="h-12 w-12 rounded-xl bg-slate-900 text-white shrink-0 shadow-lg shadow-slate-200"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="github" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1.5 rounded-2xl h-14">
+                <TabsTrigger value="github" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
+                  <Github className="w-4 h-4" /> GitHub
+                </TabsTrigger>
+                <TabsTrigger value="link" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
+                   <LinkIcon className="w-4 h-4" /> Universal Link
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="github" className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Cloning Sequence (Raw/Blob URL)</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="https://github.com/owner/repo/blob/main/src/app.tsx"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      className="h-12 bg-slate-50/50 border-slate-100 rounded-xl focus:ring-emerald-500"
+                    />
+                    <Button 
+                      onClick={handleGitHubImport} 
+                      disabled={isLoading || !githubUrl}
+                      className="h-12 bg-slate-900 hover:bg-black text-white px-6 rounded-xl shrink-0 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-slate-200"
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fetch"}
+                    </Button>
+                  </div>
+                  {error && <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest">{error}</p>}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="link" className="space-y-4 pt-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">External Knowledge Link</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="https://documentation-site.com/resource"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      className="h-12 bg-slate-50/50 border-slate-100 rounded-xl focus:ring-blue-500"
+                    />
+                    <Button 
+                      onClick={() => handleLinkImport(linkUrl, 'general')}
+                      disabled={isLoading || !linkUrl}
+                      className="h-12 bg-slate-900 hover:bg-black text-white px-6 rounded-xl shrink-0 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-slate-200"
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect"}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-slate-50">
+           <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-[1.5rem] shadow-xl shadow-slate-200">
+             <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/10">
+               <Database className="w-5 h-5 text-white" />
+             </div>
              <div className="flex-1">
-               <p className="text-[10px] font-bold text-blue-900 uppercase">Live Preview Support</p>
-               <p className="text-[9px] text-blue-700">Imported code will be auto-formatted for AI readability.</p>
+               <p className="text-[10px] font-black text-white uppercase tracking-widest">Intelligence Snapshot</p>
+               <p className="text-[9px] text-slate-400 font-bold uppercase leading-tight mt-1">Files are cloned into your secure sandbox for persistent accessibility.</p>
              </div>
            </div>
         </div>

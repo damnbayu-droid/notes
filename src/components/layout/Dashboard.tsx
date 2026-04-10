@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react';
 
 import type { User, Note } from '@/types';
 import { useNotes } from '@/hooks/useNotes';
@@ -84,16 +84,20 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     notes,
   } = useNotes(user);
 
+  const isCreatingRef = useRef(false);
+
   // Global Event Coordination
   useEffect(() => {
     const handleCreateNote = async (event: CustomEvent) => {
-      if (event.detail && event.detail.title && event.detail.content) {
+      if (event.detail && event.detail.title && event.detail.content && !isCreatingRef.current) {
+        isCreatingRef.current = true;
         await createNote({
           title: event.detail.title,
           content: event.detail.content,
           folder: event.detail.folder || 'Main',
           note_type: event.detail.note_type || 'text'
         });
+        isCreatingRef.current = false;
       }
     };
     
@@ -180,42 +184,21 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
           <main className="flex-1 overflow-auto w-full relative bg-slate-50/20">
             <Suspense fallback={<div className="h-full flex items-center justify-center p-12"><div className="w-12 h-12 border-4 border-violet-100 border-t-violet-600 rounded-full animate-spin" /></div>}>
               {currentView === 'notes' || currentView === 'archive' || currentView === 'trash' ? (
-                editingNote ? (
-                  <NoteEditor
-                    user={user}
-                    note={editingNote}
-                    isOpen={!!editingNote || isEditorOpen}
-                    onUpdate={async (updates) => {
-                      if (editingNote) await updateNote(editingNote.id, updates);
-                    }}
-                    onClose={() => {
-                      setEditingNote(null);
-                      setIsEditorOpen(false);
-                    }}
-                    isExpanded={isEditorOpen}
-                    onToggleExpand={() => setIsEditorOpen(!isEditorOpen)}
-                    onDelete={() => {
-                      deleteNote(editingNote.id);
-                      setEditingNote(null);
-                      setIsEditorOpen(false);
-                    }}
-                  />
-                ) : (
-                  <div className="h-full flex flex-col">
-                      <SearchBar
-                        activeFolder={activeFolder}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        selectedTags={selectedTags}
-                        availableTags={allTags}
-                        onTagToggle={toggleTag}
-                        onClearFilters={() => { setSearchQuery(''); setSelectedTags([]); }}
-                        sortBy={sortBy}
-                        setSortBy={setSortBy}
-                        viewMode={viewMode}
-                        setViewMode={setViewMode}
-                        onOpenInfo={() => setIsInfoPanelOpen(true)}
-                      />
+                <div className="h-full flex flex-col">
+                    <SearchBar
+                      activeFolder={activeFolder}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      selectedTags={selectedTags}
+                      availableTags={allTags}
+                      onTagToggle={toggleTag}
+                      onClearFilters={() => { setSearchQuery(''); setSelectedTags([]); }}
+                      sortBy={sortBy}
+                      setSortBy={setSortBy}
+                      viewMode={viewMode}
+                      setViewMode={setViewMode}
+                      onOpenInfo={() => setIsInfoPanelOpen(true)}
+                    />
                     {currentView === 'trash' && (
                       <div className="mx-6 mt-4 p-5 bg-rose-50 border border-rose-100 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
                         <div className="flex items-center gap-4">
@@ -260,8 +243,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                       </div>
                     )}
                   </div>
-                )
-              ) : currentView === 'settings' ? (
+                ) : currentView === 'settings' ? (
                 <div className="p-6">
                   <SettingsPage
                     defaultTab={settingsTab}
@@ -307,7 +289,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
               ) : null}
             </Suspense>
 
-            <AdRedirectTimer hasAds={hasAds} onUpgrade={() => setIsPaymentModalOpen(true)} />
+            <AdRedirectTimer hasAds={hasAds} user={user} onUpgrade={() => setIsPaymentModalOpen(true)} />
           </main>
         </div>
       </div>
@@ -324,10 +306,15 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
         onUpdate={async (noteData) => {
           if (editingNote) {
             await updateNote(editingNote.id, noteData);
-          } else {
-            const result = await createNote(noteData);
-            if (result.success && result.note) {
-              setEditingNote(result.note);
+          } else if (!isCreatingRef.current) {
+            isCreatingRef.current = true;
+            try {
+              const result = await createNote(noteData);
+              if (result.success && result.note) {
+                setEditingNote(result.note);
+              }
+            } finally {
+              isCreatingRef.current = false;
             }
           }
         }}

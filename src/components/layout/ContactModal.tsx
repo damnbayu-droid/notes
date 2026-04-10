@@ -19,6 +19,7 @@ interface ContactModalProps {
 }
 
 export function ContactModal({ isOpen, onClose, userEmail = '' }: ContactModalProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState(userEmail);
   const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('');
@@ -33,6 +34,7 @@ export function ContactModal({ isOpen, onClose, userEmail = '' }: ContactModalPr
     setIsSubmitting(true);
     try {
       const { error } = await supabase.from('support_messages').insert([{
+        name,
         email,
         phone,
         subject: subject || 'General Inquiry',
@@ -89,6 +91,19 @@ export function ContactModal({ isOpen, onClose, userEmail = '' }: ContactModalPr
             </div>
 
             <div className="p-8 space-y-5 bg-white">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Full Name</label>
+                <div className="relative">
+                  <Input 
+                    placeholder="Enter your name" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="h-12 rounded-2xl border-slate-100 focus:ring-violet-600 bg-slate-50/50"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email Address</label>
                 <div className="relative">

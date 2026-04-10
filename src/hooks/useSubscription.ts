@@ -20,12 +20,13 @@ export function useSubscription(user: User | null) {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('subscription_tier')
+          .select('subscription_tier, ads_disabled')
           .eq('id', user!.id)
           .single();
 
         if (error) throw error;
         setTier(data?.subscription_tier as SubscriptionTier || 'free');
+        setAdsDisabled(data?.ads_disabled || false);
       } catch (err) {
         console.error('Error fetching subscription:', err);
         setTier('free');
@@ -46,6 +47,7 @@ export function useSubscription(user: User | null) {
         filter: `id=eq.${user.id}`
       }, (payload) => {
         setTier(payload.new.subscription_tier as SubscriptionTier);
+        setAdsDisabled(payload.new.ads_disabled || false);
       })
       .subscribe();
 
@@ -54,9 +56,10 @@ export function useSubscription(user: User | null) {
     };
   }, [user]);
 
+  const [adsDisabled, setAdsDisabled] = useState(false);
   const isLimited = tier === 'limited_month' || tier === 'limited_year' || tier === 'free';
   const isPaid = tier !== 'free';
-  const hasAds = tier !== 'full_access';
+  const hasAds = tier !== 'full_access' && !adsDisabled && tier !== 'admin' as any;
 
   return {
     tier,
