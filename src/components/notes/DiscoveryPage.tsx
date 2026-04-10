@@ -149,7 +149,7 @@ export function DiscoveryPage() {
                                         <Sparkles className="w-4 h-4" />
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Badge variant="secondary" className="bg-slate-50 dark:bg-slate-800 text-[10px] uppercase font-bold tracking-tight px-2 py-0.5">
+                                        <Badge variant="outline" className="bg-slate-50 dark:bg-slate-800 text-[10px] uppercase font-bold tracking-tight px-2 py-0.5">
                                             {note.category || 'General'}
                                         </Badge>
                                         {note.ratingCount! > 0 && (

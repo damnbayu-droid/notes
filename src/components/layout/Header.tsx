@@ -23,6 +23,8 @@ import {
   CheckCircle2,
   Mic,
   Scan,
+  LayoutGrid,
+  Shield
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -74,6 +76,10 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
     };
   }, []);
 
+  const handleChangeView = (view: string) => {
+    window.dispatchEvent(new CustomEvent('change-view', { detail: view }));
+  };
+
   // Determine container state
   const isActive = !!dynamicStatus || !!notification;
 
@@ -116,8 +122,8 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
             {dynamicStatus && (
               <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in zoom-in duration-300">
                 {dynamicStatus.type === 'record' && <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
-                {dynamicStatus.type === 'scan' && <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-400" />}
-                {dynamicStatus.type === 'info' && <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />}
+                {dynamicStatus.type === 'scan' && <Scan className="w-3.5 h-3.5 sm:w-4 h-4 text-blue-400" />}
+                {dynamicStatus.type === 'info' && <Bell className="w-3.5 h-3.5 sm:w-4 h-4 text-white" />}
                 <span className="text-xs sm:text-sm font-medium whitespace-nowrap text-white">{dynamicStatus.text}</span>
               </div>
             )}
@@ -196,6 +202,20 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
                   <UserIcon className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
+                
+                {/* NEW: Admin & Dashboard Fast Links */}
+                <DropdownMenuItem onClick={() => handleChangeView('notes')}>
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
+                
+                {user?.email === 'damnbayu@gmail.com' && (
+                  <DropdownMenuItem onClick={() => handleChangeView('admin')} className="text-violet-600 font-bold">
+                    <Shield className="mr-2 h-4 w-4" />
+                    System Admin
+                  </DropdownMenuItem>
+                )}
+
                 <DropdownMenuItem onClick={() => onOpenSettings('security')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings

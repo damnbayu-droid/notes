@@ -1,30 +1,28 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/hooks/useTheme';
 import { AdvancedVoiceDialog } from '@/components/voice/AdvancedVoiceDialog';
 import {
   LayoutGrid,
   Archive,
-  Plus,
   X,
   Calendar,
-  Moon,
-  Sun,
   Book,
   Mic,
   Pin,
-  Settings,
-  Cloud,
-  MoreHorizontal,
-  Pencil,
   Trash2,
+  FileEdit,
   Compass,
   Crown,
   Zap,
-  FileEdit,
-  Shield,
+  MoreHorizontal,
+  Moon,
+  Sun,
+  Plus,
+  Pencil,
+  MessageSquare,
+  Cloud
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,18 +36,16 @@ type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedu
 interface SidebarProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
-  user: any;
   isOpen: boolean;
   onClose: () => void;
   folders: string[];
   activeFolder: string;
   onSelectFolder: (folder: string) => void;
-  onOpenSettings: (tab?: string) => void;
   onAddFolder: () => void;
   renameFolder: (oldName: string, newName: string) => Promise<{ success: boolean; error?: string }>;
   deleteFolder: (folderName: string) => Promise<{ success: boolean; error?: string }>;
-  togglePinFolder: (folderName: string) => void;
   pinnedFolders: string[];
+  togglePinFolder: (folderName: string) => void;
   subscriptionTier?: string;
   onUpgrade?: () => void;
 }
@@ -57,13 +53,11 @@ interface SidebarProps {
 export function Sidebar({
   currentView,
   onViewChange,
-  user,
   isOpen,
   onClose,
   folders,
   activeFolder,
   onSelectFolder,
-  onOpenSettings,
   onAddFolder,
   renameFolder,
   deleteFolder,
@@ -74,19 +68,16 @@ export function Sidebar({
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const activeNotesCount = 0;
-  const archivedNotesCount = 0;
 
   const navItems = [
-    { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: activeNotesCount },
+    { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: 0 },
     { id: 'discovery' as ViewType, label: 'Discovery', icon: Compass, count: 0 },
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
-    { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: archivedNotesCount },
+    { id: 'archive' as ViewType, label: 'Archive', icon: Archive, count: 0 },
     { id: 'trash' as ViewType, label: 'Trash', icon: Trash2, count: 0 },
     { id: 'scanner' as ViewType, label: 'PDF Editor', icon: FileEdit, count: 0 },
     { id: 'voice-note' as any, label: 'Voice Note', icon: Mic, count: 0, onClick: () => setIsVoiceOpen(true) },
-    ...(user?.email === 'damnbayu@gmail.com' ? [{ id: 'admin' as ViewType, label: 'Admin Panel', icon: Shield, count: 0 }] : []),
   ];
 
   const sortedFolders = useMemo(() => {
@@ -98,6 +89,10 @@ export function Sidebar({
       return a.localeCompare(b);
     });
   }, [folders, pinnedFolders]);
+
+  const handleContactUs = () => {
+    window.dispatchEvent(new CustomEvent('open-contact-modal'));
+  };
 
   return (
     <>
@@ -117,10 +112,10 @@ export function Sidebar({
         flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-none flex items-center justify-between h-14 px-4 border-b border-border">
-          <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex-none flex items-center justify-between h-16 px-4 border-b border-border">
+          <div className="flex items-center gap-2">
             <img src="/Logo.webp?v=2" alt="Smart Notes" className="w-8 h-auto object-contain drop-shadow-sm" />
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent tracking-tighter">
               Smart Notes
             </span>
           </div>
@@ -133,7 +128,7 @@ export function Sidebar({
           <div className="px-3 space-y-6">
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50 hover:bg-violet-100 rounded-xl border border-violet-100 transition-all group"
+              className="w-full flex items-center justify-between px-4 py-3 mb-2 bg-violet-50/50 dark:bg-violet-950/20 hover:bg-violet-100 rounded-xl border border-violet-100 dark:border-violet-900 transition-all group"
               aria-label="Toggle theme"
             >
               <div className="flex items-center gap-3">
@@ -142,7 +137,7 @@ export function Sidebar({
                 ) : (
                   <Sun className="w-5 h-5 text-orange-500 group-hover:scale-110 transition-transform" aria-hidden="true" />
                 )}
-                <span className="font-medium text-violet-900">
+                <span className="font-bold text-violet-900 dark:text-violet-100 text-sm">
                   {theme === 'dark' ? 'Dark Mode' : 'Light Mode'}
                 </span>
               </div>
@@ -159,28 +154,29 @@ export function Sidebar({
 
 
             {/* Subscription Badge/Button */}
-            <div className="px-3">
+            <div className="px-1">
               {subscriptionTier === 'full_access' ? (
-                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-xl">
+                <div className="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl shadow-sm">
                   <Crown className="w-5 h-5 text-emerald-600" />
-                  <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">PRO Account</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">Enterprise PRO</span>
                 </div>
               ) : (
                 <button
                   onClick={onUpgrade}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:brightness-110 rounded-xl shadow-lg shadow-violet-500/20 transition-all active:scale-95 group"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:brightness-110 rounded-2xl shadow-xl shadow-violet-500/20 transition-all active:scale-95 group"
                 >
                   <div className="flex items-center gap-3">
                     <Crown className="w-5 h-5 text-white animate-pulse" />
-                    <span className="text-xs font-black uppercase tracking-widest text-white">Go Premium</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Go Premium</span>
                   </div>
                   <Zap className="w-4 h-4 text-violet-200 group-hover:text-white transition-colors" />
                 </button>
               )}
             </div>
+            
             <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Menu
+              <p className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">
+                CORE SYSTEM
               </p>
               {navItems.map((item: any) => (
                 <button
@@ -195,44 +191,42 @@ export function Sidebar({
                     }
                     onClose();
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${currentView === item.id
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${currentView === item.id
+                    ? 'bg-violet-100/50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                    : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-foreground'
                     }`}
                   aria-label={item.label}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-primary' : 'text-muted-foreground'
+                    <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-violet-600' : 'text-slate-400'
                       }`} />
                     {item.label}
                   </div>
-                  {item.count > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {item.count}
-                    </Badge>
-                  )}
                 </button>
               ))}
             </div>
 
             {/* Folders */}
             <div className="space-y-1">
+               <p className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">
+                KNOWLEDGE BASE
+              </p>
               <div className="space-y-0.5">
                 {sortedFolders.map(folder => folder !== 'Google Drive' && (
-                  <div key={folder} className="group flex items-center justify-between pr-2 rounded-lg hover:bg-accent transition-colors">
+                  <div key={folder} className="group flex items-center justify-between pr-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
                     <button
                       onClick={() => {
                         onSelectFolder(folder);
                         onViewChange('notes');
                         onClose();
                       }}
-                      className={`flex-1 flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors ${activeFolder === folder
-                        ? 'text-accent-foreground font-semibold'
+                      className={`flex-1 flex items-center gap-3 px-3 py-2 text-sm font-bold transition-colors ${activeFolder === folder
+                        ? 'text-violet-600 dark:text-violet-400'
                         : 'text-muted-foreground'
                         }`}
                     >
                       <div className="flex items-center gap-3 truncate">
-                        {pinnedFolders.includes(folder) && <Pin className="w-3 h-3 text-primary fill-primary rotate-45" />}
+                        {pinnedFolders.includes(folder) && <Pin className="w-3 h-3 text-violet-600 fill-violet-600 rotate-45 shrink-0" />}
                         <span className="truncate">{folder}</span>
                       </div>
                     </button>
@@ -244,14 +238,14 @@ export function Sidebar({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
                             aria-label={`Options for ${folder}`}
                             onClick={(e) => e.stopPropagation()}
                           >
                             < MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-48 rounded-2xl border-violet-100 shadow-xl">
                           <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
                             setTimeout(async () => {
@@ -269,7 +263,7 @@ export function Sidebar({
                                 }
                               }
                             }, 100);
-                          }}>
+                          }} className="rounded-xl">
                             <Pencil className="w-4 h-4 mr-2" />
                             Rename
                           </DropdownMenuItem>
@@ -282,11 +276,11 @@ export function Sidebar({
                                 type: 'info'
                               }
                             }));
-                          }}>
-                            <div className={`w-4 h-4 mr-2 border rounded-full ${pinnedFolders.includes(folder) ? 'bg-primary border-primary' : 'border-muted-foreground'}`} />
+                          }} className="rounded-xl">
+                            <Pin className="w-4 h-4 mr-2" />
                             {pinnedFolders.includes(folder) ? 'Unpin Folder' : 'Pin Folder'}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50" onClick={(e) => {
+                          <DropdownMenuItem className="text-red-600 focus:text-red-600 focus:bg-red-50 rounded-xl" onClick={(e) => {
                             e.stopPropagation();
                             setTimeout(async () => {
                               if (confirm(`Delete folder "${folder}"? Notes will be moved to Trash.`)) {
@@ -313,97 +307,56 @@ export function Sidebar({
                 ))}
                 <button
                   onClick={onAddFolder}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-primary hover:bg-accent transition-all border border-dashed border-transparent hover:border-primary/20"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all border border-dashed border-violet-200 dark:border-violet-800"
                 >
                   <Plus className="w-4 h-4" />
-                  <span className="truncate">Add Folder</span>
+                  <span className="truncate uppercase tracking-widest text-[10px]">Create Folder</span>
                 </button>
               </div>
             </div>
-
-            {/* Tags placeholder removed as per logic but keeping structure if needed */}
           </div>
-        </ScrollArea>      {/* Footer */}
-        <div className="flex-none p-4 border-t border-border space-y-2 bg-background pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-          {/* Main Dashboard CTA (Always accessible point of return) */}
-          <button
-            onClick={() => {
-              onViewChange('notes');
-              onClose();
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all border shadow-sm mb-2 ${
-              currentView === 'notes' 
-              ? 'bg-violet-600 text-white border-violet-700 shadow-violet-500/20' 
-              : 'bg-violet-50 text-violet-600 border-violet-100 hover:bg-violet-100'
-            }`}
-            aria-label="Back to Dashboard"
-          >
-            <LayoutGrid className="w-5 h-5" />
-            Main Dashboard
-          </button>
+        </ScrollArea>
 
-          {/* Admin Dashboard CTA (Only for Admin) */}
-          {user?.email === 'damnbayu@gmail.com' && (
-            <button
-              onClick={() => {
-                onViewChange('admin');
-                onClose();
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all border shadow-sm mb-2 ${
-                currentView === 'admin' 
-                ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-500/20' 
-                : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
-              }`}
-              aria-label="System Administration"
-            >
-              <Shield className="w-5 h-5" />
-              System Admin
-            </button>
-          )}
-
+        {/* Footer */}
+        <div className="flex-none p-5 border-t border-border space-y-3 bg-background/50 backdrop-blur-sm pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
           <button
-            onClick={() => {
-              onOpenSettings('profile');
-              onClose();
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${currentView === 'settings'
-              ? 'bg-accent text-accent-foreground font-medium'
-              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              }`}
+            onClick={handleContactUs}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-slate-900 text-white hover:bg-black transition-all shadow-lg active:scale-95 group"
           >
-            <Settings className="w-5 h-5" />
-            Settings
+            <MessageSquare className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
+            Contact Us
           </button>
 
           <button
             onClick={async () => {
               window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                detail: { title: 'Sync Triggered', message: 'Connecting to Online Database...', type: 'info' }
+                detail: { title: 'Syncing...', message: 'Connecting to Cloud HQ', type: 'info' }
               }));
-              // Short timeout to let the notification animation play before reload
               setTimeout(() => {
                 window.location.reload();
               }, 800);
             }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
             aria-label="Offline? Connect Again"
-            title="Force sync data with online database"
           >
-            <Cloud className="w-5 h-5" aria-hidden="true" />
-            Offline? Connect Again
+            <Cloud className="w-4 h-4 opacity-40" />
+            System Refresh
           </button>
+
           <div className="pt-2 text-center">
             <a
               href="https://bali.enterprises"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-60 hover:opacity-100 hover:text-violet-600 transition-all underline-offset-4 hover:underline"
+              className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] opacity-40 hover:opacity-100 hover:text-violet-600 transition-all"
             >
-              Powered by Bali.Enterprises
+              Bali.Enterprises
             </a>
           </div>
         </div>
-      </aside>      <AdvancedVoiceDialog
+      </aside>
+
+      <AdvancedVoiceDialog
         isOpen={isVoiceOpen}
         onClose={() => setIsVoiceOpen(false)}
         onSendToAI={(text) => {

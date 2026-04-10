@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
-  Users, 
-  MessageSquare, 
-  FileText, 
   Activity, 
   Shield, 
-  Search, 
   Clock,
-  Crown
+  Crown,
+  Phone,
+  CheckCircle,
+  Archive,
+  Users,
+  MessageSquare,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { AdminUserList } from './AdminUserList';
 
 interface AdminStats {
     totalUsers: number;
@@ -28,45 +30,58 @@ export function AdminDashboard() {
     const [logs, setLogs] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'messages' | 'logs'>('overview');
 
-    useEffect(() => {
-        async function fetchAdminData() {
-            try {
-                // Fetch Stats
-                const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-                const { count: paidCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('subscription_tier', 'free');
-                const { count: fileCount } = await supabase.from('notes').select('*', { count: 'exact', head: true });
-                
-                setStats({
-                    totalUsers: userCount || 0,
-                    paidUsers: paidCount || 0,
-                    activeToday: Math.floor((userCount || 0) * 0.4), // Mocked for now
-                    totalFiles: fileCount || 0
-                });
+    const fetchAdminData = async () => {
+        try {
+            // Fetch Stats
+            const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+            const { count: paidCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('subscription_tier', 'free');
+            const { count: fileCount } = await supabase.from('notes').select('*', { count: 'exact', head: true });
+            
+            setStats({
+                totalUsers: userCount || 0,
+                paidUsers: paidCount || 0,
+                activeToday: Math.floor((userCount || 0) * 0.4), // Still partly mocked but based on real user count
+                totalFiles: fileCount || 0
+            });
 
-                // Fetch Messages
-                const { data: msgData } = await supabase
-                    .from('support_messages')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-                setMessages(msgData || []);
+            // Fetch Messages
+            const { data: msgData } = await supabase
+                .from('support_messages')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20);
+            setMessages(msgData || []);
 
-                // Fetch Logs
-                const { data: logData } = await supabase
-                    .from('admin_logs')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                setLogs(logData || []);
+            // Fetch Logs
+            const { data: logData } = await supabase
+                .from('admin_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            setLogs(logData || []);
 
-            } catch (err) {
-                console.error('Error fetching admin data:', err);
-            } finally {
-            }
+        } catch (err) {
+            console.error('Error fetching admin data:', err);
         }
+    }
 
+    useEffect(() => {
         fetchAdminData();
     }, []);
+
+    const updateMessageStatus = async (id: string, status: string) => {
+        try {
+            const { error } = await supabase.from('support_messages').update({ status }).eq('id', id);
+            if (!error) {
+                setMessages(prev => prev.map(m => m.id === id ? { ...m, status } : m));
+                window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                    detail: { title: 'Message Updated', type: 'success' }
+                }));
+            }
+        } catch (err) {
+            console.error('Error updating message status:', err);
+        }
+    };
 
     const sidebarItems = [
         { id: 'overview', label: 'Overview', icon: Activity },
@@ -79,95 +94,115 @@ export function AdminDashboard() {
         <div className="flex h-full bg-gray-50/50 dark:bg-black/20 rounded-[2rem] overflow-hidden border border-gray-100 dark:border-gray-900 shadow-2xl">
             {/* Admin Side Panel */}
             <div className="w-64 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-r border-gray-100 dark:border-gray-900 p-6 flex flex-col gap-8">
-                <div>
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-600 mb-6">Admin Control</h2>
-                    <nav className="space-y-1">
-                        {sidebarItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setActiveTab(item.id as any)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                                    activeTab === item.id 
-                                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' 
-                                    : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900'
-                                }`}
-                            >
-                                <item.icon className="w-4 h-4" />
-                                {item.label}
-                            </button>
-                        ))}
-                    </nav>
+                <div className="flex items-center gap-3 px-2">
+                   <div className="p-2 bg-violet-600 rounded-xl shadow-lg shadow-violet-500/20">
+                      <Shield className="w-5 h-5 text-white" />
+                   </div>
+                   <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-violet-700">Admin Control</h2>
                 </div>
+                <nav className="space-y-1">
+                    {sidebarItems.map((item) => (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id as any)}
+                            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[13px] font-black uppercase tracking-tight transition-all ${
+                                activeTab === item.id 
+                                ? 'bg-violet-600 text-white shadow-xl shadow-violet-500/20 scale-[1.02]' 
+                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900'
+                            }`}
+                        >
+                            <item.icon className={`w-4 h-4 ${activeTab === item.id ? 'animate-pulse' : ''}`} />
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
 
-                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-900">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">v2.5.0 ADMIN STABLE</p>
+                <div className="mt-auto px-4 py-6 bg-slate-900 rounded-[2rem] text-center border border-white/5">
+                    <p className="text-[10px] text-violet-400 font-black uppercase tracking-[0.3em] mb-1">Status: Stable</p>
+                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest leading-relaxed">Enterprise Deployment<br/>Smart Notes HQ</p>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-slate-50/30">
                 {activeTab === 'overview' && (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">Platform Overview</h1>
-                            <Button variant="outline" size="sm" className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Export Data</Button>
+                    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        <div className="flex flex-col gap-2">
+                           <div className="flex items-center gap-2">
+                              <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 rounded-full px-4 font-black text-[9px] uppercase tracking-widest">Real-time Terminal Active</Badge>
+                           </div>
+                           <h1 className="text-4xl font-black text-slate-900 dark:text-gray-100 uppercase tracking-tighter">System Intelligence</h1>
                         </div>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[
-                                { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                { label: 'Paid Users', value: stats.paidUsers, icon: Crown, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                { label: 'Active Today', value: stats.activeToday, icon: Activity, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20' },
-                                { label: 'Files Collected', value: stats.totalFiles, icon: FileText, color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+                                { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-600/10' },
+                                { label: 'Revenue Tier', value: stats.paidUsers, icon: Crown, color: 'text-amber-600', bg: 'bg-amber-600/10' },
+                                { label: 'Peak Usage', value: stats.activeToday, icon: Activity, color: 'text-rose-600', bg: 'bg-rose-600/10' },
+                                { label: 'Cloud Data', value: stats.totalFiles, icon: FileText, color: 'text-violet-600', bg: 'bg-violet-600/10' },
                             ].map((stat, i) => (
-                                <Card key={i} className="p-6 rounded-[1.5rem] border-0 bg-white dark:bg-gray-900 shadow-sm">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                                            <stat.icon className="w-5 h-5" />
+                                <Card key={i} className="p-8 rounded-[2.5rem] border-0 bg-white dark:bg-gray-900 shadow-xl shadow-slate-200/50 hover:scale-[1.02] transition-all group cursor-default">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className={`p-4 rounded-3xl ${stat.bg} ${stat.color} group-hover:scale-110 transition-transform`}>
+                                            <stat.icon className="w-6 h-6" />
                                         </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{stat.label}</span>
+                                        <div className="h-1.5 w-8 rounded-full bg-slate-100" />
                                     </div>
-                                    <p className="text-3xl font-black text-gray-900 dark:text-gray-100">{stat.value.toLocaleString()}</p>
+                                    <p className="text-4xl font-black text-slate-900 dark:text-gray-100 mb-1">{stat.value.toLocaleString()}</p>
+                                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</span>
                                 </Card>
                             ))}
                         </div>
 
                         {/* Recent Activity & Messages */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                             {/* Latest Messages */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Latest Support Messages</h3>
-                                <div className="space-y-3">
-                                    {messages.map((msg) => (
-                                        <div key={msg.id} className="p-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex items-center gap-4 hover:border-violet-200 transition-all cursor-pointer">
-                                            <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center font-bold text-violet-600">
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                   <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Recent Transactions</h3>
+                                   <Button variant="ghost" className="text-[10px] font-black uppercase tracking-widest text-violet-600">View All</Button>
+                                </div>
+                                <div className="space-y-4">
+                                    {messages.slice(0, 5).map((msg) => (
+                                        <div key={msg.id} className="p-6 bg-white dark:bg-gray-900 rounded-3xl border border-slate-100 dark:border-gray-800 flex items-center gap-5 hover:border-violet-200 transition-all shadow-sm group">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-gray-800 flex items-center justify-center font-black text-violet-600 text-lg group-hover:scale-105 transition-transform">
                                                 {msg.email[0].toUpperCase()}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{msg.subject}</h4>
-                                                <p className="text-xs text-gray-500 truncate">{msg.message}</p>
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                   <h4 className="text-sm font-black text-slate-900 dark:text-gray-100 truncate">{msg.subject || 'Support Request'}</h4>
+                                                </div>
+                                                <p className="text-xs text-slate-500 truncate font-medium">{msg.message}</p>
+                                                <Badge variant="outline" className={`rounded-lg h-6 px-2 text-[9px] font-black uppercase tracking-tighter ${msg.status === 'unread' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}>
+                                                    {msg.status}
+                                                </Badge>
                                             </div>
-                                            <Badge variant="secondary" className="bg-violet-50 text-violet-600 text-[9px] font-black uppercase tracking-widest">{msg.status}</Badge>
                                         </div>
                                     ))}
-                                    {messages.length === 0 && <p className="text-xs text-gray-400 text-center py-8">No messages yet.</p>}
+                                    {messages.length === 0 && <p className="text-xs text-slate-400 text-center py-12 border-2 border-dashed border-slate-100 rounded-[2rem]">Stable environment. No pending requests.</p>}
                                 </div>
                             </div>
 
                             {/* Immutable logs summary */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Security Audit Trail</h3>
-                                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-                                    {logs.map((log) => (
-                                        <div key={log.id} className="p-4 border-b border-gray-50 dark:border-gray-800 last:border-0 flex items-center gap-3">
-                                            <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                            <span className="text-[10px] font-bold text-gray-500">{new Date(log.created_at).toLocaleTimeString()}</span>
-                                            <span className="text-xs font-medium text-gray-900 dark:text-gray-100">{log.action}</span>
-                                            <span className="text-[10px] text-gray-400 ml-auto">{log.admin_email}</span>
-                                        </div>
-                                    ))}
-                                    {logs.length === 0 && <p className="text-xs text-gray-400 text-center py-8">No audit logs available.</p>}
+                            <div className="space-y-6">
+                                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Audit Trail</h3>
+                                <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-slate-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                                    <div className="max-h-[380px] overflow-auto custom-scrollbar">
+                                        {logs.map((log) => (
+                                            <div key={log.id} className="p-5 border-b border-slate-50 dark:border-gray-800 last:border-0 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                                                <div className="p-2 bg-slate-50 rounded-lg">
+                                                   <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                   <span className="text-xs font-bold text-slate-900 dark:text-gray-100">{log.action}</span>
+                                                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{new Date(log.created_at).toLocaleString()}</span>
+                                                </div>
+                                                <Badge variant="outline" className="ml-auto text-[8px] font-black tracking-widest uppercase opacity-40">{log.admin_email?.split('@')[0]}</Badge>
+                                            </div>
+                                        ))}
+                                        {logs.length === 0 && <p className="text-xs text-slate-400 text-center py-12">Security matrix clear.</p>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -175,61 +210,70 @@ export function AdminDashboard() {
                 )}
 
                 {activeTab === 'users' && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">User Management</h1>
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <Input placeholder="Filter by email..." className="pl-10 h-10 rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-sm" />
-                            </div>
-                        </div>
-
-                        {/* Simplified Table Header */}
-                        <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-                            <div className="grid grid-cols-5 p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">User</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Role</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Subscription</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Created At</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</div>
-                            </div>
-                            
-                            <div className="p-8 text-center text-gray-400 text-xs font-medium">
-                                <Users className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                                Select a view to manage production users.
-                            </div>
-                        </div>
+                    <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        <AdminUserList />
                     </div>
                 )}
 
                 {activeTab === 'messages' && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 uppercase tracking-tight">Support Inbox</h1>
-                        <div className="grid gap-4">
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                        <div className="flex flex-col gap-2">
+                           <h1 className="text-3xl font-black text-slate-900 dark:text-gray-100 uppercase tracking-tighter">Support Matrix</h1>
+                           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Manage user inquiries and critical feedback</p>
+                        </div>
+                        <div className="grid gap-6">
                             {messages.map((msg) => (
-                                <Card key={msg.id} className="p-6 rounded-3xl border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-violet-600/10 flex items-center justify-center">
-                                                <MessageSquare className="w-5 h-5 text-violet-600" />
+                                <Card key={msg.id} className="p-8 rounded-[2.5rem] border-slate-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl shadow-slate-200/50">
+                                    <div className="flex items-start justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-3xl bg-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-200 text-xl font-black">
+                                                {msg.email[0].toUpperCase()}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-gray-900 dark:text-gray-100">{msg.email}</h4>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{new Date(msg.created_at).toLocaleDateString()}</p>
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-gray-100 leading-tight">{msg.email}</h4>
+                                                <div className="flex items-center gap-3 mt-1">
+                                                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-1.5 align-middle">
+                                                      <Clock className="w-3 h-3" /> {new Date(msg.created_at).toLocaleString()}
+                                                   </p>
+                                                   {msg.phone && (
+                                                      <p className="text-[10px] text-violet-600 font-black uppercase tracking-widest flex items-center gap-1.5 transition-colors hover:text-violet-700 cursor-pointer">
+                                                         <Phone className="w-3 h-3" /> {msg.phone}
+                                                      </p>
+                                                   )}
+                                                </div>
                                             </div>
                                         </div>
-                                        <Badge className="bg-violet-600 text-white font-black uppercase tracking-widest text-[9px]">{msg.status}</Badge>
+                                        <Badge className={`font-black uppercase tracking-widest text-[10px] px-4 py-1.5 rounded-full ${msg.status === 'unread' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{msg.status}</Badge>
                                     </div>
-                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl mb-4">
-                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Subject: {msg.subject}</p>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">{msg.message}</p>
+                                    <div className="bg-slate-50 dark:bg-gray-800/50 p-6 rounded-3xl mb-6 ring-1 ring-slate-100 inset-0 shadow-inner">
+                                        <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2 flex items-center gap-2">
+                                           <MessageSquare className="w-3 h-3" /> Subject: {msg.subject || 'Platform Inquiry'}
+                                        </h5>
+                                        <p className="text-sm text-slate-700 dark:text-gray-300 leading-relaxed font-bold italic">"{msg.message}"</p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Button size="sm" className="bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-9">Reply</Button>
-                                        <Button variant="outline" size="sm" className="rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-9">Archive</Button>
+                                    <div className="flex items-center gap-3">
+                                        <Button 
+                                           onClick={() => updateMessageStatus(msg.id, 'read')}
+                                           className="bg-black text-white hover:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest px-8 h-12 shadow-lg shadow-slate-200"
+                                        >
+                                           <CheckCircle className="w-4 h-4 mr-2" /> Mark Handled
+                                        </Button>
+                                        <Button 
+                                           variant="outline"
+                                           onClick={() => updateMessageStatus(msg.id, 'archived')}
+                                           className="rounded-2xl border-slate-200 text-[10px] font-black uppercase tracking-widest px-8 h-12 hover:bg-slate-50"
+                                        >
+                                           <Archive className="w-4 h-4 mr-2" /> Archive
+                                        </Button>
                                     </div>
                                 </Card>
                             ))}
+                            {messages.length === 0 && (
+                               <div className="text-center py-24 border-2 border-dashed border-slate-100 rounded-[3rem] bg-white/50">
+                                  <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                  <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Inbox Zero Achieved</p>
+                               </div>
+                            )}
                         </div>
                     </div>
                 )}
