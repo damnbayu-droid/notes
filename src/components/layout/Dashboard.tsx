@@ -182,6 +182,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             onUpgrade={() => setIsPaymentModalOpen(true)}
             userEmail={user?.email || undefined}
             userId={user?.id || undefined}
+            onSignIn={onSignIn}
           />
 
           <main className="flex-1 overflow-auto w-full relative bg-slate-50/20">
