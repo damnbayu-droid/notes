@@ -49,6 +49,8 @@ interface SidebarProps {
   togglePinFolder: (folderName: string) => void;
   subscriptionTier?: string;
   onUpgrade?: () => void;
+  userEmail?: string;
+  userId?: string;
 }
 
 export function Sidebar({
@@ -65,7 +67,9 @@ export function Sidebar({
   pinnedFolders,
   togglePinFolder,
   subscriptionTier = 'free',
-  onUpgrade
+  onUpgrade,
+  userEmail,
+  userId
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -360,7 +364,7 @@ export function Sidebar({
             Connect Again / Refresh System
           </button>
 
-          <div className="pt-2 text-center">
+          <div className="pt-2 text-center space-y-2">
             <a
               href="https://bali.enterprises"
               target="_blank"
@@ -369,6 +373,16 @@ export function Sidebar({
             >
               Bali.Enterprises
             </a>
+
+            {userEmail && (
+              <div className="pt-2 border-t border-slate-100/50 mt-2 text-left opacity-30 hover:opacity-100 transition-opacity">
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated Account:</p>
+                <p className="text-[8px] font-mono text-slate-500 truncate mb-1">{userEmail}</p>
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">System ID:</p>
+                <code className="text-[8px] font-mono text-violet-600 truncate block bg-violet-50 rounded px-1">{userId}</code>
+                <p className="text-[6px] font-bold text-slate-400 mt-1 uppercase italic tracking-tighter">*Compare this ID to your Database screenshots</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>
