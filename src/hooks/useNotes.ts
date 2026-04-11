@@ -257,12 +257,34 @@ export function useNotes(user: User | null): UseNotesReturn {
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     const timestamp = new Date().toISOString();
     setNotes(prev => prev.map(n => n.id === id ? { ...n, ...updates, updated_at: timestamp } : n));
+    
     if (isOffline) {
       setSyncQueue(prev => [...prev, { type: 'UPDATE', payload: { id, updates: { ...updates, updated_at: timestamp } } }]);
-    } else {
-      await supabase.from('notes').update({ ...updates, updated_at: timestamp }).eq('id', id);
+      return { success: true };
     }
-    return { success: true };
+
+    try {
+      const { error } = await supabase.from('notes').update({ ...updates, updated_at: timestamp }).eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    } catch (err: any) {
+      console.warn('Update failed, attempting legacy update fallback:', err);
+      // If error is due to missing columns, strip them and try again
+      const legacyUpdates = { ...updates };
+      delete legacyUpdates.is_discoverable;
+      delete legacyUpdates.category;
+      delete legacyUpdates.share_slug;
+      delete legacyUpdates.is_shared;
+      delete legacyUpdates.share_type;
+      delete legacyUpdates.share_permission;
+
+      const { error: legacyError } = await supabase.from('notes').update({ ...legacyUpdates, updated_at: timestamp }).eq('id', id);
+      if (legacyError) {
+        console.error('Final update failure:', legacyError);
+        return { success: false, error: legacyError.message };
+      }
+      return { success: true };
+    }
   }, [isOffline]);
 
   const deleteForever = useCallback(async (id: string) => {
