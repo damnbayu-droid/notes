@@ -308,6 +308,18 @@ export default function SharedNoteView() {
                         <Globe className="w-3.5 h-3.5" />
                         <span className="text-[10px] font-black uppercase tracking-widest">Public Uplink</span>
                     </div>
+                    
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest border-violet-100 text-violet-600 hover:bg-violet-50 transition-all gap-2"
+                        onClick={() => window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                            detail: { title: 'Permission Requested', message: 'Uplink request sent to original author.', type: 'info' } 
+                        }))}
+                    >
+                        <Lock className="w-3 h-3" /> Request Access
+                    </Button>
+
                     <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                          <Cpu className="w-3.5 h-3.5 text-violet-500" />
                          AI Optimization Active

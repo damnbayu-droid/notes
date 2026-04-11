@@ -8,7 +8,7 @@ import {
   Signature as SignatureIcon, 
   Download, 
   Trash2, 
-  Layout,
+  Shield,
   Type,
   Save,
   PlusCircle,
@@ -238,8 +238,11 @@ export function PDFStudio() {
             className="hidden" 
             id="pdf-upload" 
           />
-          <Button asChild className="bg-violet-600 hover:bg-violet-700 px-8 h-12 rounded-xl text-lg shadow-xl shadow-violet-500/20">
-            <label htmlFor="pdf-upload" className="cursor-pointer">Add PDF File</label>
+          <Button 
+            className="bg-violet-600 hover:bg-violet-700 px-8 h-12 rounded-xl text-lg shadow-xl shadow-violet-500/20"
+            onClick={() => document.getElementById('pdf-upload')?.click()}
+          >
+            Add PDF File
           </Button>
         </div>
       ) : (
@@ -253,7 +256,7 @@ export function PDFStudio() {
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full justify-start gap-3 h-12 border-violet-100 text-violet-700 hover:bg-violet-50 bg-white">
                         <SignatureIcon className="w-4 h-4" />
-                        Digital Signature
+                        <span>Digital Signature</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px]">
@@ -341,65 +344,66 @@ export function PDFStudio() {
                <div className="bg-white/90 backdrop-blur-sm border-b p-2 flex items-center justify-between text-[10px] text-gray-500 font-bold sticky top-0 z-10">
                   <span className="flex items-center gap-2">
                     <MousePointer2 className="w-3 h-3" />
-                    Interactive Editor
+                    Technical Intelligence Viewer
                   </span>
                   <span>{pdfFile?.name}</span>
                </div>
 
-               <div className="flex-1 relative">
-                 <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                   <Layout className="w-32 h-32" />
-                 </div>
+               <div className="flex-1 relative overflow-hidden bg-slate-100">
+                 {/* Real PDF Viewer */}
+                  {pdfBytes && (
+                    <iframe
+                      src={URL.createObjectURL(new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })) + '#toolbar=0&navpanes=0&scrollbar=0'}
+                      className="w-full h-full pointer-events-none border-0"
+                      title="PDF Preview"
+                    />
+                  )}
                  
-                 {/* Visualized Typewriter Entries */}
-                 {typewriterEntries.map(entry => (
-                   <div 
-                     key={entry.id}
-                     className="absolute flex items-center gap-1 bg-violet-50/80 border border-violet-200 px-1 py-0.5 rounded text-[10px] text-black shadow-sm group/entry"
-                     style={{ 
-                       left: `${(entry.x / 595) * 100}%`,
-                       top: `${(1 - (entry.y / 842)) * 100}%` 
-                     }}
-                   >
-                     {entry.text}
-                     <button 
-                       className="opacity-0 group-hover/entry:opacity-100 text-red-500 transition-opacity"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         setTypewriterEntries(prev => prev.filter(et => et.id !== entry.id));
-                       }}
-                     >
-                       <X className="w-3 h-3" />
-                     </button>
-                   </div>
-                 ))}
-
-                 <div className="h-full flex flex-col items-center justify-center text-center p-12 space-y-4">
-                   <p className="text-xl font-black text-gray-300 pointer-events-none uppercase tracking-tighter">Document Layout Preview</p>
-                   <p className="text-sm text-gray-400 max-w-sm pointer-events-none">
-                     Forms and signatures are mapped to standard PDF coordinates. Commit your changes to generate the final file.
-                   </p>
+                 {/* Visualized Typewriter Entries Overlay */}
+                 <div className="absolute inset-0 pointer-events-none">
+                    {typewriterEntries.map(entry => (
+                      <div 
+                        key={entry.id}
+                        className="absolute flex items-center gap-1 bg-violet-600 text-white font-bold px-1.5 py-0.5 rounded shadow-xl text-[10px] animate-in zoom-in-50 duration-200 pointer-events-auto group/entry"
+                        style={{ 
+                          left: `${(entry.x / 595) * 100}%`,
+                          top: `${(1 - (entry.y / 842)) * 100}%`,
+                          transform: 'translate(-50%, -50%)' 
+                        }}
+                      >
+                        {entry.text}
+                        <button 
+                          className="ml-1 opacity-0 group-hover/entry:opacity-100 hover:text-red-200 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTypewriterEntries(prev => prev.filter(et => et.id !== entry.id));
+                          }}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                  </div>
                </div>
 
                {isTypewriterActive && (
-                  <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] px-3 py-1 rounded-full flex items-center gap-2 shadow-xl animate-bounce">
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] px-3 py-1 rounded-full flex items-center gap-2 shadow-xl animate-bounce z-20">
                     <PlusCircle className="w-3 h-3" />
-                    Click anywhere to place text: "{currentText || '...'}"
+                    Click to Map Intelligence: "{currentText || '...'}"
                   </div>
                )}
             </div>
             
             <div className="mt-4 flex items-center justify-between text-[10px] text-gray-400 px-2 uppercase tracking-tighter font-bold">
               <div className="flex items-center gap-4">
-                 <span>Format: PDF/A</span>
-                 <span>Security: AES-256</span>
+                 <span>Protocol: PDF/A-Intel</span>
+                 <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> AES-256 Secured</span>
               </div>
               <button 
-                onClick={() => {setPdfFile(null); setPdfBytes(null);}} 
-                className="text-red-400 hover:text-red-600 flex items-center gap-1"
+                onClick={() => {setPdfFile(null); setPdfBytes(null); setTypewriterEntries([]); setFormFields([]);}} 
+                className="text-red-400 hover:text-red-600 flex items-center gap-1 transition-colors"
               >
-                <Trash2 className="w-3 h-3" /> Discard
+                <Trash2 className="w-3 h-3" /> Purge Asset
               </button>
             </div>
           </div>

@@ -35,9 +35,10 @@ interface HeaderProps {
   onOpenSettings: (tab?: string) => void;
   onSignIn: () => void;
   onOpenAlarm: () => void;
+  tier?: string;
 }
 
-export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm }: HeaderProps) {
+export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSignIn, onOpenAlarm, tier }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   // dynamicStatus = Active modes like Mic/Scan (Replaces Clock)
   const [dynamicStatus, setDynamicStatus] = useState<{ icon: any, text: string, type: 'info' | 'record' | 'scan' } | null>(null);
@@ -140,7 +141,7 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
                 {/* Floating Notification Overlay - Appears smoothly below Dynamic Island */}
                 {notification && (
                   <div
-                    className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-6 fade-in duration-700"
+                    className="fixed top-[72px] left-1/2 -translate-x-1/2 z-[9999] animate-in slide-in-from-top-6 fade-in duration-700"
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenAlarm(); // Click notification to open center
@@ -204,7 +205,19 @@ export function Header({ user, onSignOut, onToggleSidebar, onOpenSettings, onSig
                 </DropdownMenuItem>
                 
                 {/* NEW: Admin & Dashboard Fast Links */}
-                <DropdownMenuItem onClick={() => handleChangeView('notes')}>
+                <DropdownMenuItem onClick={() => {
+                  if (tier === 'full_access' || user?.email === 'damnbayu@gmail.com') {
+                    handleChangeView('notes');
+                  } else {
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                      detail: { 
+                        title: 'Full Access Required', 
+                        message: 'Dashboard access is a premium feature. Upgrade to proceed.', 
+                        type: 'info' 
+                      } 
+                    }));
+                  }
+                }}>
                   <LayoutGrid className="mr-2 h-4 w-4" />
                   Dashboard
                 </DropdownMenuItem>

@@ -75,78 +75,81 @@ export function OutsourcePicker({ isOpen, onClose, onImport, mode = 'drive' }: O
             <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-sm">
               {mode === 'drive' ? <Cloud className="w-5 h-5 text-blue-500" /> : <Database className="w-5 h-5 text-emerald-500" />}
             </div>
-            {mode === 'drive' ? 'Select From Drive' : 'Connect Intelligence Resource'}
+            {mode === 'drive' ? 'Select From Drive' : 'Intelligence Resource Hub'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="mt-6 space-y-6">
           {mode === 'drive' ? (
             <div className="space-y-6">
-              <div className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-blue-100 rounded-[2rem] bg-blue-50/20 group hover:bg-blue-50/40 transition-all cursor-pointer">
-                <Cloud className="w-12 h-12 text-blue-200 mb-4 group-hover:scale-110 transition-transform" />
-                <p className="text-sm font-black text-blue-900 uppercase tracking-widest">Open Google Picker</p>
+              <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-blue-100 rounded-[2.5rem] bg-blue-50/20 group hover:bg-blue-50/40 transition-all cursor-pointer">
+                <Cloud className="w-14 h-14 text-blue-200 mb-4 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-black text-blue-900 uppercase tracking-widest">Connect Google Drive</p>
                 <p className="text-[10px] text-blue-600/60 mt-2 px-12 text-center uppercase font-bold tracking-tighter">
-                  Native browser integration for Docs, Sheets, and Slides
+                  Deep mapping for Google Docs, Sheets, and Slides
                 </p>
                 <Button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'Auth Required', message: 'Configure Google Client ID in settings.', type: 'info' } }))}
-                  className="mt-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-10 px-8 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-200"
+                  onClick={() => window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                    detail: { title: 'Auth Required', message: 'Uplink to Google Cloud requires Client configuration.', type: 'info' } 
+                  }))}
+                  className="mt-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-12 px-10 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-200"
                 >
-                  Select File
+                  Authorize Google Picker
                 </Button>
               </div>
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100" /></div>
-                <div className="relative flex justify-center text-[9px] uppercase font-black text-slate-400"><span className="bg-white px-4">OR PASTE DIRECT LINK</span></div>
+                <div className="relative flex justify-center text-[9px] uppercase font-black text-slate-400"><span className="bg-white px-4">OR PASTE ASSET LINK</span></div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="space-y-3">
                 <Input 
-                   placeholder="Google Drive sharing link..." 
+                   placeholder="Docs/Sheets/Slides Public URL..." 
                    value={driveUrl}
                    onChange={(e) => setDriveUrl(e.target.value)}
-                   className="h-12 rounded-xl bg-slate-50/50 border-slate-100 focus:ring-blue-500"
+                   className="h-14 rounded-2xl bg-white border-slate-200 focus:ring-blue-500 shadow-sm"
                 />
                 <Button 
-                  onClick={() => handleLinkImport(driveUrl, 'drive')}
                   disabled={isLoading || !driveUrl}
-                  className="h-12 w-12 rounded-xl bg-slate-900 text-white shrink-0 shadow-lg shadow-slate-200"
+                  onClick={() => handleLinkImport(driveUrl, 'drive')}
+                  className="w-full h-12 rounded-xl bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-slate-200"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-5 h-5" />}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
+                  Finalize Drive Resource
                 </Button>
               </div>
             </div>
           ) : (
             <Tabs defaultValue="github" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-slate-50 p-1.5 rounded-2xl h-14">
-                <TabsTrigger value="github" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-                  <Github className="w-4 h-4" /> GitHub
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1.5 rounded-2xl h-14">
+                <TabsTrigger value="github" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-black uppercase text-[10px] tracking-widest gap-2">
+                  <Github className="w-4 h-4" /> Technical/GitHub
                 </TabsTrigger>
-                <TabsTrigger value="link" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm font-black uppercase text-[10px] tracking-widest gap-2">
-                   <LinkIcon className="w-4 h-4" /> Universal Link
+                <TabsTrigger value="link" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md font-black uppercase text-[10px] tracking-widest gap-2">
+                   <LinkIcon className="w-4 h-4" /> Technical Link
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="github" className="space-y-4 pt-6">
+              <TabsContent value="github" className="space-y-4 pt-6 animate-in slide-in-from-top-2">
                 <div className="space-y-3">
-                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Cloning Sequence (Raw/Blob URL)</p>
-                  <div className="flex gap-2">
+                  <p className="text-[10px] text-slate-400 uppercase font-black tracking-[0.2em]">Repository Integration Sequence</p>
+                  <div className="flex flex-col gap-3">
                     <Input
-                      placeholder="https://github.com/owner/repo/blob/main/src/app.tsx"
+                      placeholder="https://github.com/owner/repo/blob/branch/file.tsx"
                       value={githubUrl}
                       onChange={(e) => setGithubUrl(e.target.value)}
-                      className="h-12 bg-slate-50/50 border-slate-100 rounded-xl focus:ring-emerald-500"
+                      className="h-14 bg-white border-slate-200 rounded-2xl focus:ring-emerald-500 shadow-sm"
                     />
                     <Button 
                       onClick={handleGitHubImport} 
                       disabled={isLoading || !githubUrl}
-                      className="h-12 bg-slate-900 hover:bg-black text-white px-6 rounded-xl shrink-0 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-slate-200"
+                      className="h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-200"
                     >
-                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fetch"}
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Initiate Technical Clone"}
                     </Button>
                   </div>
-                  {error && <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest">{error}</p>}
+                  {error && <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest bg-rose-50 p-3 rounded-lg border border-rose-100">{error}</p>}
                 </div>
               </TabsContent>
 

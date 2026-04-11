@@ -134,9 +134,9 @@ export function ContactModal({ isOpen, onClose, userEmail = '' }: ContactModalPr
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Your Message</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Notes / Inquiry Details</label>
                 <Textarea 
-                  placeholder="How can we help?" 
+                  placeholder="Intelligence contribution or technical query..." 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required

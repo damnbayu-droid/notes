@@ -62,7 +62,8 @@ export function useNotes(user: User | null): UseNotesReturn {
   const [notes, setNotes] = useState<Note[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem('notes');
+        const storageKey = user ? `notes_${user.id}` : 'notes_guest';
+        const cached = localStorage.getItem(storageKey);
         const parsed = cached ? JSON.parse(cached) : [];
         if (parsed.length === 0 && !localStorage.getItem('has_seen_welcome')) {
           localStorage.setItem('has_seen_welcome', 'true');
@@ -114,7 +115,10 @@ export function useNotes(user: User | null): UseNotesReturn {
   const [logs, setLogs] = useState<NoteLog[]>([]);
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([]);
 
-  useEffect(() => { localStorage.setItem('notes', JSON.stringify(notes)); }, [notes]);
+  useEffect(() => { 
+    const storageKey = user ? `notes_${user.id}` : 'notes_guest';
+    localStorage.setItem(storageKey, JSON.stringify(notes)); 
+  }, [notes, user]);
   useEffect(() => { localStorage.setItem('syncQueue', JSON.stringify(syncQueue)); }, [syncQueue]);
   useEffect(() => { localStorage.setItem('pinnedFolders', JSON.stringify(pinnedFolders)); }, [pinnedFolders]);
   useEffect(() => { localStorage.setItem('notes_sort_by', sortBy); }, [sortBy]);
@@ -165,8 +169,21 @@ export function useNotes(user: User | null): UseNotesReturn {
   const loadNotes = useCallback(async () => {
     if (!user || isOffline) return;
     setIsLoading(true);
-    const { data, error } = await supabase.from('notes').select('*').eq('user_id', user.id);
-    if (data && !error) setNotes(data as Note[]);
+    // Fetch owned notes OR where user is a collaborator
+    const { data: ownedNotes } = await supabase.from('notes').select('*').eq('user_id', user.id);
+    const { data: collabData } = await supabase.from('note_collaborators').select('note_id').eq('email', user.email);
+    
+    let allFetchedNotes = [...(ownedNotes || [])];
+    
+    if (collabData && collabData.length > 0) {
+      const collabIds = collabData.map(c => c.note_id);
+      const { data: sharedWithMe } = await supabase.from('notes').select('*').in('id', collabIds);
+      if (sharedWithMe) {
+        allFetchedNotes = [...allFetchedNotes, ...sharedWithMe];
+      }
+    }
+
+    setNotes(allFetchedNotes as Note[]);
     setIsLoading(false);
   }, [user, isOffline]);
 
@@ -317,12 +334,22 @@ export function useNotes(user: User | null): UseNotesReturn {
       return { success: true };
     },
     shareNote: async (id, type = 'public', _pwd, perm = 'read', disc = false) => {
-      const n = notes.find(x => x.id === id);
-      const slug = n?.share_slug || generateShareSlug(n?.title || 'note');
-      const updates = { is_shared: true, share_slug: slug, share_type: type, share_permission: perm, is_discoverable: disc };
-      setNotes(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x));
-      await supabase.from('notes').update(updates).eq('id', id);
-      return { success: true, slug };
+      try {
+        const n = notes.find(x => x.id === id);
+        const slug = n?.share_slug || generateShareSlug(n?.title || 'note');
+        const updates = { is_shared: true, share_slug: slug, share_type: type, share_permission: perm, is_discoverable: disc };
+        
+        // Optimistic local update
+        setNotes(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x));
+        
+        const { error } = await supabase.from('notes').update(updates).eq('id', id);
+        if (error) throw error;
+        
+        return { success: true, slug };
+      } catch (err: any) {
+        console.error('Sharing failed:', err);
+        return { success: false, error: err.message };
+      }
     },
     unshareNote: async (id) => updateNote(id, { is_shared: false }),
     logs, collaborators,

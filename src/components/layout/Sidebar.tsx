@@ -317,7 +317,15 @@ export function Sidebar({
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex-none p-5 border-t border-border space-y-3 bg-background/50 backdrop-blur-sm pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="flex-none p-5 border-t border-border space-y-3 bg-background/50 backdrop-blur-sm relative z-10">
+          <button
+            onClick={handleContactUs}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-slate-900 text-white hover:bg-black transition-all shadow-xl active:scale-95 group border border-slate-800"
+          >
+            <MessageSquare className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
+            Contact Us / Support
+          </button>
+
           <button
             onClick={async () => {
               window.dispatchEvent(new CustomEvent('dcpi-notification', {
@@ -327,19 +335,11 @@ export function Sidebar({
                 window.location.reload();
               }, 800);
             }}
-            className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
+            className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest opacity-60 hover:opacity-100"
             aria-label="Offline? Connect Again"
           >
-            <Cloud className="w-4 h-4 opacity-40" />
-            System Refresh / Connect Again
-          </button>
-
-          <button
-            onClick={handleContactUs}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-slate-900 text-white hover:bg-black transition-all shadow-lg active:scale-95 group"
-          >
-            <MessageSquare className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
-            Contact Us / Support
+            <Cloud className="w-4 h-4" />
+            Connect Again / Refresh System
           </button>
 
           <div className="pt-2 text-center">

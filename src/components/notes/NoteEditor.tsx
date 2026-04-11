@@ -302,8 +302,21 @@ export function NoteEditor({
     } else if (file.type === 'text/plain' || file.name.endsWith('.md')) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result && editor) {
-          editor.chain().focus().insertContent(`<pre><code>${event.target.result}</code></pre>`).run();
+        const content = event.target?.result as string;
+        if (content && editor) {
+          // If editor is mostly empty (only has title), replace/seed content
+          const isNoteEmpty = editor.getText().replace(editor.getText().split('\n')[0] || '', '').trim().length === 0;
+          
+          if (isNoteEmpty) {
+            const title = file.name.replace(/\.[^/.]+$/, "");
+            editor.commands.setContent(`<h1>${title}</h1>${content.split('\n').map(line => `<p>${line}</p>`).join('')}`);
+          } else {
+            editor.chain().focus().insertContent(`<hr /><p><strong>Imported from ${file.name}:</strong></p><pre><code>${content}</code></pre>`).run();
+          }
+          
+          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+            detail: { title: 'Uplink Complete', message: `Fully ingested ${file.name} technical data.`, type: 'success' } 
+          }));
         }
       };
       reader.readAsText(file);
@@ -312,12 +325,12 @@ export function NoteEditor({
       window.dispatchEvent(new CustomEvent('dcpi-notification', { 
         detail: { 
           title: 'PDF Ingested', 
-          message: `${file.name} added to intelligence node. Use PDF Editor for deep analysis.`, 
+          message: `${file.name} added to intelligence node. Opening PDF Studio...`, 
           type: 'success' 
         } 
       }));
-      // For now we add a reference
-      editor?.chain().focus().insertContent(`<p><strong>Attached PDF:</strong> ${file.name}</p>`).run();
+      // For now we add a reference and could potentially trigger PDF Studio
+      editor?.chain().focus().insertContent(`<p><strong>Attached Intelligence Asset:</strong> ${file.name}</p>`).run();
     } else {
       window.dispatchEvent(new CustomEvent('dcpi-notification', { detail: { title: 'File Type Unsupported', message: 'Currently supporting Images, PDFs and Text/MD files.', type: 'info' } }));
     }

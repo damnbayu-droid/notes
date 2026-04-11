@@ -27,15 +27,38 @@ export class GitHubService {
    */
   public parseUrl(url: string) {
     try {
-      // Clean URL: remove query params and trailing slashes
-      const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+      // Clean URL: remove query params and trailing fragments
+      const cleanUrl = url.split('?')[0].split('#')[0].replace(/\/$/, '');
       
-      const regex = /github\.com\/([^/]+)\/([^/]+)(?:\/(?:blob|raw)\/([^/]+)\/(.+))?/;
+      // Support patterns:
+      // 1. https://github.com/owner/repo/blob/branch/path
+      // 2. https://github.com/owner/repo/raw/branch/path
+      // 3. https://github.com/owner/repo/blame/branch/path
+      // 4. https://raw.githubusercontent.com/owner/repo/branch/path (Accept Raw URLs directly)
+      const regex = /(?:github\.com|raw\.githubusercontent\.com)\/([^/]+)\/([^/]+)(?:\/(?:blob|raw|blame|tree)\/([^/]+)\/(.+))?/;
       const match = cleanUrl.match(regex);
-      if (!match) return null;
+      
+      if (!match) {
+        // Fallback for simple repo URL: https://github.com/owner/repo
+        const simpleRegex = /github\.com\/([^/]+)\/([^/]+)$/;
+        const simpleMatch = cleanUrl.match(simpleRegex);
+        if (simpleMatch) {
+          const [, owner, repo] = simpleMatch;
+          return { owner, repo, branch: "main", path: "" };
+        }
+        return null;
+      }
+      
+      const [, owner, repo, segment, path] = match;
+      
+      // Special handling for raw.githubusercontent.com which has No segment
+      if (cleanUrl.includes('raw.githubusercontent.com')) {
+        const parts = cleanUrl.split('/').filter(Boolean).slice(2); // Remove https: and raw.githubusercontent.com
+        const [owner, repo, branch, ...pathParts] = parts;
+        return { owner, repo, branch: branch || "main", path: pathParts.join('/') || "" };
+      }
 
-      const [, owner, repo, branch, path] = match;
-      return { owner, repo, branch: branch || "main", path: path || "" };
+      return { owner, repo, branch: segment === 'main' || segment === 'master' ? segment : (match[3] || "main"), path: path || "" };
     } catch (e) {
       return null;
     }
@@ -46,7 +69,7 @@ export class GitHubService {
    */
   public async fetchFileContent(owner: string, repo: string, path: string, branch: string = "main"): Promise<string> {
     try {
-      if (!path) throw new Error('No path provided. Please link to a specific file.');
+      if (!path) throw new Error('Note Intelligence requires a specific file path. Please link directly to a technical asset.');
 
       // Try raw.githubusercontent.com first
       const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
@@ -57,12 +80,15 @@ export class GitHubService {
         if (branch === 'main') {
           return this.fetchFileContent(owner, repo, path, 'master');
         }
-        throw new Error(`Failed to fetch file (${response.status}): ${response.statusText}. Ensure the file is public.`);
+        throw new Error(`GitHub Security Protocol: Access Denied or File Not Found (${response.status}). Verify the resource is public.`);
       }
       
       return await response.text();
-    } catch (error) {
+    } catch (error: any) {
       console.error("GitHub fetch error:", error);
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('GitHub Security Block: Browser CORS policy restricted the direct fetch. Try using the direct "Raw" URL from GitHub instead.');
+      }
       throw error;
     }
   }

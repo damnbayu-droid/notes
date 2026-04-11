@@ -151,6 +151,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
       <div className="min-h-screen bg-background flex flex-col">
         <Header
           user={user}
+          tier={tier}
           onSignOut={onSignOut}
           onSignIn={onSignIn}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
