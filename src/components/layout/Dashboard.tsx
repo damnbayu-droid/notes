@@ -183,6 +183,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             userEmail={user?.email || undefined}
             userId={user?.id || undefined}
             onSignIn={onSignIn}
+            reconcileIdentity={reconcileNotes}
           />
 
           <main className="flex-1 overflow-auto w-full relative bg-slate-50/20">

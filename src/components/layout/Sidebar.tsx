@@ -52,6 +52,7 @@ interface SidebarProps {
   userEmail?: string;
   userId?: string;
   onSignIn?: () => void;
+  reconcileIdentity?: () => Promise<{ success: boolean; count?: number; error?: string }>;
 }
 
 export function Sidebar({
@@ -70,7 +71,9 @@ export function Sidebar({
   subscriptionTier = 'free',
   onUpgrade,
   userEmail,
-  onSignIn
+  userId,
+  onSignIn,
+  reconcileIdentity
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -118,29 +121,61 @@ export function Sidebar({
         flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-none p-3 bg-slate-50 border-b border-border">
-            <div className="flex items-center gap-2 mb-2">
+        <div className="flex-none p-4 bg-slate-50 border-b border-border shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                <p className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Connect: dfxhfutflhnxjjpbqscj</p>
+                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Connect: dfxhfutflhnxjjpbqscj</p>
             </div>
             
             {userEmail ? (
-                <div className="flex flex-col">
-                    <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Session Active:</p>
-                    <p className="text-[8px] font-mono text-slate-700 truncate">{userEmail}</p>
-                </div>
-            ) : (
-                <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100 flex flex-col gap-2">
-                    <p className="text-[10px] font-black text-amber-900 leading-tight">92 Notes Found in Cloud</p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Session Signature:</p>
+                    <code className="text-[10px] font-mono text-violet-600 break-all leading-tight block">{userId}</code>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <p className="text-[10px] font-black text-slate-900 mb-2 uppercase tracking-tight">Data Missing?</p>
                     <Button 
-                        size="sm"
-                        onClick={onSignIn}
-                        className="w-full h-8 bg-amber-600 hover:bg-amber-700 text-white font-black uppercase tracking-widest text-[8px] rounded-lg shadow-md shadow-amber-200"
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-10 border-violet-200 text-violet-600 bg-violet-50/50 hover:bg-violet-100 font-bold uppercase tracking-widest text-[9px] rounded-xl shadow-sm transition-all active:scale-95"
+                      onClick={async () => {
+                        window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                          detail: { title: 'Deep Sync Initiated', message: 'Scanning all database sectors...', type: 'info' } 
+                        }));
+                        const res = await reconcileIdentity?.();
+                        if (res?.success) {
+                          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                            detail: { 
+                              title: 'Restoration Successful', 
+                              message: `Recovered ${res.count} documents. They are now linked to your session!`, 
+                              type: 'success' 
+                            } 
+                          }));
+                        } else {
+                          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                            detail: { title: 'Sync Warning', message: res?.error || 'No notes found for migration.', type: 'warning' } 
+                          }));
+                        }
+                      }}
                     >
-                        Restore My Documents
+                      Deep Scan & Restore
+                    </Button>
+                    <p className="text-[7px] font-bold text-slate-400 mt-2 uppercase italic tracking-tighter">*Searches for notes matching legacy ID: cfd6e46f-...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-amber-50 rounded-3xl border border-amber-100 flex flex-col gap-3">
+                    <p className="text-[10px] font-black text-amber-900">92 Notes Found in Cloud</p>
+                    <Button 
+                      onClick={onSignIn}
+                      className="w-full h-10 bg-amber-600 hover:bg-amber-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg"
+                    >
+                      Authenticate Now
                     </Button>
                 </div>
-            )}
+              )}
         </div>
 
         <div className="flex-none flex items-center justify-between h-16 px-4 border-b border-border">
