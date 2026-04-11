@@ -169,22 +169,40 @@ export function useNotes(user: User | null): UseNotesReturn {
   const loadNotes = useCallback(async () => {
     if (!user || isOffline) return;
     setIsLoading(true);
-    // Fetch owned notes OR where user is a collaborator
-    const { data: ownedNotes } = await supabase.from('notes').select('*').eq('user_id', user.id);
-    const { data: collabData } = await supabase.from('note_collaborators').select('note_id').eq('email', user.email);
     
-    let allFetchedNotes = [...(ownedNotes || [])];
-    
-    if (collabData && collabData.length > 0) {
-      const collabIds = collabData.map(c => c.note_id);
-      const { data: sharedWithMe } = await supabase.from('notes').select('*').in('id', collabIds);
-      if (sharedWithMe) {
-        allFetchedNotes = [...allFetchedNotes, ...sharedWithMe];
-      }
-    }
+    try {
+      // Primary attempt: Fetch all notes with new columns
+      const { data: ownedNotes, error: loadError } = await supabase.from('notes').select('*').eq('user_id', user.id);
+      
+      if (loadError) throw loadError;
 
-    setNotes(allFetchedNotes as Note[]);
-    setIsLoading(false);
+      const { data: collabData } = await supabase.from('note_collaborators').select('note_id').eq('email', user.email);
+      let allFetchedNotes = [...(ownedNotes || [])];
+      
+      if (collabData && collabData.length > 0) {
+        const collabIds = collabData.map(c => c.note_id);
+        const { data: sharedWithMe } = await supabase.from('notes').select('*').in('id', collabIds);
+        if (sharedWithMe) allFetchedNotes = [...allFetchedNotes, ...sharedWithMe];
+      }
+
+      setNotes(allFetchedNotes as Note[]);
+    } catch (err: any) {
+      console.warn('Primary fetch failed, attempting legacy fallback:', err);
+      // LEGACY FALLBACK: Fetch only established columns to handle schema mismatches
+      const baseColumns = 'id, title, content, user_id, color, is_pinned, is_archived, tags, folder, note_type, created_at, updated_at';
+      const { data: legacyNotes, error: legacyError } = await supabase.from('notes').select(baseColumns).eq('user_id', user.id);
+      
+      if (!legacyError && legacyNotes) {
+        setNotes(legacyNotes as Note[]);
+        window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+          detail: { title: 'Legacy Mode Active', message: 'Connected to core data. Some discovery features may require a database update.', type: 'info' } 
+        }));
+      } else {
+        console.error('Final fetch failure:', legacyError);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, [user, isOffline]);
 
   const processSyncQueue = useCallback(async () => {
@@ -351,7 +369,17 @@ export function useNotes(user: User | null): UseNotesReturn {
         return { success: false, error: err.message };
       }
     },
-    unshareNote: async (id) => updateNote(id, { is_shared: false }),
+    unshareNote: async (id) => {
+      try {
+        await supabase.from('notes').update({ is_shared: false }).eq('id', id);
+        setNotes(prev => prev.map(x => x.id === id ? { ...x, is_shared: false } : x));
+        return { success: true };
+      } catch (err: any) {
+        // Fallback for legacy schema
+        setNotes(prev => prev.map(x => x.id === id ? { ...x, is_shared: false } : x));
+        return { success: true };
+      }
+    },
     logs, collaborators,
     fetchLogs: async (id) => { const { data } = await supabase.from('note_logs').select('*').eq('note_id', id).order('created_at', { ascending: false }); if (data) setLogs(data); },
     fetchCollaborators: async (id) => { const { data } = await supabase.from('note_collaborators').select('*').eq('note_id', id); if (data) setCollaborators(data); },

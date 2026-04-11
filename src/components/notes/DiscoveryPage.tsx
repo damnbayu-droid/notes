@@ -33,7 +33,9 @@ export function DiscoveryPage() {
                     .eq('is_discoverable', true)
                     .order('updated_at', { ascending: false });
 
-                if (data && !error) {
+                if (error) throw error;
+
+                if (data) {
                     // Fetch ratings for each note
                     const notesWithRatings = await Promise.all((data as Note[]).map(async (n) => {
                         const { data: ratings } = await supabase
@@ -49,8 +51,14 @@ export function DiscoveryPage() {
                     }));
                     setNotes(notesWithRatings);
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to fetch discovery feed:', err);
+                if (err.code === 'PGRST204' || err.message?.includes('is_discoverable')) {
+                    // Specific error for missing column
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                        detail: { title: 'Discovery Not Syncing', message: 'Your database needs a core update to enable Community Library features. Check the Admin panel for guide.', type: 'info' } 
+                    }));
+                }
             } finally {
                 setIsLoading(false);
             }
