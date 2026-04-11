@@ -70,7 +70,7 @@ export function Sidebar({
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
 
   const navItems = [
-    { id: 'notes' as ViewType, label: 'All Notes', icon: LayoutGrid, count: 0 },
+    { id: 'notes' as ViewType, label: 'Dashboard', icon: LayoutGrid, count: 0 },
     { id: 'discovery' as ViewType, label: 'Discovery', icon: Compass, count: 0 },
     { id: 'books' as ViewType, label: 'Book Mode', icon: Book, count: 0 },
     { id: 'schedule' as ViewType, label: 'Schedule', icon: Calendar, count: 0 },
@@ -173,37 +173,54 @@ export function Sidebar({
               )}
             </div>
             
-            <div className="space-y-1">
-              <p className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">
-                CORE SYSTEM
-              </p>
-              {navItems.map((item: any) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    if (item.onClick) {
-                      item.onClick();
-                    } else if (item.id === 'discovery') {
-                      onViewChange('discovery');
-                    } else {
-                      onViewChange(item.id);
-                    }
-                    onClose();
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${currentView === item.id
-                    ? 'bg-violet-100/50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
-                    : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-foreground'
-                    }`}
-                  aria-label={item.label}
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-violet-600' : 'text-slate-400'
-                      }`} />
-                    {item.label}
-                  </div>
-                </button>
-              ))}
-            </div>
+              <div className="flex flex-col gap-1">
+                <p className="px-3 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">
+                  CORE SYSTEM
+                </p>
+                {subscriptionTier === 'admin' && (
+                  <button
+                    onClick={() => {
+                       onViewChange('admin');
+                       onClose();
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-black transition-all mb-2 ${currentView === 'admin'
+                      ? 'bg-rose-600 text-white shadow-lg shadow-rose-200'
+                      : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-5 h-5" />
+                      ADMIN PANEL
+                    </div>
+                  </button>
+                )}
+                {navItems.map((item: any) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.onClick) {
+                        item.onClick();
+                      } else if (item.id === 'discovery') {
+                        onViewChange('discovery');
+                      } else {
+                        onViewChange(item.id);
+                      }
+                      onClose();
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${currentView === item.id
+                      ? 'bg-violet-100/50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                      : 'text-muted-foreground hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-foreground'
+                      }`}
+                    aria-label={item.label}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className={`w-5 h-5 ${currentView === item.id ? 'text-violet-600' : 'text-slate-400'
+                        }`} />
+                      {item.label}
+                    </div>
+                  </button>
+                ))}
+              </div>
 
             {/* Folders */}
             <div className="space-y-1">
