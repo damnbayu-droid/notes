@@ -82,6 +82,7 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     unshareNote,
     emptyTrash,
     notes,
+    reconcileNotes,
   } = useNotes(user);
 
   const isCreatingRef = useRef(false);
