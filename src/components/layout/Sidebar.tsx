@@ -22,7 +22,8 @@ import {
   Plus,
   Pencil,
   MessageSquare,
-  Cloud
+  Cloud,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,

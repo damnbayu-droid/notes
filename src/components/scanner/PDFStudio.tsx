@@ -353,7 +353,7 @@ export function PDFStudio() {
                  {/* Real PDF Viewer */}
                   {pdfBytes && (
                     <iframe
-                      src={URL.createObjectURL(new Blob([pdfBytes as Uint8Array], { type: 'application/pdf' })) + '#toolbar=0&navpanes=0&scrollbar=0'}
+                      src={URL.createObjectURL(new Blob([pdfBytes as any], { type: 'application/pdf' })) + '#toolbar=0&navpanes=0&scrollbar=0'}
                       className="w-full h-full pointer-events-none border-0"
                       title="PDF Preview"
                     />
