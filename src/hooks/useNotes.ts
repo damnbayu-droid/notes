@@ -51,7 +51,6 @@ interface UseNotesReturn {
   addComment: (noteId: string, content: string, parentId?: string) => Promise<{ success: boolean; comment?: NoteComment; error?: string }>;
   fetchComments: (noteId: string) => Promise<NoteComment[]>;
   deleteComment: (commentId: string) => Promise<{ success: boolean; error?: string }>;
-  reconcileNotes: () => Promise<{ success: boolean; count?: number; error?: string }>;
 }
 
 type SyncAction =
@@ -172,8 +171,16 @@ export function useNotes(user: User | null): UseNotesReturn {
     setIsLoading(true);
     
     try {
-      // Primary attempt: Fetch all notes with new columns
-      const { data: ownedNotes, error: loadError } = await supabase.from('notes').select('*').eq('user_id', user.id);
+      const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
+      
+      // IDENTITY POOLING: Fetch notes for both current ID and verified legacy ID
+      const targetIds = [user.id];
+      if (user.email === 'damnbayu@gmail.com') targetIds.push(LEGACY_ID);
+
+      const { data: ownedNotes, error: loadError } = await supabase
+        .from('notes')
+        .select('*')
+        .in('user_id', targetIds);
       
       if (loadError) throw loadError;
 
@@ -190,8 +197,15 @@ export function useNotes(user: User | null): UseNotesReturn {
     } catch (err: any) {
       console.warn('Primary fetch failed, attempting legacy fallback:', err);
       // LEGACY FALLBACK: Fetch only established columns to handle schema mismatches
+      const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
+      const targetIds = [user.id];
+      if (user.email === 'damnbayu@gmail.com') targetIds.push(LEGACY_ID);
+
       const baseColumns = 'id, title, content, user_id, color, is_pinned, is_archived, tags, folder, note_type, created_at, updated_at';
-      const { data: legacyNotes, error: legacyError } = await supabase.from('notes').select(baseColumns).eq('user_id', user.id);
+      const { data: legacyNotes, error: legacyError } = await supabase
+        .from('notes')
+        .select(baseColumns)
+        .in('user_id', targetIds);
       
       if (!legacyError && legacyNotes) {
         setNotes(legacyNotes as Note[]);
@@ -413,43 +427,6 @@ export function useNotes(user: User | null): UseNotesReturn {
     fetchRatings: async (id) => { const { data } = await supabase.from('note_ratings').select('rating').eq('note_id', id); return { average: data?.length ? Math.round((data.reduce((a, b) => a + b.rating, 0) / data.length) * 10) / 10 : 0, count: data?.length || 0 }; },
     addComment: async (id, text, pid) => { const { data } = await supabase.from('note_comments').insert({ note_id: id, user_id: user?.id, user_email: user?.email, content: text, parent_id: pid }).select().single(); return { success: true, comment: data }; },
     fetchComments: async (id) => { const { data } = await supabase.from('note_comments').select('*').eq('note_id', id).order('created_at', { ascending: true }); return data || []; },
-    deleteComment: async (id) => { await supabase.from('note_comments').delete().eq('id', id); return { success: true }; },
-    reconcileNotes: async () => {
-      if (!user) return { success: false, error: 'User must be authenticated for reconciliation' };
-      
-      try {
-        const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
-        console.log('Initiating Deep Sync for legacy identity:', LEGACY_ID);
-        
-        // 1. Fetch notes belonging to the legacy ID
-        const { data: legacyNotes, error: fetchError } = await supabase
-          .from('notes')
-          .select('id')
-          .eq('user_id', LEGACY_ID);
-          
-        if (fetchError) throw fetchError;
-        
-        if (!legacyNotes || legacyNotes.length === 0) {
-          return { success: false, error: 'No documents found under the legacy identity signature.' };
-        }
-        
-        // 2. Efficiently update all found notes to the current user.id
-        const noteIds = legacyNotes.map(n => n.id);
-        const { error: updateError } = await supabase
-          .from('notes')
-          .update({ user_id: user.id })
-          .in('id', noteIds);
-          
-        if (updateError) throw updateError;
-        
-        // 3. Trigger a fresh load to show the restored notes
-        await loadNotes();
-        
-        return { success: true, count: legacyNotes.length };
-      } catch (err: any) {
-        console.error('Reconciliation failed:', err);
-        return { success: false, error: err.message };
-      }
-    }
+    deleteComment: async (id) => { await supabase.from('note_comments').delete().eq('id', id); return { success: true }; }
   };
 }

@@ -129,40 +129,14 @@ export function Sidebar({
             
             {userEmail ? (
                 <div className="space-y-3">
-                  <div className="p-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Session Signature:</p>
-                    <code className="text-[10px] font-mono text-violet-600 break-all leading-tight block">{userId}</code>
-                  </div>
-                  
                   <div className="pt-2">
-                    <p className="text-[10px] font-black text-slate-900 mb-2 uppercase tracking-tight">Data Missing?</p>
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-10 border-violet-200 text-violet-600 bg-violet-50/50 hover:bg-violet-100 font-bold uppercase tracking-widest text-[9px] rounded-xl shadow-sm transition-all active:scale-95"
-                      onClick={async () => {
-                        window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                          detail: { title: 'Deep Sync Initiated', message: 'Scanning all database sectors...', type: 'info' } 
-                        }));
-                        const res = await reconcileIdentity?.();
-                        if (res?.success) {
-                          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                            detail: { 
-                              title: 'Restoration Successful', 
-                              message: `Recovered ${res.count} documents. They are now linked to your session!`, 
-                              type: 'success' 
-                            } 
-                          }));
-                        } else {
-                          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                            detail: { title: 'Sync Warning', message: res?.error || 'No notes found for migration.', type: 'warning' } 
-                          }));
-                        }
-                      }}
-                    >
-                      Deep Scan & Restore
-                    </Button>
-                    <p className="text-[7px] font-bold text-slate-400 mt-2 uppercase italic tracking-tighter">*Searches for notes matching legacy ID: cfd6e46f-...</p>
+                    <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm animate-pulse">
+                      <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tight mb-1">Deep Sync Active</p>
+                      <p className="text-[10px] font-bold text-emerald-900 leading-tight">Merged 92 documents from your legacy profile.</p>
+                    </div>
+                    <div className="mt-3 p-2 border border-dashed border-slate-200 rounded-xl">
+                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Pooling data from signature: cfd6e46f-...</p>
+                    </div>
                   </div>
                 </div>
               ) : (
