@@ -154,7 +154,7 @@ export function Sidebar({
                       </Button>
                     </div>
                     <div className="mt-3 p-2 border border-dashed border-slate-200 rounded-xl">
-                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Scanning globally for your recovery signature</p>
+                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Targeting Master Proof: cfd6e46f-c2d7-45b1-978f-0a4401fe35da</p>
                     </div>
                   </div>
                 </div>

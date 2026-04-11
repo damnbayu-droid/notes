@@ -426,17 +426,25 @@ export function useNotes(user: User | null): UseNotesReturn {
     addLog: async (id, action, details) => { await supabase.from('note_logs').insert({ note_id: id, user_id: user?.id, user_email: user?.email, action, details }); },
     reconcileNotes: async () => {
       if (!user) return { success: false, error: 'User not authenticated' };
+      const SPECIFIC_LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
       try {
-        const { data, error } = await supabase.rpc('reconcile_user_notes_by_email');
+        console.log('Starting Master Recovery for ID:', SPECIFIC_LEGACY_ID);
+        const { data, error } = await supabase.rpc('reconcile_by_master_id', { p_legacy_id: SPECIFIC_LEGACY_ID });
         if (error) throw error;
+        
         const count = Array.isArray(data) ? data[0]?.updated_count : (data as any)?.updated_count || 0;
+        
+        // Forceful clear and reload
+        setNotes([]); 
+        await new Promise(r => setTimeout(r, 500));
         await loadNotes();
+        
         window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-          detail: { title: 'Identity Synced', message: `Successfully restored ${count} legacy documents.`, type: 'success' } 
+          detail: { title: 'Recovery Complete', message: `Identity merged. Found and restored ${count} documents.`, type: 'success' } 
         }));
         return { success: true, count };
       } catch (err: any) {
-        console.error('Reconciliation error:', err);
+        console.error('Master Recovery error:', err);
         return { success: false, error: err.message };
       }
     },

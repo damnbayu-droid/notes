@@ -1,8 +1,8 @@
--- UNIVERSAL IDENTITY RECONCILIATION (EMAIL-BASED)
--- This version is more robust than ID-based matching as it recovers any notes 
--- tied to accounts matching your current verified email address.
+-- MASTER IDENTITY RECOVERY (ID-SPECIFIC)
+-- This version uses the EXACT ID found in your database records to ensure recovery
+-- even if your email/auth records are out of sync.
 
-CREATE OR REPLACE FUNCTION public.reconcile_user_notes_by_email()
+CREATE OR REPLACE FUNCTION public.reconcile_by_master_id(p_legacy_id UUID)
 RETURNS TABLE (updated_count INTEGER)
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -10,35 +10,29 @@ SET search_path = public
 AS $$
 DECLARE
     v_new_id UUID := auth.uid();
-    v_new_email TEXT;
     v_updated INTEGER := 0;
 BEGIN
-    -- Get current authenticated user's email
-    SELECT email INTO v_new_email FROM auth.users WHERE id = v_new_id;
-    
-    IF v_new_email IS NULL THEN
-        RAISE EXCEPTION 'Not authenticated or local user';
+    -- Security Check: Caller must be authenticated
+    IF v_new_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
     END IF;
 
-    -- Transfer all notes that belong to ANY account (ID) with this same email
-    -- excluding the current ID 
+    -- Transfer all notes owned by the legacy ID to the current user
     UPDATE public.notes 
     SET user_id = v_new_id,
         updated_at = NOW()
-    WHERE user_id IN (
-        SELECT id FROM auth.users WHERE email = v_new_email
-    ) AND user_id != v_new_id;
+    WHERE user_id = p_legacy_id;
     
     GET DIAGNOSTICS v_updated = ROW_COUNT;
     
     -- Transfer Related Data
-    UPDATE public.note_logs SET user_id = v_new_id WHERE user_id IN (SELECT id FROM auth.users WHERE email = v_new_email) AND user_id != v_new_id;
-    UPDATE public.note_comments SET user_id = v_new_id WHERE user_id IN (SELECT id FROM auth.users WHERE email = v_new_email) AND user_id != v_new_id;
-    UPDATE public.note_ratings SET user_id = v_new_id WHERE user_id IN (SELECT id FROM auth.users WHERE email = v_new_email) AND user_id != v_new_id;
+    UPDATE public.note_logs SET user_id = v_new_id WHERE user_id = p_legacy_id;
+    UPDATE public.note_comments SET user_id = v_new_id WHERE user_id = p_legacy_id;
+    UPDATE public.note_ratings SET user_id = v_new_id WHERE user_id = p_legacy_id;
 
     RETURN QUERY SELECT v_updated;
 END;
 $$;
 
 -- Grant execution to authenticated users
-GRANT EXECUTE ON FUNCTION public.reconcile_user_notes_by_email() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reconcile_by_master_id(UUID) TO authenticated;
