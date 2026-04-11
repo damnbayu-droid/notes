@@ -374,15 +374,33 @@ export function Sidebar({
               Bali.Enterprises
             </a>
 
-            {userEmail && (
-              <div className="pt-2 border-t border-slate-100/50 mt-2 text-left opacity-30 hover:opacity-100 transition-opacity">
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated Account:</p>
-                <p className="text-[8px] font-mono text-slate-500 truncate mb-1">{userEmail}</p>
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">System ID:</p>
-                <code className="text-[8px] font-mono text-violet-600 truncate block bg-violet-50 rounded px-1">{userId}</code>
-                <p className="text-[6px] font-bold text-slate-400 mt-1 uppercase italic tracking-tighter">*Compare this ID to your Database screenshots</p>
-              </div>
-            )}
+            <div className="pt-2 border-t border-slate-100/50 mt-2 text-left opacity-30 hover:opacity-100 transition-opacity">
+               <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                  <p className="text-[8px] font-black text-slate-900 uppercase tracking-widest">Active Database: dfxhfutflhnxjjpbqscj</p>
+               </div>
+               
+               {userEmail ? (
+                 <>
+                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated Account:</p>
+                   <p className="text-[8px] font-mono text-slate-500 truncate mb-1">{userEmail}</p>
+                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">System ID:</p>
+                   <code className="text-[8px] font-mono text-violet-600 truncate block bg-violet-50 rounded px-1">{userId}</code>
+                 </>
+               ) : (
+                 <div className="p-2 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-[7px] font-black text-amber-600 uppercase tracking-widest leading-none mb-1">⚠️ Status: Not Authenticated</p>
+                    <p className="text-[8px] font-bold text-amber-700 leading-tight mb-2">Your 92 notes are locked in the cloud. Sign in to reclaim them.</p>
+                    <button 
+                      onClick={() => window.location.href = '/auth'}
+                      className="w-full py-1.5 bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest rounded-lg hover:bg-amber-700 transition-all"
+                    >
+                      Restore Connection Now
+                    </button>
+                 </div>
+               )}
+               <p className="text-[6px] font-bold text-slate-400 mt-2 uppercase italic tracking-tighter">*Data is linked to your system ID for security</p>
+            </div>
           </div>
         </div>
       </aside>
