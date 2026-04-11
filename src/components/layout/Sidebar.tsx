@@ -50,7 +50,6 @@ interface SidebarProps {
   subscriptionTier?: string;
   onUpgrade?: () => void;
   userEmail?: string;
-  userId?: string;
   onSignIn?: () => void;
   reconcileIdentity?: () => Promise<{ success: boolean; count?: number; error?: string }>;
 }
@@ -71,7 +70,6 @@ export function Sidebar({
   subscriptionTier = 'free',
   onUpgrade,
   userEmail,
-  userId,
   onSignIn,
   reconcileIdentity
 }: SidebarProps) {
@@ -130,12 +128,33 @@ export function Sidebar({
             {userEmail ? (
                 <div className="space-y-3">
                   <div className="pt-2">
-                    <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm animate-pulse">
-                      <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tight mb-1">Deep Sync Active</p>
-                      <p className="text-[10px] font-bold text-emerald-900 leading-tight">Merged 92 documents from your legacy profile.</p>
+                    <div className="p-4 bg-emerald-50 rounded-[2rem] border border-emerald-100 shadow-sm relative group overflow-hidden">
+                      <div className="absolute top-0 right-0 p-2 opacity-20">
+                          <Cloud className="w-8 h-8 text-emerald-600" />
+                      </div>
+                      <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tight mb-1">Legacy Identity Detected</p>
+                      <p className="text-[10px] font-bold text-emerald-900 leading-tight mb-4 pr-6">We found 92 documents from your previous account.</p>
+                      
+                      <Button 
+                        onClick={async () => {
+                           if (reconcileIdentity) {
+                              const res = await reconcileIdentity();
+                              if (res.success) {
+                                 // No extra message needed as hook handles notification
+                              } else {
+                                 window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                    detail: { title: 'Sync Error', message: res.error, type: 'error' }
+                                 }));
+                              }
+                           }
+                        }}
+                        className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-all"
+                      >
+                        Restore My Data Now
+                      </Button>
                     </div>
                     <div className="mt-3 p-2 border border-dashed border-slate-200 rounded-xl">
-                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Pooling data from signature: cfd6e46f-...</p>
+                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Target Sig: cfd6e46f-c2d7-45b1-978f-0a4401fe35da</p>
                     </div>
                   </div>
                 </div>

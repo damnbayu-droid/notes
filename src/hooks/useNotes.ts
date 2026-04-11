@@ -51,6 +51,7 @@ interface UseNotesReturn {
   addComment: (noteId: string, content: string, parentId?: string) => Promise<{ success: boolean; comment?: NoteComment; error?: string }>;
   fetchComments: (noteId: string) => Promise<NoteComment[]>;
   deleteComment: (commentId: string) => Promise<{ success: boolean; error?: string }>;
+  reconcileNotes: () => Promise<{ success: boolean; count?: number; error?: string }>;
 }
 
 type SyncAction =
@@ -421,8 +422,25 @@ export function useNotes(user: User | null): UseNotesReturn {
     fetchLogs: async (id) => { const { data } = await supabase.from('note_logs').select('*').eq('note_id', id).order('created_at', { ascending: false }); if (data) setLogs(data); },
     fetchCollaborators: async (id) => { const { data } = await supabase.from('note_collaborators').select('*').eq('note_id', id); if (data) setCollaborators(data); },
     addCollaborator: async (id, email, perm) => { await supabase.from('note_collaborators').upsert({ note_id: id, email, permission: perm }); return { success: true }; },
-    removeCollaborator: async (id, email) => { await supabase.from('note_collaborators').delete().eq('note_id', id).eq('email', email); return { success: true }; },
+    removeCollaborator: async (id, email) => { await supabase.from('note_collaborators').delete().eq('id', id).eq('email', email); return { success: true }; },
     addLog: async (id, action, details) => { await supabase.from('note_logs').insert({ note_id: id, user_id: user?.id, user_email: user?.email, action, details }); },
+    reconcileNotes: async () => {
+      if (!user) return { success: false, error: 'User not authenticated' };
+      const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
+      try {
+        const { data, error } = await supabase.rpc('reconcile_user_notes', { p_legacy_id: LEGACY_ID });
+        if (error) throw error;
+        const count = Array.isArray(data) ? data[0]?.updated_count : (data as any)?.updated_count || 0;
+        await loadNotes();
+        window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+          detail: { title: 'Identity Synced', message: `Successfully restored ${count} legacy documents.`, type: 'success' } 
+        }));
+        return { success: true, count };
+      } catch (err: any) {
+        console.error('Reconciliation error:', err);
+        return { success: false, error: err.message };
+      }
+    },
     rateNote: async (id, val) => { await supabase.from('note_ratings').upsert({ note_id: id, user_id: user?.id, rating: val }); return { success: true }; },
     fetchRatings: async (id) => { const { data } = await supabase.from('note_ratings').select('rating').eq('note_id', id); return { average: data?.length ? Math.round((data.reduce((a, b) => a + b.rating, 0) / data.length) * 10) / 10 : 0, count: data?.length || 0 }; },
     addComment: async (id, text, pid) => { const { data } = await supabase.from('note_comments').insert({ note_id: id, user_id: user?.id, user_email: user?.email, content: text, parent_id: pid }).select().single(); return { success: true, comment: data }; },

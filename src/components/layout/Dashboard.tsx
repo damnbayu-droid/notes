@@ -182,7 +182,6 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             subscriptionTier={tier}
             onUpgrade={() => setIsPaymentModalOpen(true)}
             userEmail={user?.email || undefined}
-            userId={user?.id || undefined}
             onSignIn={onSignIn}
             reconcileIdentity={reconcileNotes}
           />
