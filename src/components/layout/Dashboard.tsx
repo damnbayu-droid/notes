@@ -230,7 +230,11 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
                       </div>
                     )}
                     {activeNotes.length === 0 ? (
-                      <EmptyState type={currentView} onClearFilters={() => { setSearchQuery(''); setSelectedTags([]); }} />
+                      <EmptyState 
+                        type={currentView} 
+                        onAction={handleCreateNote}
+                        onClearFilters={() => { setSearchQuery(''); setSelectedTags([]); }} 
+                      />
                     ) : (
                       <div className="flex-1 p-6">
                         <NotesGrid
