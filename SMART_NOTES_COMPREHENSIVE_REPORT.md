@@ -1,6 +1,17 @@
-## [Audit Log] - 2026-04-10 23:55:00 WIB
+## [Audit Log] - 2026-04-11 17:33:00 WIB
 
-### ✅ Enterprise Scaling & Monetization Ecosystem
+### 🔴 CRITICAL: Database Connectivity & Data Visibility Issue
+- **State**: INCOMPLETE / INVESTIGATING
+- **Issue**: Data from Supabase project `dfxhfutflhnxjjpbqscj` is visible in the Table Editor (92 records) but **Hidden/Disconnected** in the application UI at `notes.biz.id`.
+- **Symptoms**:
+    - "Restore My Data Now" button click triggers no visible feedback or document appearance.
+    - "Create your first note" button in EmptyState has been reported as unclickable (prop fix deployed but pending verification).
+    - Hardened RLS policies might be blocking "Identity Pooling" even with direct `user_id` specified in queries.
+- **Current Theory**: Cross-account `user_id` mismatch combined with strict Row Level Security (RLS) is preventing the application from "seeing" the data even though it exists in the physical table.
+
+---
+
+## [Audit Log] - 2026-04-10 23:55:00 WIB
 - **Monetized Tier Logic**: Implemented a 3-tier subscription framework: **Free**, **Limited (Month/Year)**, and **Full Access**.
 - **DOKU P-Link Integration**: Secured native payment routing via DOKU for all paid tiers, ensuring industrial-grade transaction handling.
 - **Ad-Redirect Monetization**: Developed a 15-minute background timer and interstitial prompt for Limited users to maintain free platform sustainability.

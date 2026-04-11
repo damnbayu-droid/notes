@@ -52,6 +52,8 @@ interface SidebarProps {
   userEmail?: string;
   onSignIn?: () => void;
   reconcileIdentity?: () => Promise<{ success: boolean; count?: number; error?: string }>;
+  diagnostics?: { projectId: string; authId: string; notesCount: number };
+  onForceSync?: () => Promise<void>;
 }
 
 export function Sidebar({
@@ -71,7 +73,9 @@ export function Sidebar({
   onUpgrade,
   userEmail,
   onSignIn,
-  reconcileIdentity
+  reconcileIdentity,
+  diagnostics,
+  onForceSync
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
@@ -394,6 +398,26 @@ export function Sidebar({
 
         {/* Footer */}
         <div className="flex-none p-5 border-t border-border space-y-3 bg-background/50 backdrop-blur-sm relative z-10">
+          {userEmail === 'damnbayu@gmail.com' && diagnostics && (
+            <div className="mb-4 p-3 bg-slate-100 rounded-2xl border border-slate-200">
+               <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">System Diagnostics</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
+               </div>
+               <div className="space-y-1">
+                  <p className="text-[8px] font-mono text-slate-400">PROJECT: <span className="text-slate-900 font-bold">{diagnostics.projectId}</span></p>
+                  <p className="text-[8px] font-mono text-slate-400">AUTH_ID: <span className="text-slate-900 font-bold truncate">{diagnostics.authId.substring(0, 10)}...</span></p>
+                  <p className="text-[8px] font-mono text-slate-400">DATA_LOAD: <span className="text-slate-900 font-bold">{diagnostics.notesCount} Records</span></p>
+               </div>
+               <Button 
+                onClick={onForceSync}
+                className="w-full mt-3 h-8 bg-slate-900 hover:bg-black text-[9px] text-white font-black uppercase tracking-widest rounded-xl transition-all active:scale-95"
+               >
+                 Force Vacuum & Sync
+               </Button>
+            </div>
+          )}
+
           <button
             onClick={handleContactUs}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-slate-900 text-white hover:bg-black transition-all shadow-xl active:scale-95 group border border-slate-800"

@@ -52,6 +52,8 @@ interface UseNotesReturn {
   fetchComments: (noteId: string) => Promise<NoteComment[]>;
   deleteComment: (commentId: string) => Promise<{ success: boolean; error?: string }>;
   reconcileNotes: () => Promise<{ success: boolean; count?: number; error?: string }>;
+  diagnostics: { projectId: string; authId: string; notesCount: number };
+  forceSync: () => Promise<void>;
 }
 
 type SyncAction =
@@ -452,6 +454,19 @@ export function useNotes(user: User | null): UseNotesReturn {
     fetchRatings: async (id) => { const { data } = await supabase.from('note_ratings').select('rating').eq('note_id', id); return { average: data?.length ? Math.round((data.reduce((a, b) => a + b.rating, 0) / data.length) * 10) / 10 : 0, count: data?.length || 0 }; },
     addComment: async (id, text, pid) => { const { data } = await supabase.from('note_comments').insert({ note_id: id, user_id: user?.id, user_email: user?.email, content: text, parent_id: pid }).select().single(); return { success: true, comment: data }; },
     fetchComments: async (id) => { const { data } = await supabase.from('note_comments').select('*').eq('note_id', id).order('created_at', { ascending: true }); return data || []; },
-    deleteComment: async (id) => { await supabase.from('note_comments').delete().eq('id', id); return { success: true }; }
+    deleteComment: async (id) => { await supabase.from('note_comments').delete().eq('id', id); return { success: true }; },
+    diagnostics: {
+      projectId: (supabase as any).supabaseUrl?.split('//')[1]?.split('.')[0] || 'Unknown',
+      authId: user?.id || 'Anonymous',
+      notesCount: notes.length
+    },
+    forceSync: async () => {
+      localStorage.clear();
+      setNotes([]);
+      await loadNotes();
+      window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+        detail: { title: 'Vacuum Complete', message: 'Local cache purged. Force-fetching from cloud...', type: 'info' } 
+      }));
+    }
   };
 }

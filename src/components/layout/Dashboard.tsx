@@ -83,6 +83,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     emptyTrash,
     notes,
     reconcileNotes,
+    diagnostics,
+    forceSync,
   } = useNotes(user);
 
   const isCreatingRef = useRef(false);
@@ -184,6 +186,8 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
             userEmail={user?.email || undefined}
             onSignIn={onSignIn}
             reconcileIdentity={reconcileNotes}
+            diagnostics={diagnostics}
+            onForceSync={forceSync}
           />
 
           <main className="flex-1 overflow-auto w-full relative bg-slate-50/20">
