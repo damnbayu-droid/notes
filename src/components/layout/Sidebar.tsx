@@ -79,6 +79,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'Dashboard', icon: LayoutGrid, count: 0 },
@@ -140,21 +141,32 @@ export function Sidebar({
                       <p className="text-[10px] font-bold text-emerald-900 leading-tight mb-4 pr-6">We found 92 documents from your previous account.</p>
                       
                       <Button 
+                        disabled={isRestoring}
                         onClick={async () => {
                            if (reconcileIdentity) {
-                              const res = await reconcileIdentity();
-                              if (res.success) {
-                                 // No extra message needed as hook handles notification
-                              } else {
-                                 window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                    detail: { title: 'Sync Error', message: res.error, type: 'error' }
-                                 }));
+                              setIsRestoring(true);
+                              try {
+                                const res = await reconcileIdentity();
+                                if (!res.success) {
+                                   window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                                      detail: { title: 'Sync Error', message: res.error, type: 'error' }
+                                   }));
+                                }
+                              } finally {
+                                setIsRestoring(false);
                               }
                            }
                         }}
-                        className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-all"
+                        className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
-                        Restore My Data Now
+                        {isRestoring ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Syncing...
+                          </>
+                        ) : (
+                          "Restore My Data Now"
+                        )}
                       </Button>
                     </div>
                     <div className="mt-3 p-2 border border-dashed border-slate-200 rounded-xl">

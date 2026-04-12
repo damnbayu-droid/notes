@@ -179,23 +179,23 @@ export function NoteEditor({
         setEditorText(editor.getText());
       }
       setColor(note.color);
-      setIsPinned(note.is_pinned);
-      setIsArchived(note.is_archived);
-      setTags(note.tags);
+      setIsPinned(Boolean(note.is_pinned));
+      setIsArchived(Boolean(note.is_archived));
+      setTags(Array.isArray(note.tags) ? note.tags : []);
       setReminderDate(note.reminder_date || '');
       setFolder(note.folder || 'Main');
-      setIsShared(note.is_shared || false);
+      setIsShared(Boolean(note.is_shared));
       setShareSlug(note.share_slug);
-      setIsDiscoverable(note.is_discoverable || false);
+      setIsDiscoverable(Boolean(note.is_discoverable));
       setNoteCategory(note.category || 'General');
       setExternalSourceUrl(note.external_source_url);
       setExternalSourceType(note.external_source_type);
       setExternalSourceTitle(note.external_source_title);
 
       lastSavedState.current = {
-        html: initialHtml, color: note.color, tags: [...note.tags],
+        html: initialHtml, color: note.color || 'default', tags: Array.isArray(note.tags) ? [...note.tags] : [],
         folder: note.folder || 'Main', reminderDate: note.reminder_date || '',
-        isDiscoverable: note.is_discoverable || false, category: note.category || 'General'
+        isDiscoverable: Boolean(note.is_discoverable), category: note.category || 'General'
       };
     } else {
       setEditorHtml('');

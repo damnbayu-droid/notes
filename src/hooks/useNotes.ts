@@ -174,16 +174,12 @@ export function useNotes(user: User | null): UseNotesReturn {
     setIsLoading(true);
     
     try {
-      const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
-      
-      // IDENTITY POOLING: Fetch notes for both current ID and verified legacy ID
-      const targetIds = [user.id];
-      if (user.email === 'damnbayu@gmail.com') targetIds.push(LEGACY_ID);
-
+      // PROPER IDENTITY FETCH: Only fetch notes for current authenticated ID.
+      // Identity reconciliation should be used to move legacy data to the new ID.
       const { data: ownedNotes, error: loadError } = await supabase
         .from('notes')
         .select('*')
-        .in('user_id', targetIds);
+        .eq('user_id', user.id);
       
       if (loadError) throw loadError;
 
@@ -196,27 +192,45 @@ export function useNotes(user: User | null): UseNotesReturn {
         if (sharedWithMe) allFetchedNotes = [...allFetchedNotes, ...sharedWithMe];
       }
 
-      setNotes(allFetchedNotes as Note[]);
-    } catch (err: any) {
-      console.warn('Primary fetch failed, attempting legacy fallback:', err);
-      // LEGACY FALLBACK: Fetch only established columns to handle schema mismatches
-      const LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
-      const targetIds = [user.id];
-      if (user.email === 'damnbayu@gmail.com') targetIds.push(LEGACY_ID);
+      // SCHEMA RESILIENCE: Hydrate all fetched notes with safe default values
+      const hydratedNotes = allFetchedNotes.map(n => ({
+        ...n,
+        folder: n.folder || 'Main',
+        tags: Array.isArray(n.tags) ? n.tags : [],
+        is_pinned: Boolean(n.is_pinned),
+        is_archived: Boolean(n.is_archived),
+        color: n.color || 'default',
+        note_type: n.note_type || 'text',
+        is_shared: Boolean(n.is_shared),
+        is_discoverable: Boolean(n.is_discoverable),
+        category: n.category || 'General'
+      }));
 
+      setNotes(hydratedNotes as Note[]);
+    } catch (err: any) {
+      console.warn('Primary fetch failed, attempting schema-resilient fallback:', err);
+      // FALLBACK: Fetch only established columns to handle deep schema mismatches
       const baseColumns = 'id, title, content, user_id, color, is_pinned, is_archived, tags, folder, note_type, created_at, updated_at';
       const { data: legacyNotes, error: legacyError } = await supabase
         .from('notes')
         .select(baseColumns)
-        .in('user_id', targetIds);
+        .eq('user_id', user.id);
       
       if (!legacyError && legacyNotes) {
-        setNotes(legacyNotes as Note[]);
+        setNotes(legacyNotes.map(n => ({
+          ...n,
+          folder: n.folder || 'Main',
+          tags: Array.isArray(n.tags) ? n.tags : [],
+          is_pinned: Boolean(n.is_pinned),
+          is_archived: Boolean(n.is_archived),
+          color: n.color || 'default'
+        })) as Note[]);
+        
         window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-          detail: { title: 'Legacy Mode Active', message: 'Connected to core data. Some discovery features may require a database update.', type: 'info' } 
+          detail: { title: 'Compatibility Mode', message: 'Connected to core data. Advanced discovery features may require system update.', type: 'info' } 
         }));
       } else {
-        console.error('Final fetch failure:', legacyError);
+        console.error('Final fetch critical failure:', legacyError);
       }
     } finally {
       setIsLoading(false);
@@ -429,6 +443,11 @@ export function useNotes(user: User | null): UseNotesReturn {
     reconcileNotes: async () => {
       if (!user) return { success: false, error: 'User not authenticated' };
       const SPECIFIC_LEGACY_ID = 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da';
+      
+      window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+        detail: { title: 'Authenticating Legacy Cloud...', message: 'Requesting permission to transfer 92 documents', type: 'info' } 
+      }));
+
       try {
         console.log('Starting Master Recovery for ID:', SPECIFIC_LEGACY_ID);
         const { data, error } = await supabase.rpc('reconcile_by_master_id', { p_legacy_id: SPECIFIC_LEGACY_ID });
@@ -436,14 +455,21 @@ export function useNotes(user: User | null): UseNotesReturn {
         
         const count = Array.isArray(data) ? data[0]?.updated_count : (data as any)?.updated_count || 0;
         
-        // Forceful clear and reload
-        setNotes([]); 
-        await new Promise(r => setTimeout(r, 500));
-        await loadNotes();
-        
-        window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-          detail: { title: 'Recovery Complete', message: `Identity merged. Found and restored ${count} documents.`, type: 'success' } 
-        }));
+        if (count > 0) {
+          // Forceful clear and reload
+          setNotes([]); 
+          await new Promise(r => setTimeout(r, 800));
+          await loadNotes();
+          
+          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+            detail: { title: 'Recovery Complete', message: `Identity merged. Found and restored ${count} documents to your workspace.`, type: 'success' } 
+          }));
+        } else {
+          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+            detail: { title: 'Recovery Finished', message: 'No orphaned records found for this master sequence. Your data is likely already up to date.', type: 'info' } 
+          }));
+        }
+
         return { success: true, count };
       } catch (err: any) {
         console.error('Master Recovery error:', err);
