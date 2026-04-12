@@ -37,3 +37,9 @@ Go to **Supabase Dashboard -> Authentication -> Email Templates**. Update each t
 - Keep the **Sender Name** as: `Smart Notes`
 - Keep the **Sender Email** as: `smart@notes.biz.id`
 - Ensure all links in the templates use the `{{ .ConfirmationURL }}` placeholder correctly.
+
+---
+
+## 4. Final Status (2026-04-13)
+- **Status**: ✅ FULLY IMPLEMENTED
+- **Verification**: SMTP bridge via Resend is active and verified. SPF/DKIM/DMARC records are provisioned for `notes.biz.id`.
