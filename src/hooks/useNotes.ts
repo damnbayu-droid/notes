@@ -181,7 +181,19 @@ export function useNotes(user: User | null): UseNotesReturn {
         .select('*')
         .eq('user_id', user.id);
       
-      if (loadError) throw loadError;
+      if (loadError) {
+        // DETECT MISSING SCHEMA: Handle 400/404 errors caused by missing 'notes' table
+        if (loadError.code === '42P01' || loadError.message?.includes('relation "notes" does not exist')) {
+          window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+            detail: { 
+              title: 'Database Setup Required', 
+              message: 'The "notes" table is missing from your project. Please run the Master Initialization SQL script in your Supabase dashboard.', 
+              type: 'error' 
+            } 
+          }));
+        }
+        throw loadError;
+      }
 
       const { data: collabData } = await supabase.from('note_collaborators').select('note_id').eq('email', user.email);
       let allFetchedNotes = [...(ownedNotes || [])];
