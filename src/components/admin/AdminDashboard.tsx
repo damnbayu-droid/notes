@@ -10,7 +10,8 @@ import {
   Archive,
   Users,
   MessageSquare,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,10 +23,11 @@ interface AdminStats {
     paidUsers: number;
     activeToday: number;
     totalFiles: number;
+    totalDiscoveryNotes: number;
 }
 
 export function AdminDashboard() {
-    const [stats, setStats] = useState<AdminStats>({ totalUsers: 0, paidUsers: 0, activeToday: 0, totalFiles: 0 });
+    const [stats, setStats] = useState<AdminStats>({ totalUsers: 0, paidUsers: 0, activeToday: 0, totalFiles: 0, totalDiscoveryNotes: 0 });
     const [messages, setMessages] = useState<any[]>([]);
     const [logs, setLogs] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'messages' | 'logs'>('overview');
@@ -36,12 +38,14 @@ export function AdminDashboard() {
             const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
             const { count: paidCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).neq('subscription_tier', 'free');
             const { count: fileCount } = await supabase.from('notes').select('*', { count: 'exact', head: true });
+            const { count: discoveryCount } = await supabase.from('discovery_notes').select('*', { count: 'exact', head: true });
             
             setStats({
                 totalUsers: userCount || 0,
                 paidUsers: paidCount || 0,
                 activeToday: Math.floor((userCount || 0) * 0.4) || 0, 
-                totalFiles: fileCount || 0
+                totalFiles: fileCount || 0,
+                totalDiscoveryNotes: discoveryCount || 0
             });
 
             // Fetch Messages (Support + Subscription Notifications)
@@ -152,7 +156,7 @@ export function AdminDashboard() {
                             {[
                                 { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-600/10' },
                                 { label: 'Revenue Tier', value: stats.paidUsers, icon: Crown, color: 'text-amber-600', bg: 'bg-amber-600/10' },
-                                { label: 'Peak Usage', value: stats.activeToday, icon: Activity, color: 'text-rose-600', bg: 'bg-rose-600/10' },
+                                { label: 'Community Feed', value: stats.totalDiscoveryNotes, icon: Sparkles, color: 'text-emerald-600', bg: 'bg-emerald-600/10' },
                                 { label: 'Cloud Data', value: stats.totalFiles, icon: FileText, color: 'text-violet-600', bg: 'bg-violet-600/10' },
                             ].map((stat, i) => (
                                 <Card key={i} className="p-8 rounded-[2.5rem] border-0 bg-white dark:bg-gray-900 shadow-xl shadow-slate-200/50 hover:scale-[1.02] transition-all group cursor-default">

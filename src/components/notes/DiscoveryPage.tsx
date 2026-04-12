@@ -27,21 +27,26 @@ export function DiscoveryPage() {
         async function fetchDiscoverableNotes() {
             setIsLoading(true);
             try {
+                // Fetch from the dedicated discovery_notes table
                 const { data, error } = await supabase
-                    .from('notes')
+                    .from('discovery_notes')
                     .select('*')
-                    .eq('is_discoverable', true)
                     .order('updated_at', { ascending: false });
 
                 if (error) throw error;
 
                 if (data) {
-                    // Fetch ratings for each note
-                    const notesWithRatings = await Promise.all((data as Note[]).map(async (n) => {
+                    // Fetch ratings for each note from note_ratings
+                    // Note: discovery_notes has 'id' which matches the original note's id
+                    const notesWithRatings = await Promise.all((data as any[]).map(async (n) => {
                         const { data: ratings } = await supabase
                             .from('note_ratings')
                             .select('rating')
                             .eq('note_id', n.id);
+                        
+                        // We also need to get the share_slug from the original note if not in discovery_notes
+                        // Actually, discovery_notes should ideally have share_slug or we fetch it.
+                        // Let's check the schema I created.
                         
                         if (ratings && ratings.length > 0) {
                             const avg = ratings.reduce((acc, curr) => acc + curr.rating, 0) / ratings.length;
@@ -53,12 +58,9 @@ export function DiscoveryPage() {
                 }
             } catch (err: any) {
                 console.error('Failed to fetch discovery feed:', err);
-                if (err.code === 'PGRST204' || err.message?.includes('is_discoverable')) {
-                    // Specific error for missing column
-                    window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                        detail: { title: 'Discovery Not Syncing', message: 'Your database needs a core update to enable Community Library features. Check the Admin panel for guide.', type: 'info' } 
-                    }));
-                }
+                window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                    detail: { title: 'Registry Error', message: 'Failed to synchronize community library data.', type: 'error' } 
+                }));
             } finally {
                 setIsLoading(false);
             }

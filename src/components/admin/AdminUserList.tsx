@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Search, Trash2, Mail, Shield, ShieldAlert, User as UserIcon, Database } from 'lucide-react';
+import { Search, Trash2, Mail, ShieldAlert, Database } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -71,18 +77,50 @@ export function AdminUserList() {
         }
     };
 
-    const deleteUser = async (userId: string) => {
-        const { error } = await supabase.auth.admin.deleteUser(userId);
+    const updateRole = async (userId: string, newRole: string) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ role: newRole })
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error updating role:', error);
+        } else {
+            setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                detail: { title: 'Clearance Updated', message: `Identity ${userId.slice(0,8)} level changed.`, type: 'success' } 
+            }));
+        }
+    };
+
+    const updateSubscription = async (userId: string, newTier: string) => {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ subscription_tier: newTier })
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error updating subscription:', error);
+        } else {
+            setUsers(users.map(u => u.id === userId ? { ...u, subscription_tier: newTier } : u));
+            window.dispatchEvent(new CustomEvent('dcpi-notification', { 
+                detail: { title: 'Quota Modified', message: `Neural tier adjusted for node ${userId.slice(0,8)}.`, type: 'success' } 
+            }));
+        }
+    };
+
+    const purgeUserData = async (userId: string) => {
+        const { error } = await supabase.rpc('delete_user_data_admin', { target_user_id: userId });
         
         if (error) {
-            console.error('Error deleting user:', error);
+            console.error('Error purging user data:', error);
             window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                detail: { title: 'DANGER', message: 'Auth deletion requires Service Role. Please use Supabase Dashboard.', type: 'error' } 
+                detail: { title: 'PROTOCOL FAILURE', message: error.message, type: 'error' } 
             }));
         } else {
             setUsers(users.filter(u => u.id !== userId));
             window.dispatchEvent(new CustomEvent('dcpi-notification', { 
-                detail: { title: 'User Purged', message: 'Credential sequence terminated.', type: 'success' } 
+                detail: { title: 'Data Purged', message: 'User data has been scrubbed from public tables.', type: 'success' } 
             }));
         }
     };
@@ -165,16 +203,33 @@ export function AdminUserList() {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={`rounded-lg h-6 px-2 text-[9px] font-black uppercase tracking-tighter ${profile.role === 'admin' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
-                                                {profile.role === 'admin' ? <Shield className="w-3 h-3 mr-1" /> : <UserIcon className="w-3 h-3 mr-1" />}
-                                                {profile.role}
-                                            </Badge>
+                                         <TableCell>
+                                            <Select 
+                                                value={profile.role} 
+                                                onValueChange={(val) => updateRole(profile.id, val)}
+                                            >
+                                                <SelectTrigger className="h-8 w-28 text-[9px] font-black uppercase tracking-tighter rounded-lg border-slate-200">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                                    <SelectItem value="user" className="text-[10px] font-bold">User</SelectItem>
+                                                    <SelectItem value="admin" className="text-[10px] font-bold">Admin</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className={`rounded-lg h-6 px-2 text-[9px] font-black uppercase tracking-tighter ${profile.subscription_tier === 'full_access' ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-slate-50 text-slate-500'}`}>
-                                                {profile.subscription_tier}
-                                            </Badge>
+                                            <Select 
+                                                value={profile.subscription_tier} 
+                                                onValueChange={(val) => updateSubscription(profile.id, val)}
+                                            >
+                                                <SelectTrigger className="h-8 w-32 text-[9px] font-black uppercase tracking-tighter rounded-lg border-slate-200">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl border-slate-100 shadow-2xl">
+                                                    <SelectItem value="free" className="text-[10px] font-bold">Free Tier</SelectItem>
+                                                    <SelectItem value="full_access" className="text-[10px] font-bold">Full Access</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </TableCell>
                                         <TableCell className="text-[10px] font-medium text-muted-foreground">
                                             {new Date(profile.created_at).toLocaleDateString()}
@@ -214,7 +269,7 @@ export function AdminUserList() {
                                                             <AlertDialogCancel className="rounded-xl border-slate-100 font-bold">Abort Protocol</AlertDialogCancel>
                                                             <AlertDialogAction 
                                                                 className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold"
-                                                                onClick={() => deleteUser(profile.id)}
+                                                                onClick={() => purgeUserData(profile.id)}
                                                             >
                                                                 Confirm Extraction
                                                             </AlertDialogAction>

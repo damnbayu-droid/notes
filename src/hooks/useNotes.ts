@@ -54,6 +54,7 @@ interface UseNotesReturn {
   reconcileNotes: () => Promise<{ success: boolean; count?: number; error?: string }>;
   diagnostics: { projectId: string; authId: string; notesCount: number };
   forceSync: () => Promise<void>;
+  reconcileDiscovery: () => Promise<{ success: boolean; count?: number; error?: string }>;
 }
 
 type SyncAction =
@@ -420,14 +421,43 @@ export function useNotes(user: User | null): UseNotesReturn {
     shareNote: async (id, type = 'public', _pwd, perm = 'read', disc = false) => {
       try {
         const n = notes.find(x => x.id === id);
-        const slug = n?.share_slug || generateShareSlug(n?.title || 'note');
-        const updates = { is_shared: true, share_slug: slug, share_type: type, share_permission: perm, is_discoverable: disc };
+        if (!n) throw new Error('Note not found');
+        
+        const slug = n.share_slug || generateShareSlug(n.title || 'note');
+        const updates = { 
+          is_shared: true, 
+          share_slug: slug, 
+          share_type: type, 
+          share_permission: perm, 
+          is_discoverable: disc,
+          category: n.category || 'General' 
+        };
         
         // Optimistic local update
         setNotes(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x));
         
-        const { error } = await supabase.from('notes').update(updates).eq('id', id);
-        if (error) throw error;
+        // 1. Update main notes table
+        const { error: noteError } = await supabase.from('notes').update(updates).eq('id', id);
+        if (noteError) throw noteError;
+        
+        // 2. Handle Discovery Sync
+        if (disc) {
+          // Upsert into discovery system
+          const { error: discError } = await supabase.from('discovery_notes').upsert({
+            id: n.id,
+            user_id: n.user_id,
+            title: n.title,
+            content: n.content,
+            category: n.category || 'General',
+            tags: n.tags || [],
+            share_slug: slug,
+            updated_at: new Date().toISOString()
+          });
+          if (discError) console.warn('Discovery sync failed:', discError);
+        } else {
+          // Ensure removed from discovery if was previously discoverable
+          await supabase.from('discovery_notes').delete().eq('id', id);
+        }
         
         return { success: true, slug };
       } catch (err: any) {
@@ -437,13 +467,52 @@ export function useNotes(user: User | null): UseNotesReturn {
     },
     unshareNote: async (id) => {
       try {
-        await supabase.from('notes').update({ is_shared: false }).eq('id', id);
-        setNotes(prev => prev.map(x => x.id === id ? { ...x, is_shared: false } : x));
+        const updates = { is_shared: false, is_discoverable: false };
+        
+        // 1. Update main table
+        const { error } = await supabase.from('notes').update(updates).eq('id', id);
+        if (error) throw error;
+        
+        // 2. Remove from discovery
+        await supabase.from('discovery_notes').delete().eq('id', id);
+        
+        setNotes(prev => prev.map(x => x.id === id ? { ...x, ...updates } : x));
         return { success: true };
       } catch (err: any) {
-        // Fallback for legacy schema
-        setNotes(prev => prev.map(x => x.id === id ? { ...x, is_shared: false } : x));
-        return { success: true };
+        console.error('Unshare failed:', err);
+        return { success: false, error: err.message };
+      }
+    },
+    reconcileDiscovery: async () => {
+      try {
+        // Fetch all discoverable notes from main table
+        const { data: discoverableNotes, error } = await supabase
+          .from('notes')
+          .select('*')
+          .eq('is_discoverable', true);
+        
+        if (error) throw error;
+        if (!discoverableNotes) return { success: true, count: 0 };
+
+        // Prep for bulk upsert
+        const syncData = discoverableNotes.map(n => ({
+          id: n.id,
+          user_id: n.user_id,
+          title: n.title,
+          content: n.content,
+          category: n.category || 'General',
+          tags: n.tags || [],
+          share_slug: n.share_slug,
+          updated_at: n.updated_at
+        }));
+
+        const { error: syncError } = await supabase.from('discovery_notes').upsert(syncData);
+        if (syncError) throw syncError;
+
+        return { success: true, count: syncData.length };
+      } catch (err: any) {
+        console.error('Reconciliation failed:', err);
+        return { success: false, error: err.message };
       }
     },
     logs, collaborators,
