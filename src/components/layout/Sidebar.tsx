@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTheme } from '@/hooks/useTheme';
@@ -56,6 +56,42 @@ interface SidebarProps {
   onForceSync?: () => Promise<void>;
 }
 
+function SidebarNotifications() {
+    const [notifications, setNotifications] = useState<any[]>([]);
+
+    useEffect(() => {
+        const handleStatus = (e: any) => {
+            const { text, type } = e.detail;
+            const id = Math.random().toString(36).substr(2, 9);
+            setNotifications(prev => [...prev, { id, text, type }]);
+            setTimeout(() => {
+                setNotifications(prev => prev.filter(n => n.id !== id));
+            }, 5000);
+        };
+
+        window.addEventListener('dcpi-status', handleStatus);
+        window.addEventListener('dcpi-notification', handleStatus);
+        return () => {
+            window.removeEventListener('dcpi-status', handleStatus);
+            window.removeEventListener('dcpi-notification', handleStatus);
+        };
+    }, []);
+
+    if (notifications.length === 0) return null;
+
+    return (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+            {notifications.map(n => (
+                <div key={n.id} className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                    <span className={n.type === 'error' ? 'text-rose-500' : n.type === 'success' ? 'text-emerald-500' : 'text-violet-600'}>
+                        {n.text}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export function Sidebar({
   currentView,
   onViewChange,
@@ -72,14 +108,15 @@ export function Sidebar({
   subscriptionTier = 'free',
   onUpgrade,
   userEmail,
-  onSignIn,
-  reconcileIdentity,
   diagnostics,
   onForceSync
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
+
+  const handleContactUs = () => {
+    window.dispatchEvent(new CustomEvent('open-contact-modal'));
+  };
 
   const navItems = [
     { id: 'notes' as ViewType, label: 'Dashboard', icon: LayoutGrid, count: 0 },
@@ -102,10 +139,6 @@ export function Sidebar({
     });
   }, [folders, pinnedFolders]);
 
-  const handleContactUs = () => {
-    window.dispatchEvent(new CustomEvent('open-contact-modal'));
-  };
-
   return (
     <>
       {/* Mobile overlay */}
@@ -124,78 +157,15 @@ export function Sidebar({
         flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex-none p-4 bg-slate-50 border-b border-border shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Connect: dfxhfutflhnxjjpbqscj</p>
-            </div>
-            
-            {userEmail ? (
-                <div className="space-y-3">
-                  <div className="pt-2">
-                    <div className="p-4 bg-emerald-50 rounded-[2rem] border border-emerald-100 shadow-sm relative group overflow-hidden">
-                      <div className="absolute top-0 right-0 p-2 opacity-20">
-                          <Cloud className="w-8 h-8 text-emerald-600" />
-                      </div>
-                      <p className="text-[10px] font-black text-emerald-700 uppercase tracking-tight mb-1">Legacy Identity Detected</p>
-                      <p className="text-[10px] font-bold text-emerald-900 leading-tight mb-4 pr-6">We found 92 documents from your previous account.</p>
-                      
-                      <Button 
-                        disabled={isRestoring}
-                        onClick={async () => {
-                           if (reconcileIdentity) {
-                              setIsRestoring(true);
-                              try {
-                                const res = await reconcileIdentity();
-                                if (!res.success) {
-                                   window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                                      detail: { title: 'Sync Error', message: res.error, type: 'error' }
-                                   }));
-                                }
-                              } finally {
-                                setIsRestoring(false);
-                              }
-                           }
-                        }}
-                        className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center justify-center gap-2"
-                      >
-                        {isRestoring ? (
-                          <>
-                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Syncing...
-                          </>
-                        ) : (
-                          "Restore My Data Now"
-                        )}
-                      </Button>
-                    </div>
-                    <div className="mt-3 p-2 border border-dashed border-slate-200 rounded-xl">
-                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">*Targeting Master Proof: cfd6e46f-c2d7-45b1-978f-0a4401fe35da</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 bg-amber-50 rounded-3xl border border-amber-100 flex flex-col gap-3">
-                    <p className="text-[10px] font-black text-amber-900">92 Notes Found in Cloud</p>
-                    <Button 
-                      onClick={onSignIn}
-                      className="w-full h-10 bg-amber-600 hover:bg-amber-700 text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-lg"
-                    >
-                      Authenticate Now
-                    </Button>
-                </div>
-              )}
+        <div className="flex-none p-4">
+            {/* Notification Center: Letters Only, No Background */}
+            <SidebarNotifications />
         </div>
 
-        <div className="flex-none flex items-center justify-between h-16 px-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent tracking-tighter">
-              Smart Notes
-            </span>
-          </div>
-          <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose} aria-label="Close sidebar">
-            <X className="w-5 h-5" />
-          </Button>
+        <div className="flex-none flex items-center justify-between p-4 border-b border-border lg:hidden">
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close sidebar">
+                <X className="w-5 h-5" />
+            </Button>
         </div>
 
         <ScrollArea className="flex-1 py-4">

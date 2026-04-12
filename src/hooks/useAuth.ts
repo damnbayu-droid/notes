@@ -44,6 +44,13 @@ export function useAuth(): UseAuthReturn {
 
         if (mounted) {
           if (session?.user) {
+            // Fetch additional profile data
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role, subscription_tier, ads_disabled')
+              .eq('id', session.user.id)
+              .single();
+
             setState({
               user: {
                 id: session.user.id,
@@ -51,6 +58,9 @@ export function useAuth(): UseAuthReturn {
                 name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
                 avatar: session.user.user_metadata.avatar,
                 created_at: session.user.created_at,
+                role: profile?.role || 'user',
+                subscription_tier: profile?.subscription_tier || 'free',
+                ads_disabled: !!profile?.ads_disabled,
               },
               isAuthenticated: true,
               isLoading: false,
@@ -73,6 +83,12 @@ export function useAuth(): UseAuthReturn {
       if (!mounted) return;
 
       if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, subscription_tier, ads_disabled')
+          .eq('id', session.user.id)
+          .single();
+
         setState({
           user: {
             id: session.user.id,
@@ -80,6 +96,9 @@ export function useAuth(): UseAuthReturn {
             name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
             avatar: session.user.user_metadata.avatar,
             created_at: session.user.created_at,
+            role: profile?.role || 'user',
+            subscription_tier: profile?.subscription_tier || 'free',
+            ads_disabled: !!profile?.ads_disabled,
           },
           isAuthenticated: true,
           isLoading: false,

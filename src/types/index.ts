@@ -4,6 +4,9 @@ export interface User {
   name: string;
   avatar?: string;
   created_at: string;
+  role?: string;
+  subscription_tier?: string;
+  ads_disabled?: boolean;
 }
 
 export interface Note {

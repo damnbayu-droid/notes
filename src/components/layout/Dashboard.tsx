@@ -51,6 +51,23 @@ export function Dashboard({ user, onSignOut, onSignIn }: DashboardProps) {
     setIsPaymentModalOpen
   } = useSubscription(user);
 
+  // Celebration logic for new payments
+  useEffect(() => {
+    if (tier !== 'free') {
+      const hasCelebrated = localStorage.getItem(`celebrated_${tier}_${user?.id}`);
+      if (!hasCelebrated && user) {
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+          detail: { 
+            title: 'Neural Access Granted', 
+            text: `Thanks for supporting Smart Notes! You are now on the ${tier.replace('_', ' ')} tier.`,
+            type: 'success' 
+          }
+        }));
+        localStorage.setItem(`celebrated_${tier}_${user.id}`, 'true');
+      }
+    }
+  }, [tier, user]);
+
   const {
     pinnedNotes,
     activeNotes,

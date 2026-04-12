@@ -40,17 +40,30 @@ export function AdminDashboard() {
             setStats({
                 totalUsers: userCount || 0,
                 paidUsers: paidCount || 0,
-                activeToday: Math.floor((userCount || 0) * 0.4), // Still partly mocked but based on real user count
+                activeToday: Math.floor((userCount || 0) * 0.4) || 0, 
                 totalFiles: fileCount || 0
             });
 
-            // Fetch Messages
-            const { data: msgData } = await supabase
+            // Fetch Messages (Support + Subscription Notifications)
+            const { data: supportMsgs } = await supabase
                 .from('support_messages')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(20);
-            setMessages(msgData || []);
+                .limit(10);
+            
+            const { data: payMsgs } = await supabase
+                .from('payment_notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            // Combine and sort
+            const combined = [
+                ...(supportMsgs || []).map(m => ({ ...m, type: 'support' })),
+                ...(payMsgs || []).map(m => ({ ...m, type: 'payment', subject: `Payment from ${m.user_email}`, message: `User upgraded to ${m.plan_name} (${m.amount} ${m.currency})`, status: 'unread' }))
+            ].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+            setMessages(combined);
 
             // Fetch Logs
             const { data: logData } = await supabase
