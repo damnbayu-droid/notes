@@ -1,0 +1,18 @@
+TITLE: SQL Editor - Smart Notes | notes.biz.id
+SLUG: sql-editor-smart-notes-notes-b-m13ra
+CONTENT: <p>SQL Editor - Smart Notes | <a target="_blank" rel="noopener noreferrer nofollow" class="text-violet-600 dark:text-violet-400 underline decoration-2 underline-offset-4 font-bold cursor-pointer" href="http://notes.biz.id">notes.biz.id</a></p><p></p><p>1</p><pre><code class="language-pgsql">SELECT email FROM auth.users WHERE id = 'c9bef35f-15a3-4721-98da-6e9f362e9b5c';
+
+2
+-- DATA LIFECYCLE MANAGEMENT IMPLEMENTATION
+
+-----------------------------------------------------------
+-- 1. PROFILE PICTUR
+---
+TITLE: Saran Semua Ai dari hasil Audit Full
+SLUG: saran-semua-ai-dari-hasil-audi-6rlls
+CONTENT: <p>Saran Semua Ai dari hasil Audit Full</p><p><br><br>Link Audit antar Ai : <a target="_blank" rel="noopener noreferrer nofollow" class="text-violet-600 dark:text-violet-400 underline decoration-2 underline-offset-4 font-bold cursor-pointer" href="https://www.notes.biz.id/s/audit-full-smart-notes-5uuyh">https://www.notes.biz.id/s/audit-full-smart-notes-5uuyh</a></p><p></p><p>GEMINI Ai :</p><p></p><p>Berdasarkan isi dokumen <strong>"Audit Full Smart Notes"</strong> yang Anda bagikan, saya telah m
+---
+TITLE: Audit Full Smart Notes :
+SLUG: audit-full-smart-notes-5uuyh
+CONTENT: <p>Audit Full Smart Notes :<br><br>Gemini, Chat GPT, Claude dan Deepseek<br><br>GEMINI :<br><br>Baca Link :&nbsp;<a target="_blank" rel="noopener noreferrer nofollow" class="text-violet-600 dark:text-violet-400 underline decoration-2 underline-offset-4 font-bold cursor-pointer" href="https://www.notes.biz.id/s/test-notes-online-zqyy">https://www.notes.biz.id/s/test-notes-online-zqyy</a></p><p>Catatan pada tautan tersebut berisi teks berikut:</p><p><strong>"Ini adalah test notes online untuk menc
+---
