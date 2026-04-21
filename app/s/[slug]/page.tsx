@@ -223,6 +223,13 @@ export default async function SharedNotePage({
   // Auth fetch for community logic (optional)
   const { data: { user } } = await supabase.auth.getUser()
 
+  const { data: offloadedFiles } = await supabase
+    .from('note_files')
+    .select('*')
+    .eq('note_id', graph.id)
+
+  const offloadedFile = offloadedFiles?.[0]
+  
   // Trigger server-side view tracking
   trackNoteMetric(graph.id, 'view').catch(() => {});
 
@@ -260,6 +267,13 @@ export default async function SharedNotePage({
             </div>
           </header>
           <main>
+             {offloadedFile && (
+               <section style={{ padding: '20px', background: '#fff9db', border: '2px solid #fab005', borderRadius: '12px', marginBottom: '20px' }}>
+                 <strong>EXTERNAL INTELLIGENCE NODE DETECTED:</strong>
+                 <p>This node contains high-density content offloaded for stability.</p>
+                 <a href={offloadedFile.file_url}>ACCESS FULL PAYLOAD ({offloadedFile.file_url})</a>
+               </section>
+             )}
              <div dangerouslySetInnerHTML={{ __html: recursiveHtml }} />
              <hr />
              <h3>Plaintext Knowledge Extract:</h3>
@@ -449,12 +463,25 @@ export default async function SharedNotePage({
                )}
             </article>
 
-             <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
+               <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
                 <h2>{graph.title}</h2>
                 <div>{renderRecursiveText(graph)}</div>
                 <p>Metadata: {graph.tags?.join(', ')}</p>
                 <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
              </section>
+
+             {/* AI STRUCTURED BLOCK (MANDATORY FOR v16.0.0) */}
+             {offloadedFile && (
+               <div style={{ display: 'none' }} id="ai-file-block">
+                 {JSON.stringify({
+                   type: "external_knowledge_file",
+                   summary: offloadedFile.summary,
+                   file_url: offloadedFile.file_url,
+                   content_type: "code_or_prompt",
+                   version: "v16.0.0-STABLE"
+                 })}
+               </div>
+             )}
 
             {/* Neural Broadcast Cluster (Sharing CTA) */}
             <ShareCluster title={graph.title || 'Intelligence Node'} slug={slug} />

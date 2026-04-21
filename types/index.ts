@@ -16,6 +16,7 @@ export interface Note {
   id: string;
   title: string;
   content: string;
+  content_original?: string; // Neural Payload Preservation (v16.0.0)
   user_id: string;
   color: NoteColor;
   is_pinned: boolean;

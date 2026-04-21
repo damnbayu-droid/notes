@@ -45,6 +45,7 @@ import {
     Mic,
     RefreshCw,
     Plus,
+    Lock,
     FileImage as ImageIcon,
 } from 'lucide-react'
 import {
@@ -75,6 +76,7 @@ import { LineageHub } from './LineageHub'
 import { processImageForNeural } from '@/lib/imageProcessor'
 import { uploadNoteAsset } from '@/lib/supabase/storage'
 import { downloadMarkdown } from '@/lib/googleDrive'
+import { detectOffloading, processOffloading } from '@/lib/offloading'
 
 interface NoteEditorProps {
   user: User | null
@@ -222,6 +224,33 @@ export function NoteEditor({
     },
   })
 
+  // AI Offloading Integration (v16.0.0)
+  const performOffloadCheck = async (contentHtml: string, contentText: string): Promise<{ html: string; offloaded: boolean }> => {
+    if (!user || !note || !detectOffloading(contentText)) {
+      return { html: contentHtml, offloaded: false }
+    }
+
+    const offloadToast = toast.loading('Massive Intelligence Detected. Offloading...')
+    const result = await processOffloading(note.id, user.id, contentText, note.title || 'Untitled')
+    
+    if (result.success && result.replacement_content) {
+      toast.success('Neural Offloading Successful', { 
+        id: offloadToast,
+        description: 'Large payload moved to persistent file for SSR stability.' 
+      })
+      
+      // Update editor immediately to show the offloaded state
+      if (editor) {
+        editor.commands.setContent(result.replacement_content)
+      }
+      
+      return { html: result.replacement_content, offloaded: true }
+    } else {
+      toast.error('Offloading Failed', { id: offloadToast, description: result.error })
+      return { html: contentHtml, offloaded: false }
+    }
+  }
+
   // Manual/Immediate Save Trigger (Protocol BUFF-DATA-INTEGRITY)
   const handleForceSave = useCallback(() => {
     if (!note || !editor) return
@@ -242,27 +271,33 @@ export function NoteEditor({
 
     if (hasChanged) {
       setIsSaving(true)
-      const title = currentText.split('\n')[0]?.substring(0, 100) || 'Untitled Note'
-      onUpdate({ 
-        title, 
-        content: currentHtml, 
-        color, 
-        tags, 
-        is_discoverable: isDiscoverable, 
-        category,
-        reminder_date: reminderDate || undefined,
-        is_archived: note.is_archived
+      
+      // Execute Offloading Pipeline (v16.0.0)
+      performOffloadCheck(currentHtml, currentText).then(({ html: finalHtml }) => {
+        const title = currentText.split('\n')[0]?.substring(0, 100) || 'Untitled Note'
+        onUpdate({ 
+          title, 
+          content: finalHtml, 
+          content_original: currentHtml, 
+          color, 
+          tags, 
+          is_discoverable: isDiscoverable, 
+          category,
+          reminder_date: reminderDate || undefined,
+          is_archived: note.is_archived
+        })
+        
+        lastSavedState.current = {
+          html: finalHtml,
+          color,
+          tags: [...tags],
+          reminderDate: reminderDate || '',
+          isDiscoverable,
+          category,
+          is_archived: Boolean(note.is_archived)
+        }
+        setTimeout(() => setIsSaving(false), 500)
       })
-      lastSavedState.current = {
-        html: currentHtml,
-        color,
-        tags: [...tags],
-        reminderDate: reminderDate || '',
-        isDiscoverable,
-        category,
-        is_archived: Boolean(note.is_archived)
-      }
-      setTimeout(() => setIsSaving(false), 500)
     }
   }, [editor, note, color, tags, isDiscoverable, category, reminderDate, onUpdate])
 
@@ -294,27 +329,32 @@ export function NoteEditor({
 
     if (hasChanged) {
       setIsSaving(true)
-      const title = debouncedText.split('\n')[0]?.substring(0, 100) || 'Untitled Note'
-      onUpdate({ 
-        title, 
-        content: debouncedHtml, 
-        color, 
-        tags, 
-        is_discoverable: isDiscoverable, 
-        category,
-        reminder_date: reminderDate || undefined,
-        is_archived: note.is_archived
+
+      // Execute Offloading Pipeline (v16.0.0)
+      performOffloadCheck(debouncedHtml, debouncedText).then(({ html: finalHtml }) => {
+        const title = debouncedText.split('\n')[0]?.substring(0, 100) || 'Untitled Note'
+        onUpdate({ 
+          title, 
+          content: finalHtml, 
+          color, 
+          tags, 
+          is_discoverable: isDiscoverable, 
+          category,
+          reminder_date: reminderDate || undefined,
+          is_archived: note.is_archived
+        })
+        
+        lastSavedState.current = {
+          html: finalHtml,
+          color,
+          tags: [...tags],
+          reminderDate: reminderDate || '',
+          isDiscoverable,
+          category,
+          is_archived: Boolean(note.is_archived)
+        }
+        setTimeout(() => setIsSaving(false), 800)
       })
-      lastSavedState.current = {
-        html: debouncedHtml,
-        color,
-        tags: [...tags],
-        reminderDate: reminderDate || '',
-        isDiscoverable,
-        category,
-        is_archived: Boolean(note.is_archived)
-      }
-      setTimeout(() => setIsSaving(false), 800)
     }
   }, [debouncedHtml, debouncedText, color, tags, isDiscoverable, category, reminderDate, note, isOpen, onUpdate])
 
@@ -731,16 +771,36 @@ export function NoteEditor({
                       </TooltipContent>
                     </Tooltip>
                   )}
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm" disabled={!note || isSaving || !editor?.getText().trim()} onClick={() => setIsSharingModalOpen(true)} className="h-9 px-3 sm:px-5 rounded-xl border border-slate-200 dark:border-white/5 text-slate-900 dark:text-white font-black uppercase text-[9px] tracking-widest bg-white dark:bg-slate-900 shadow-sm">
-                         <Share2 className={`w-3.5 h-3.5 mr-2 ${editor?.getText().trim() ? 'text-violet-600' : 'text-slate-300'}`} /> {note?.is_shared ? 'Manage' : 'Share'}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                       <p>Universal Access Management</p>
-                    </TooltipContent>
-                 </Tooltip>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={!note || isSaving || !editor?.getText().trim()} onClick={() => setIsSharingModalOpen(true)} className="h-9 px-3 sm:px-5 rounded-xl border border-slate-200 dark:border-white/5 text-slate-900 dark:text-white font-black uppercase text-[9px] tracking-widest bg-white dark:bg-slate-900 shadow-sm">
+                           <Share2 className={`w-3.5 h-3.5 mr-2 ${editor?.getText().trim() ? 'text-violet-600' : 'text-slate-300'}`} /> {note?.is_shared ? 'Manage' : 'Share'}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                         <p>Universal Access Management</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {note?.is_shared && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            if (confirm('Are you sure you want to take this intelligence node offline?')) {
+                              onUnshareNote?.(note.id);
+                              toast.success('Intelligence taken offline');
+                            }
+                          }} className="h-9 px-3 rounded-xl text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-black uppercase text-[9px] tracking-widest transition-all">
+                             <Lock className="w-3.5 h-3.5 mr-2" /> Turn Offline
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                           <p>Terminate Public Link</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
 
                  <Tooltip>
                     <TooltipTrigger asChild>

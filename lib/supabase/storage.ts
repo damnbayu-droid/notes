@@ -33,7 +33,6 @@ export async function uploadNoteAsset(
 
     if (error) throw error;
 
-    // Retrieve the public universal link
     const { data: { publicUrl } } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(path);
@@ -41,6 +40,48 @@ export async function uploadNoteAsset(
     return { url: publicUrl };
   } catch (err: any) {
     console.error('Storage Engine Failure:', err.message);
+    return { error: err.message };
+  }
+}
+
+/**
+ * AI Offloading Storage Engine (v16.0.0)
+ * Handles persistent storage of massive code/prompt payloads.
+ */
+export async function uploadOffloadedFile(
+  userId: string,
+  content: string,
+  extension: string = 'md'
+): Promise<{ url?: string; error?: string }> {
+  const supabase = createClient();
+  const bucketName = 'offloaded_files'; // Ensure this bucket exists and is public
+  
+  // Deterministic Fingerprint for deduplication
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  const path = `${userId}/${hashHex}.${extension}`;
+
+  try {
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(bucketName)
+      .upload(path, content, {
+        contentType: extension === 'md' ? 'text/markdown' : 'text/plain',
+        upsert: true // Allow overwriting same content (idempotent)
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(path);
+
+    return { url: publicUrl };
+  } catch (err: any) {
+    console.error('Offloading Storage Failure:', err.message);
     return { error: err.message };
   }
 }
