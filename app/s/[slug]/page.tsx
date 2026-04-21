@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
 export const revalidate = 60
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 import { sanitizeHtml } from '@/lib/sanitization'
 import { Metadata } from 'next'
@@ -231,27 +231,48 @@ export default async function SharedNotePage({
   const isPublic = graph.share_type === 'public'
   const sanitizedContent = sanitizeHtml(graph.content || '')
 
-  // 3. AI-FIRST AUTO-INGRESS: If it's a bot or format=text/raw=1 is requested
+  // 3. AI-FIRST AUTO-INGRESS: Pure HTML Fallback for Bots
   if (isBot || versionId === 'text' || formatParam === 'text' || rawParam === '1') {
     const rawText = renderRecursiveText(graph)
+    const recursiveHtml = renderRecursiveHtml(graph)
 
     return (
-      <div style={{ backgroundColor: '#0f172a', color: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
-        <header style={{ borderBottom: '1px solid #1e293b', paddingBottom: '1rem', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', margin: 0 }}>{graph.title}</h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Neural Intelligence Node • Verified AI Ingress</p>
-        </header>
-        <article style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '1.1rem' }}>
-          {rawText}
-        </article>
-        <footer style={{ marginTop: '3rem', paddingTop: '1rem', borderTop: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.75rem' }}>
-          <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
-          <p>Metadata: {graph.tags?.join(', ')}</p>
-          <p>Checksum: {graph.updated_at}</p>
-          <p>Smart Notes Protocol v15.0.16 (Hardened)</p>
-          <p>Neural Heartbeat: {new Date().toISOString()}</p>
-        </footer>
-      </div>
+      <html lang="en">
+        <head>
+          <title>{graph.title} | Smart Notes AI Oracle</title>
+          <meta name="description" content={graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160)} />
+          <meta name="robots" content="index, follow" />
+          <style>{`
+            body { font-family: sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 800px; margin: 40px auto; padding: 20px; }
+            h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+            .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+            article { white-space: pre-wrap; }
+            footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.8rem; color: #999; }
+          `}</style>
+        </head>
+        <body>
+          <header>
+            <h1>{graph.title}</h1>
+            <div className="meta">
+              <p>Source: {graph.profiles?.full_name || 'Anonym'}</p>
+              <p>Tags: {graph.tags?.join(', ') || 'None'}</p>
+              <p>Updated: {new Date(graph.updated_at).toISOString()}</p>
+            </div>
+          </header>
+          <main>
+             <div dangerouslySetInnerHTML={{ __html: recursiveHtml }} />
+             <hr />
+             <h3>Plaintext Knowledge Extract:</h3>
+             <article>{rawText}</article>
+          </main>
+          <footer>
+            <p>Smart Notes Protocol v15.0.17 (Static-Hardened)</p>
+            <p>Render Mode: Pure-SSR-Ingress</p>
+            <p>User Agent Detected: {userAgent}</p>
+            <p>Neural Heartbeat: {new Date().toISOString()}</p>
+          </footer>
+        </body>
+      </html>
     )
   }
   
@@ -523,7 +544,7 @@ export default async function SharedNotePage({
       </div>
 
       <footer className="max-w-7xl mx-auto w-full px-6 py-24 border-t border-slate-100 dark:border-slate-900 text-center">
-         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Powered by Smart Notes Collective • v15.0.16</p>
+         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Powered by Smart Notes Collective • v15.0.17</p>
          <h4 className="text-xl font-black text-slate-900 dark:text-white">Join the Knowledge Revolution</h4>
          <div className="mt-8">
             <a href="/" className="inline-block px-10 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-2xl">
