@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { X, Pin, Trash2, Send, Download, Check, Maximize2, Minimize2, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -10,22 +10,35 @@ interface StickyNoteProps {
   content: string
   x: number
   y: number
+  width?: number
+  height?: number
   onClose: (id: string) => void
   onUpdate: (id: string, updates: Partial<{ content: string; x: number; y: number; width?: number; height?: number }>) => void
 }
 
-export function StickyNote({ id, content, x, y, onClose, onUpdate }: StickyNoteProps) {
+export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate }: StickyNoteProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [text, setText] = useState(content)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isBroadcasted, setIsBroadcasted] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [isMaximized, setIsMaximized] = useState(false)
+  const [size, setSize] = useState({ width: width || 260, height: height || 220 })
 
-  const noteRef = useRef<HTMLDivElement>(null)
+  const dragControls = useDragControls()
 
   const handleDragEnd = (_: any, info: any) => {
     onUpdate(id, { x: info.point.x, y: info.point.y })
+  }
+
+  const handleResize = (e: any, info: any) => {
+    const newWidth = Math.max(200, size.width + info.delta.x)
+    const newHeight = Math.max(40, size.height + info.delta.y)
+    setSize({ width: newWidth, height: newHeight })
+  }
+
+  const handleResizeEnd = () => {
+    onUpdate(id, { width: size.width, height: size.height })
   }
 
   const handleBroadcast = async () => {
@@ -113,6 +126,8 @@ export function StickyNote({ id, content, x, y, onClose, onUpdate }: StickyNoteP
   return (
     <motion.div
       drag={!isMaximized}
+      dragControls={dragControls}
+      dragListener={false}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       initial={{ opacity: 0, scale: 0.9, x, y }}
@@ -121,23 +136,27 @@ export function StickyNote({ id, content, x, y, onClose, onUpdate }: StickyNoteP
         scale: 1,
         x: isMaximized ? 0 : x,
         y: isMaximized ? 0 : y,
-        width: isMaximized ? '100vw' : (isMinimized ? '200px' : 'auto'),
-        height: isMaximized ? '100vh' : (isMinimized ? '40px' : 'auto'),
+        width: isMaximized ? '100vw' : (isMinimized ? '200px' : size.width),
+        height: isMaximized ? '100vh' : (isMinimized ? '40px' : size.height),
         zIndex: isMaximized ? 1000 : 500
       }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className={`fixed ${isMaximized ? 'top-0 left-0 rounded-none' : 'rounded-sm'} bg-yellow-200 dark:bg-yellow-900/95 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-t-[40px] border-yellow-300/80 dark:border-yellow-800/80 cursor-grab active:cursor-grabbing group flex flex-col transition-all duration-500`}
+      className={`fixed ${isMaximized ? 'top-0 left-0 rounded-none' : 'rounded-sm'} bg-yellow-200 dark:bg-yellow-900/95 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-t-[40px] border-yellow-300/80 dark:border-yellow-800/80 group flex flex-col transition-all duration-300`}
       style={{
         fontFamily: 'Permanent Marker, cursive, sans-serif',
-        resize: isMaximized ? 'none' : 'both',
-        minWidth: isMinimized ? '200px' : '260px',
-        minHeight: isMinimized ? '40px' : '180px',
+        minWidth: isMinimized ? '200px' : '200px',
+        minHeight: isMinimized ? '40px' : '40px',
         overflow: 'visible'
       }}
     >
+      {/* Drag Handle (Header Area) */}
+      <div 
+        onPointerDown={(e) => dragControls.start(e)}
+        className="absolute top-[-40px] left-0 right-0 h-10 cursor-grab active:cursor-grabbing z-20"
+      />
+
       {/* MacBook Style Header Dots (Top Left) */}
-      {/* MacBook Style Header Dots (Top Left) */}
-      <div className="absolute top-[-32px] left-3 flex items-center gap-2 z-30">
+      <div className="absolute top-[-32px] left-3 flex items-center gap-2 z-30 pointer-events-auto">
         <button 
            onClick={() => setIsDeleting(true)}
            className="w-3.5 h-3.5 rounded-full bg-[#FF5F56] border border-[#E0443E] hover:brightness-90 transition-all shadow-sm flex items-center justify-center group/btn"
@@ -272,6 +291,19 @@ export function StickyNote({ id, content, x, y, onClose, onUpdate }: StickyNoteP
       {/* Aesthetic Fold */}
       {!isMaximized && !isMinimized && (
         <div className="absolute bottom-0 right-0 w-8 h-8 bg-black/5 dark:bg-white/5 clip-path-fold pointer-events-none" />
+      )}
+
+      {/* Custom Resize Handle (Bottom Right) */}
+      {!isMaximized && !isMinimized && (
+        <motion.div
+          drag
+          dragMomentum={false}
+          onDrag={handleResize}
+          onDragEnd={handleResizeEnd}
+          className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-40 flex items-center justify-center group/resize"
+        >
+          <div className="w-1.5 h-1.5 bg-black/10 dark:bg-white/10 rounded-full group-hover/resize:bg-violet-500/50 transition-colors" />
+        </motion.div>
       )}
     </motion.div>
   )

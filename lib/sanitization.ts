@@ -24,12 +24,14 @@ export function sanitizeHtml(html: string): string {
         ALLOWED_TAGS: [
             'p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
             'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'a', 'img', 'span',
-            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'section', 'article'
+            'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'section', 'article',
+            'audio', 'source'
         ],
         ALLOWED_ATTR: [
             'href', 'src', 'alt', 'title', 'class', 'target', 'rel', 'style',
             'srcset', 'sizes', 'width', 'height', 'loading', 'itemprop', 'itemtype', 'itemscope',
-            'data-type', 'data-width-percentage', 'data-rotate', 'data-z-index', 'data-position', 'data-top', 'data-left', 'data-align', 'data-background-color', 'data-border-color'
+            'data-type', 'data-width-percentage', 'data-rotate', 'data-z-index', 'data-position', 'data-top', 'data-left', 'data-align', 'data-background-color', 'data-border-color',
+            'controls', 'autoplay', 'loop', 'muted'
         ],
         ADD_ATTR: ['target'],
         ALLOW_DATA_ATTR: true,

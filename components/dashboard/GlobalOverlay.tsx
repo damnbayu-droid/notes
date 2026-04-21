@@ -52,6 +52,16 @@ export function GlobalOverlay() {
       <ContactModal />
       <AdGuard />
       <SettingsModal />
+      <input 
+        type="file" 
+        id="neural-asset-input-global" 
+        className="hidden" 
+        accept="image/*,image/webp,.webp,application/pdf"
+        onChange={(e) => {
+          const event = new CustomEvent('neural-asset-upload', { detail: { files: e.target.files } });
+          window.dispatchEvent(event);
+        }}
+      />
     </>
   )
 }

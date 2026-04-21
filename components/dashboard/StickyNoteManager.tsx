@@ -9,6 +9,8 @@ interface NoteData {
   content: string
   x: number
   y: number
+  width?: number
+  height?: number
 }
 
 export function StickyNoteManager() {

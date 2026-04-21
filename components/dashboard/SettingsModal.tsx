@@ -14,7 +14,9 @@ import {
   ChevronRight,
   Cloud,
   HardDrive,
-  FolderOpen
+  FolderOpen,
+  PenTool,
+  FileImage as ImageIcon
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -240,7 +242,7 @@ export function SettingsModal() {
                   </div>
               </TabsContent>
 
-              <TabsContent value="display" className="space-y-6 mt-0">
+               <TabsContent value="display" className="space-y-6 mt-0">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                    <button className="flex flex-col items-start gap-4 p-6 rounded-3xl border-2 border-violet-600 bg-violet-50/50 dark:bg-violet-950/20 text-left transition-all">
                       <div className="flex items-center justify-between w-full">
@@ -266,6 +268,34 @@ export function SettingsModal() {
                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Maximum data ingestion</p>
                       </div>
                    </button>
+                </div>
+
+                <div className="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5 space-y-4">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Workspace Controls</p>
+                   <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                            <PenTool className="w-4 h-4 text-blue-500" />
+                         </div>
+                         <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">Neural Text Editor</p>
+                      </div>
+                      <Switch 
+                        defaultChecked={typeof window !== 'undefined' && localStorage.getItem('editor-text-enabled') !== 'false'} 
+                        onCheckedChange={(val) => localStorage.setItem('editor-text-enabled', val.toString())}
+                      />
+                   </div>
+                   <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4 text-emerald-500" />
+                         </div>
+                         <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">Neural Image Editor</p>
+                      </div>
+                      <Switch 
+                        defaultChecked={typeof window !== 'undefined' && localStorage.getItem('editor-image-enabled') !== 'false'} 
+                        onCheckedChange={(val) => localStorage.setItem('editor-image-enabled', val.toString())}
+                      />
+                   </div>
                 </div>
               </TabsContent>
 

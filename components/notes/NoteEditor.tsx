@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { 
     X, 
     Save, 
@@ -373,22 +374,77 @@ export function NoteEditor({
     }
   }
 
+  // 15.0.9: Neural Asset Ingress Hardening
+  useEffect(() => {
+    const handleGlobalUpload = (e: any) => {
+      if (!isOpen || !editor) return
+      const files = e.detail?.files
+      if (files && files[0]) {
+        handleFileChange({ target: { files: files } } as any)
+      }
+    }
+    window.addEventListener('neural-asset-upload', handleGlobalUpload)
+    return () => window.removeEventListener('neural-asset-upload', handleGlobalUpload)
+  }, [isOpen, editor])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && editor && user) {
-        const processingToast = toast.loading('Synthesizing Neural Media...')
+    if (!file) return;
+
+    if (!user) {
+      toast.error('Authentication Required', { description: 'Please sign in to upload neural assets.' })
+      return;
+    }
+
+    if (!editor) {
+      toast.error('Editor Not Ready', { description: 'Neural interface initializing...' })
+      return;
+    }
+
+    const processingToast = toast.loading('Synthesizing Neural Media...')
+    try {
+        const { blob } = await processImageForNeural(file)
+        const rawAlt = window.prompt("Description (Alt Tag):", "Neural snapshot")
+        const altDescription = rawAlt?.trim() || "Visualized intelligence"
+        const { url, error } = await uploadNoteAsset(user.id, blob, file.name)
+        
+        if (error) throw new Error(error)
+        
+        if (url) {
+            editor.chain().focus().setImage({ src: url, alt: altDescription }).run()
+            toast.success('Neural Media Ingress Successful', { id: processingToast })
+        } else {
+            throw new Error('Storage node did not return a valid URL.')
+        }
+    } catch (err: any) {
+        toast.error('Neural Machine Failure', { description: err.message, id: processingToast })
+    }
+  }
+
+  const handleVoiceComplete = async (blob: Blob) => {
+    if (editor && user && note) {
+        const processingToast = toast.loading('Finalizing Voice Intelligence...')
         try {
-            const { blob } = await processImageForNeural(file)
-            const rawAlt = window.prompt("Description (Alt Tag):", "Neural snapshot")
-            const altDescription = rawAlt?.trim() || "Visualized intelligence"
-            const { url, error } = await uploadNoteAsset(user.id, blob, file.name)
+            const fileName = `voice_${note.id}_${Date.now()}.webm`
+            const { url, error } = await uploadNoteAsset(user.id, blob, fileName)
             if (error) throw new Error(error)
             if (url) {
-                editor.chain().focus().setImage({ src: url, alt: altDescription }).run()
-                toast.success('Neural Media Ingress Successful', { id: processingToast })
+                const audioPlayerHtml = `
+                    <div class="my-6 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-[2rem] border border-slate-100 dark:border-white/5 flex flex-col gap-3 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-violet-600 rounded-xl flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                            </div>
+                            <p class="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight">Audio Intelligence Ingested</p>
+                        </div>
+                        <audio src="${url}" controls class="w-full h-10 rounded-xl" />
+                    </div>
+                `
+                editor.chain().focus().insertContent(audioPlayerHtml).run()
+                toast.success('Voice Uplink Complete', { id: processingToast })
             }
         } catch (err: any) {
-            toast.error('Neural Machine Failure', { description: err.message, id: processingToast })
+            toast.error('Voice Sync Failed', { description: err.message, id: processingToast })
         }
     }
   }
@@ -402,12 +458,26 @@ export function NoteEditor({
         className={`${isMaximized ? 'sm:max-w-none w-full h-screen rounded-none' : 'sm:max-w-[1000px] h-[95vh] sm:h-[90vh] rounded-[2rem] sm:rounded-[3.5rem]'} flex flex-col p-0 gap-0 overflow-hidden border-0 ${colorOption.bg} shadow-2xl transition-all duration-500`}
       >
         <DialogDescription className="sr-only">Comprehensive intelligence node editor with neural sync capabilities.</DialogDescription>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="image/*,image/webp,.webp"
+          onChange={handleFileChange}
+        />
         {/* Editor Header */}
         <DialogHeader className="p-3 sm:p-6 border-b border-slate-100 dark:border-white/5 flex flex-row items-center justify-between space-y-0 backdrop-blur-xl bg-white/50 dark:bg-slate-900/50 relative">
           <div className="flex items-center gap-1.5 sm:gap-4 min-w-0">
-             <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shrink-0" onClick={() => setIsMaximized(!isMaximized)}>
-               {isMaximized ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 h-4" />}
-             </Button>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl shrink-0" onClick={() => setIsMaximized(!isMaximized)}>
+                   {isMaximized ? <Minimize2 className="w-3.5 h-3.5 sm:w-4 h-4" /> : <Maximize2 className="w-3.5 h-3.5 sm:w-4 h-4" />}
+                 </Button>
+               </TooltipTrigger>
+               <TooltipContent side="bottom">
+                  <p>{isMaximized ? 'Minimize Node' : 'Maximize Workspace'}</p>
+               </TooltipContent>
+             </Tooltip>
              <div className="w-px h-4 sm:h-5 bg-slate-200 dark:bg-slate-800 mx-0.5 sm:mx-1 shrink-0 px-0" />
              <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
                 <div className="min-w-0">
@@ -567,16 +637,38 @@ export function NoteEditor({
                   <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-xl transition-all ${note?.is_pinned ? 'text-amber-500 bg-amber-500/10' : 'text-slate-300 hover:text-amber-500'}`} onClick={() => onTogglePin?.(note!.id)} title="Pin Node">
                     <Pin className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" title={note?.is_archived ? "Restore" : "Archive"} className={`h-8 w-8 rounded-xl transition-all ${note?.is_archived ? 'bg-emerald-600/10 text-emerald-600' : 'text-slate-300 hover:text-emerald-500'}`} onClick={() => onUpdate({ is_archived: !note?.is_archived })}>
-                     <Database className="w-3.5 h-3.5" />
-                  </Button>
-                  <VoiceRecorder compact onTranscriptionChunk={(text) => editor?.chain().focus().insertContent(text).run()} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className={`h-8 w-8 rounded-xl transition-all ${note?.is_archived ? 'bg-emerald-600/10 text-emerald-600' : 'text-slate-300 hover:text-emerald-500'}`} onClick={() => onUpdate({ is_archived: !note?.is_archived })}>
+                         <Database className="w-3.5 h-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                       <p>{note?.is_archived ? 'Restore from Archive' : 'Archive Intelligence'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <VoiceRecorder 
+                    compact 
+                    noteId={note?.id}
+                    userTier={user?.subscription_tier}
+                    onRecordingComplete={handleVoiceComplete}
+                    onTranscriptionChunk={(text) => editor?.chain().focus().insertContent(text).run()} 
+                  />
+                  
                   <AlertDialog>
-                     <AlertDialogTrigger asChild>
-                       <Button variant="ghost" size="icon" className="h-8 w-8 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all" title="Delete">
-                         <Trash2 className="w-3.5 h-3.5" />
-                       </Button>
-                     </AlertDialogTrigger>
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all">
+                               <Trash2 className="w-3.5 h-3.5" />
+                             </Button>
+                           </AlertDialogTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                           <p>Purge Intelligence</p>
+                        </TooltipContent>
+                     </Tooltip>
                      <AlertDialogContent className="rounded-[2.5rem] border-0 p-10 bg-white dark:bg-slate-900">
                         <AlertDialogHeader>
                            <AlertDialogTitle>Terminate Node?</AlertDialogTitle>
@@ -596,18 +688,50 @@ export function NoteEditor({
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-                  <Button variant="outline" size="sm" onClick={() => downloadMarkdown(note?.title || 'Untitled', editorHtml)} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
-                     <Cloud className="w-3.5 h-3.5 mr-2 text-violet-500" /> <span className="hidden sm:inline">Export for AI</span>
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
-                     <ImageIcon className="w-3.5 h-3.5 mr-2" /> <span className="hidden sm:inline">Neural Asset</span>
-                  </Button>
-                 <Button variant="outline" size="sm" disabled={!note || isSaving || !editor?.getText().trim()} onClick={() => setIsSharingModalOpen(true)} className="h-9 px-3 sm:px-5 rounded-xl border border-slate-200 dark:border-white/5 text-slate-900 dark:text-white font-black uppercase text-[9px] tracking-widest bg-white dark:bg-slate-900 shadow-sm">
-                    <Share2 className={`w-3.5 h-3.5 mr-2 ${editor?.getText().trim() ? 'text-violet-600' : 'text-slate-300'}`} /> {note?.is_shared ? 'Manage' : 'Share'}
-                 </Button>
-                 <Button size="sm" onClick={handleEditorClose} className="h-9 px-6 sm:px-10 rounded-xl bg-violet-600 text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-violet-500/20 hover:bg-violet-700 hover:scale-105 active:scale-95 transition-all">
-                    Save
-                 </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" onClick={() => downloadMarkdown(note?.title || 'Untitled', editorHtml)} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
+                         <Cloud className="w-3.5 h-3.5 mr-2 text-violet-500" /> <span className="hidden sm:inline">Export for AI</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                       <p>High-Fidelity AI Bridge</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {(typeof window !== 'undefined' && localStorage.getItem('editor-image-enabled') !== 'false') && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
+                          <ImageIcon className="w-3.5 h-3.5 mr-2" /> <span className="hidden sm:inline">Neural Asset</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                         <p>Inject Neural Media</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="sm" disabled={!note || isSaving || !editor?.getText().trim()} onClick={() => setIsSharingModalOpen(true)} className="h-9 px-3 sm:px-5 rounded-xl border border-slate-200 dark:border-white/5 text-slate-900 dark:text-white font-black uppercase text-[9px] tracking-widest bg-white dark:bg-slate-900 shadow-sm">
+                         <Share2 className={`w-3.5 h-3.5 mr-2 ${editor?.getText().trim() ? 'text-violet-600' : 'text-slate-300'}`} /> {note?.is_shared ? 'Manage' : 'Share'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                       <p>Universal Access Management</p>
+                    </TooltipContent>
+                 </Tooltip>
+
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" onClick={handleEditorClose} className="h-9 px-6 sm:px-10 rounded-xl bg-violet-600 text-white font-black uppercase text-[9px] tracking-widest shadow-lg shadow-violet-500/20 hover:bg-violet-700 hover:scale-105 active:scale-95 transition-all">
+                         Save
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                       <p>Force Sync to Cloud</p>
+                    </TooltipContent>
+                 </Tooltip>
               </div>
          </div>
       </DialogContent>

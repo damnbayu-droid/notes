@@ -188,14 +188,29 @@ export default async function SharedNotePage({
 
   // 15.0.8: RAW NEURAL INGRESS FOR AI AGENTS
   if (versionId === 'text' || formatParam === 'text') {
+    const rawText = graph.content
+      ?.replace(/<p>/g, '')
+      ?.replace(/<\/p>/g, '\n')
+      ?.replace(/<br\s*\/?>/g, '\n')
+      ?.replace(/<[^>]*>?/gm, '')
+      ?.trim();
+
     return (
-      <pre style={{ whiteSpace: 'pre-wrap', padding: '2rem', fontFamily: 'monospace' }}>
+      <pre style={{ 
+        whiteSpace: 'pre-wrap', 
+        padding: '2rem', 
+        fontFamily: 'monospace', 
+        backgroundColor: '#0f172a', 
+        color: '#f8fafc',
+        lineHeight: '1.6'
+      }}>
         {graph.title}\n
-        ====================\n
-        {graph.content?.replace(/<[^>]*>?/gm, '')}\n
-        ====================\n
+        ========================================\n
+        {rawText}\n
+        ========================================\n
         Metadata: {graph.tags?.join(', ')}\n
-        Author: {graph.profiles?.full_name || 'Anonym'}
+        Author: {graph.profiles?.full_name || 'Anonym'}\n
+        ID: {graph.id}
       </pre>
     )
   }

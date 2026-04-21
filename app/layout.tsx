@@ -6,6 +6,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { Providers } from "@/components/Providers";
 import { GlobalOverlay } from "@/components/dashboard/GlobalOverlay";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -79,9 +80,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
-          {children}
-          <GlobalOverlay />
-          <Toaster position="top-center" richColors />
+          <TooltipProvider>
+            {children}
+            <GlobalOverlay />
+            <Toaster position="top-center" richColors />
+          </TooltipProvider>
           {/* Neural Bridge: PWA Service Worker Registration */}
           <script dangerouslySetInnerHTML={{ __html: `
             if ('serviceWorker' in navigator) {

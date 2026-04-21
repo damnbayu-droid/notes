@@ -2,10 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Mic, Square, RefreshCcw, Pause, Play, Trash2, Download } from 'lucide-react'
+import { Mic, Square, RefreshCcw, Pause, Play, Trash2, Download, Cloud } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
+
+import { saveMedia, getMedia, deleteMedia } from '@/lib/localStore'
 
 interface VoiceRecorderProps {
+  noteId?: string
+  userTier?: string
   onRecordingComplete?: (audioBlob: Blob, transcript?: string) => void
   onTranscriptionChunk?: (text: string) => void
   onInterimTranscription?: (text: string) => void
@@ -14,6 +19,8 @@ interface VoiceRecorderProps {
 }
 
 export function VoiceRecorder({
+  noteId,
+  userTier,
   onRecordingComplete,
   onTranscriptionChunk,
   onInterimTranscription,
@@ -34,6 +41,17 @@ export function VoiceRecorder({
   const isRecordingRef = useRef(false)
   const animFrameRef = useRef<number | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
+
+  // Load local recording if exists
+  useEffect(() => {
+    if (noteId) {
+      getMedia(`voice_${noteId}`).then(blob => {
+        if (blob) {
+          setAudioUrl(URL.createObjectURL(blob))
+        }
+      })
+    }
+  }, [noteId])
 
   // Waveform animation
   const animateWaveform = useCallback(() => {
@@ -94,15 +112,28 @@ export function VoiceRecorder({
       source.connect(analyser)
       analyserRef.current = analyser
 
-      // Setup MediaRecorder
-      const mr = new MediaRecorder(stream)
+      // Setup MediaRecorder with 128kbps compression (WebP equivalent for audio)
+      const options = { 
+        audioBitsPerSecond: 128000,
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus' 
+          : 'audio/webm'
+      }
+      
+      const mr = new MediaRecorder(stream, options)
       mediaRecorderRef.current = mr
       chunksRef.current = []
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+      mr.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: options.mimeType })
         const url = URL.createObjectURL(blob)
         setAudioUrl(url)
+        
+        // Local Save (All Users)
+        if (noteId) {
+          await saveMedia(`voice_${noteId}`, blob)
+        }
+
         onRecordingComplete?.(blob)
         stream.getTracks().forEach(t => t.stop())
         if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
@@ -161,10 +192,25 @@ export function VoiceRecorder({
     if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop()
   }
 
-  const discardRecording = () => {
+  const discardRecording = async () => {
     stopRecording()
+    if (noteId) await deleteMedia(`voice_${noteId}`)
     setAudioUrl(null)
     setRecordingTime(0)
+  }
+
+  const handleUplink = async () => {
+    if (userTier !== 'Full Access') {
+      toast.error('Premium Feature', { description: 'Only Full Access accounts can Uplink voice to the cloud system.' });
+      return;
+    }
+    
+    if (audioUrl && onRecordingComplete) {
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      onRecordingComplete(blob);
+      toast.success('Neural Uplink Successful', { description: 'Voice intelligence saved to system.' });
+    }
   }
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
@@ -184,10 +230,17 @@ export function VoiceRecorder({
             </button>
           </div>
         ) : (
-          <Button variant="outline" size="sm" onClick={startRecording} className="gap-2 text-slate-600 hover:text-violet-600 hover:border-violet-200 rounded-xl">
-            <Mic className="w-4 h-4" />
-            <span className="hidden sm:inline">Record</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={startRecording} className="gap-2 text-slate-600 hover:text-violet-600 hover:border-violet-200 rounded-xl">
+              <Mic className="w-4 h-4" />
+              <span className="hidden sm:inline">{audioUrl ? 'Re-record' : 'Record'}</span>
+            </Button>
+            {audioUrl && (
+              <Button variant="ghost" size="icon" onClick={() => { const a = new Audio(audioUrl); a.play(); }} className="h-8 w-8 text-emerald-500 bg-emerald-50 rounded-xl">
+                 <Play className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
         )}
       </div>
     )
@@ -245,19 +298,25 @@ export function VoiceRecorder({
               <div className="space-y-3 p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-[2rem] border border-emerald-100 dark:border-emerald-900/30">
                 <div className="flex items-center gap-2 text-emerald-600">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Recording Saved — {formatTime(recordingTime)}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Local Intelligence Persistent — {formatTime(recordingTime)}</span>
                 </div>
                 <audio src={audioUrl} controls className="w-full h-10 rounded-xl" />
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={startRecording} className="flex-1 gap-2 rounded-xl h-10">
-                    <Mic className="w-4 h-4" /> Record Again
+                    <Mic className="w-4 h-4" /> Re-record
                   </Button>
-                  <a href={audioUrl} download="voice-note.webm">
-                    <Button variant="outline" size="sm" className="gap-2 rounded-xl h-10 text-emerald-600 border-emerald-200">
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </a>
+                  <Button onClick={handleUplink} size="sm" className="flex-1 gap-2 rounded-xl h-10 bg-violet-600 text-white hover:bg-violet-700">
+                    <Cloud className="w-4 h-4" /> System Uplink
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={discardRecording} className="gap-2 rounded-xl h-10 text-rose-500 border-rose-200">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
+                {userTier !== 'Full Access' && (
+                  <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest text-center">
+                    * System Uplink requires Full Access subscription.
+                  </p>
+                )}
               </div>
             ) : (
               <Button
