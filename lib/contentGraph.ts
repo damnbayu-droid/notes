@@ -20,7 +20,7 @@ export async function buildGraph(slug: string, versionId?: string, currentDomain
 
     let { data: node, error } = await supabase
       .from('notes')
-      .select('id, title, content, share_slug, tags, color, updated_at, is_shared, is_discoverable, published_log_id, is_premium, domain, share_type, view_count, click_count, comment_count, permission_count')
+      .select('id, title, content, share_slug, tags, color, updated_at, is_shared, is_discoverable, published_log_id, is_premium, domain, share_type, view_count, click_count, comment_count, permission_count, profiles:user_id(full_name, avatar_url, email)')
       .eq('share_slug', targetSlug)
       .eq('is_shared', true)
       .single()
@@ -32,7 +32,13 @@ export async function buildGraph(slug: string, versionId?: string, currentDomain
         .single()
       
       if (rpcNode) {
-        node = rpcNode as any
+        const castedNode = rpcNode as any
+        // Manual profile fetch for bots
+        if (castedNode.user_id) {
+          const { data: profile } = await supabase.from('profiles').select('full_name, avatar_url, email').eq('id', castedNode.user_id).single()
+          castedNode.profiles = profile
+        }
+        node = castedNode
       } else {
         return null
       }

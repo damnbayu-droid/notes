@@ -60,6 +60,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params
   const note = await getNoteData(slug)
   
+  const headersList = await (await import('next/headers')).headers();
+  const userAgent = headersList.get('user-agent') || '';
+  const isBot = /GPTBot|ChatGPT-User|Googlebot|Google-InspectionTool|Baiduspider|Bingbot|Slurp|DuckDuckBot|YandexBot|ClaudeBot|AnthropicAI|Applebot/i.test(userAgent);
+
   if (!note) return { 
     title: 'Intelligence Node Not Found',
     robots: { index: false }
@@ -169,13 +173,20 @@ export default async function SharedNotePage({
   const { slug } = await params
   const { v: versionId, format: formatParam } = await searchParams
   const supabase = await createClient()
-  const graph = await buildGraph(slug, versionId)
+
+  // 1. Detect AI Agents via User-Agent
+  const headersList = await (await import('next/headers')).headers();
+  const userAgent = headersList.get('user-agent') || '';
+  const isBot = /GPTBot|ChatGPT-User|Googlebot|Google-InspectionTool|Baiduspider|Bingbot|Slurp|DuckDuckBot|YandexBot|ClaudeBot|AnthropicAI|Applebot/i.test(userAgent);
+
+  // 2. High-Priority Knowledge Graph Fetch
+  const graph = await buildGraph(slug, versionId) as any;
 
   if (!graph) {
     return notFound();
   }
 
-  // Auth fetch for community logic
+  // Auth fetch for community logic (optional)
   const { data: { user } } = await supabase.auth.getUser()
 
   // Trigger server-side view tracking
@@ -186,8 +197,8 @@ export default async function SharedNotePage({
   const isPublic = graph.share_type === 'public'
   const sanitizedContent = sanitizeHtml(graph.content || '')
 
-  // 15.0.8: RAW NEURAL INGRESS FOR AI AGENTS
-  if (versionId === 'text' || formatParam === 'text') {
+  // 3. AI-FIRST AUTO-INGRESS: If it's a bot or format=text is requested
+  if (isBot || versionId === 'text' || formatParam === 'text') {
     const rawText = graph.content
       ?.replace(/<p>/g, '')
       ?.replace(/<\/p>/g, '\n')
@@ -210,7 +221,8 @@ export default async function SharedNotePage({
         ========================================\n
         Metadata: {graph.tags?.join(', ')}\n
         Author: {graph.profiles?.full_name || 'Anonym'}\n
-        ID: {graph.id}
+        ID: {graph.id}\n
+        Neural Oracle Status: Verified Ingress
       </pre>
     )
   }
