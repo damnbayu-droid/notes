@@ -171,11 +171,11 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
             }
           }}
           className={`
-            relative flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-2.5 cursor-pointer select-none
+            relative flex items-center gap-1.5 sm:gap-3 px-2 sm:px-5 py-1.5 sm:py-2.5 cursor-pointer select-none
             bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl
             border border-slate-200/60 dark:border-white/10
             shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]
-            rounded-full transition-all duration-300 scale-90 sm:scale-100
+            rounded-full transition-all duration-300 scale-85 sm:scale-100
             hover:shadow-[0_12px_40px_rgba(0,0,0,0.16)] hover:border-violet-300/50 dark:hover:border-violet-700/50
           `}
         >
@@ -214,36 +214,36 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
             <span className="text-[10px] sm:text-[11px] font-black font-mono tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
               {time}
             </span>
-            <span className="text-[9px] font-bold text-slate-400 hidden sm:block whitespace-nowrap">|</span>
-            <span className="text-[9px] font-bold text-slate-400 hidden sm:block whitespace-nowrap">{date}</span>
+            <span className="text-[9px] font-bold text-slate-400 hidden md:block whitespace-nowrap">|</span>
+            <span className="text-[9px] font-bold text-slate-400 hidden md:block whitespace-nowrap">{date}</span>
           </div>
 
           {/* Divider */}
           <div className="w-px h-4 bg-slate-200 dark:bg-white/10 shrink-0" />
 
-          {/* Actions: Settings & Profile */}
-          <div className="flex items-center gap-2">
+          {/* Actions: Settings & Profile (Redundant Icons hidden on Mobile v15.0.7) */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button 
               onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('open-settings-modal')); }}
-              className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-violet-600 transition-colors"
+              className="hidden md:flex p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-violet-600 transition-colors"
               title="System Configuration"
             >
               <Settings className="w-4 h-4" />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('open-info-panel')); }}
-              className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              className="hidden md:flex p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
               title="System Information"
             >
               <Info className="w-4 h-4" />
             </button>
             <div className="relative">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center overflow-hidden border transition-all ${user ? 'bg-violet-100 border-violet-200' : 'bg-slate-100 border-slate-200'}`}>
-                <span className="text-[9px] font-black text-violet-600">
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center overflow-hidden border transition-all ${user ? 'bg-violet-100 border-violet-200' : 'bg-slate-100 border-slate-200'}`}>
+                <span className="text-[8px] sm:text-[9px] font-black text-violet-600">
                   {user ? user.email?.[0]?.toUpperCase() : '?'}
                 </span>
               </div>
-              {user && <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 border border-white dark:border-slate-900 rounded-full" />}
+              {user && <div className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 border border-white dark:border-slate-900 rounded-full" />}
             </div>
           </div>
         </motion.div>
@@ -435,12 +435,20 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Neural Configuration</p>
                     
                     <button 
+                      onClick={() => { window.dispatchEvent(new CustomEvent('open-info-panel')); setIsExpanded(false) }}
+                      className="w-full h-14 flex items-center gap-4 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group"
+                    >
+                      <Info className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                      <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">System Information</span>
+                      <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    </button>
+
+                    <button 
                       onClick={() => { window.dispatchEvent(new CustomEvent('open-profile-modal')); setIsExpanded(false) }}
                       className="w-full h-14 flex items-center gap-4 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group"
                     >
                       <User className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
                       <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Profile Identity</span>
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </button>
 
                     <button 
@@ -457,14 +465,6 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
                     >
                       <Database className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
                       <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Database Cluster</span>
-                    </button>
-
-                    <button 
-                      onClick={() => { window.dispatchEvent(new CustomEvent('open-info-panel')); setIsExpanded(false) }}
-                      className="w-full h-14 flex items-center gap-4 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group"
-                    >
-                      <Info className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                      <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">System Information</span>
                     </button>
 
                     <button 

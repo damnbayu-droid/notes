@@ -87,9 +87,9 @@ export default function RootLayout({
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                  console.log('Neural Bridge Service Worker Handshake Successful:', reg.scope);
+                  // Handshake successful
                 }, function(err) {
-                  console.log('Neural Bridge Handshake Failed:', err);
+                  // Handshake failed
                 });
               });
             }

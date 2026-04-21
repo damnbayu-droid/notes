@@ -55,6 +55,11 @@ export interface Note {
   fork_count?: number;
   permission_count?: number;
   comment_count?: number;
+  profiles?: {
+    full_name: string | null;
+    avatar_url: string | null;
+    email?: string;
+  };
 }
 
 export type NoteCategory = 'General' | 'Education' | 'Work' | 'Code' | 'Personal' | 'Other';

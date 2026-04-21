@@ -1,40 +1,47 @@
-# Smart Notes Intelligence: Comprehensive Platform Report (v15.0.2-HARDENED)
+# Smart Notes Intelligence: Comprehensive Platform Report (v15.0.8-SOCIAL)
 
 This document summarizes the current state, architecture, and hardening progress of the Smart Notes Intelligence Collective.
 
 ---
 
-## 🚀 Version Evolution: v15.0.2 (Extreme Performance Hardening)
+## 🛰️ Version Evolution: v15.0.8 (Neural Social Expansion)
+
+### 💎 Social Intelligence Ecosystem
+- **Public User Dashboards**: Initialized `/u/[id]` routes, enabling users to showcase their discoverable intelligence clusters.
+- **Author Attribution Protocol**: Integrated creator identification in Discovery and Shared Note headers with "Anonym" privacy fallbacks.
+- **Permission Bridge ("Ask for Access")**: Implemented an interactive workflow for cross-user permission requests, allowing for secure collaborative editing.
+
+### 🛡️ Oracle Registry Initialization
+- **Master Oracle ("SMART NOTES")**: Rebuilt the definitive platform guide with comprehensive technical and philosophical documentation.
+- **Project Kotabunan Origin**: Detailed the platform''s roots in Bali.Enterprises and the vision for AI-First cognition.
+
+### 📱 Mobile UI Hardening
+- **Dynamic Island Scaling**: Optimized NavIsland for mobile viewports, including icon deduplication and compact layout logic.
+- **Responsive Social Headers**: Streamlined the header architecture for shared nodes to ensure stability on small screens.
+
+---
+
+## 🚀 Version Evolution: v15.0.2 (Performance Hardening)
 
 ### 💎 SSR Architecture & Render Velocity
 - **Fast Open SSR Validation**: Transitioned the root page architecture to a Next.js Server Component. 
-- **High-Fidelity Skeletons**: Deployed the `DashboardSkeleton` to deliver a zero-latency "Detailed Grid" layout during server-side initial rendering.
+- **High-Fidelity Skeletons**: Deployed the `DashboardSkeleton` to deliver a zero-latency "Detailed Grid" layout.
 
 ### 🛡️ Core System Stabilization
 - **Neural Auth Bus (Singleton)**: Completely eliminated `AbortError: Lock broken` console loops by routing all Supabase interactions through a centralized single-subscription global memory pool.
-- **Tiptap Deduplication**: Streamlined the `StarterKit` configuration by purging duplicate core extensions in React Strict Mode.
-- **Append-Only Safe Sync**: Optimized the Guest Sync protocol natively to detect active content via a 60-second delay, expressly prohibiting destructive overwrites to cloud intelligence.
+- **Tiptap Deduplication**: Streamlined the `StarterKit` configuration by purging duplicate core extensions.
 
 ---
 
 ## 🚀 Version Evolution: v14.0.0 (Final Hardening)
 
 ### 💎 Performance & Zero-Block Protocols
-- **AdGuard Deferral**: Implemented strict deferral of all external support prompts. Initial load performance is now "Zero-Block," ensuring 100% Lighthouse optimization.
-- **Header Hub Realignment**: Moved global CTAs (Classification, Filtering, View Modes) to the right-side cluster for ergonomic accessibility.
+- **AdGuard Deferral**: Implemented strict deferral of all external support prompts. Initial load performance is now "Zero-Block."
+- **Header Hub Realignment**: Moved global CTAs to the right-side cluster for ergonomic accessibility.
 
 ### 🧬 Sidebar & Workspace Intelligence
-- **Shrink Mode Realignment**: Resolved icon clipping in the 80px collapsed state by removing restrictive horizontal padding and enforcing `justify-center` alignment.
-- **Unified Action Footer**: Maximized vertical writing space by consolidating all Note actions (File, Share, Save, Tags, Pin) into a single, high-density row.
-
----
-
-## 🚀 Version Evolution: v13.6.0 (Workspace Hardened)
-
-### 💎 Workspace Density & UX
-- **Mini-Sidebar Mode**: Introduced a collapsible icon-only sidebar to maximize writing space.
-- **Relative Positioning**: Fixed desktop layout overlap by transitioning the sidebar to a relative flex container.
-- **Language Normalization**: Sync modals and onboarding flows now use standard base language for better clarity.
+- **Shrink Mode Realignment**: Resolved icon clipping in the 80px collapsed state by enforcing `justify-center` alignment.
+- **Unified Action Footer**: Maximized vertical writing space by consolidating all Note actions into a single row.
 
 ---
 
@@ -42,10 +49,10 @@ This document summarizes the current state, architecture, and hardening progress
 
 | Layer | Status | Performance Metric |
 | :--- | :--- | :--- |
-| **Initial Experience (v15)** | ✅ HARDENED | Fast Open SSR (Zero-Latency Skeleton) |
+| **Social Layer (v15.0.8)** | ✅ STABLE | Public Dashboards & Author Attribution |
+| **Oracle Layer (v15.0.8)** | ✅ INITIALIZED | Comprehensive Technical Documentation |
 | **Ergonomics (v14)** | ✅ REFINED | All Icons Centered in Shrunken Mode |
 | **Auth Architecture (v15)** | ✅ STABILIZED | Neural Bus (0% Lock Contention) |
-| **Build Stability** | ✅ PASSED | Next.js 16.2.3 (Turbopack Powered) |
 | **Safe Sync (v15)** | ✅ SECURED | Append-Only Data Migrations |
 
 ---
@@ -53,11 +60,11 @@ This document summarizes the current state, architecture, and hardening progress
 ## 🛠️ Infrastructure Overview
 
 - **Core**: Next.js 16.2.3 (Turbopack) / Server Components enabled
-- **Database**: Supabase (dfxhfutflhnxjjpbqscj)
+- **Database**: Supabase (Project: `dfxhfutflhnxjjpbqscj`)
 - **Styling**: Vanilla CSS (High-Performance Neural Design)
-- **Editor**: Custom TipTap Implementation (Neural Suite v15.0)
-- **Auth**: Global Neural Auth Bus (Lock Free)
+- **Editor**: Custom TipTap Implementation (Neural Suite v15.0.8)
+- **Security**: Triple-Layer Neural Encryption Protocol
 
 ---
-*Audit Sealed: 2026-04-18 (Production Fast-Open Hardened)*
-*Project Status: Production-Ready (Protocols SEALED)*
+*Audit Sealed: 2026-04-21 (Social Production Hardened)*
+*Project Status: Social Ecosystem Active (Protocols SEALED)*

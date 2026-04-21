@@ -15,7 +15,7 @@ import { buildGraph, flattenGraph, getVersionHistory } from '@/lib/contentGraph'
 import { getRecommendations } from '@/lib/recommendations'
 import { RecommendationCluster } from '@/components/discovery/RecommendationCluster'
 import { CommentsHub } from '@/components/notes/CommentsHub'
-import { Brain as BrainIcon, Network, History, Check, ChevronDown, Sun, Moon } from 'lucide-react'
+import { Brain as BrainIcon, Network, History, Check, ChevronDown, Sun, Moon, Plus } from 'lucide-react'
 import { ThemeToggle } from '@/components/discovery/ThemeToggle'
 import {
   DropdownMenu,
@@ -33,7 +33,14 @@ async function getNoteData(slug: string) {
   try {
     const { data, error } = await supabase
       .from('notes')
-      .select('*, is_premium, domain')
+      .select(`
+        *,
+        profiles:user_id (
+          full_name,
+          avatar_url,
+          email
+        )
+      `)
       .eq('share_slug', slug)
       .eq('is_shared', true)
       .single() as { data: Note | null, error: any }
@@ -75,7 +82,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     },
     openGraph: {
       title: note.title || 'Intelligence Node',
-      description: 'Verified Neural Knowledge Node',
+      description: note.content?.replace(/<[^>]*>?/gm, '').substring(0, 300) || 'Verified Neural Knowledge Node',
       url: pageUrl,
       type: 'article',
       images: [{
@@ -87,7 +94,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     twitter: {
       card: 'summary_large_image',
       title: note.title || 'Intelligence Node',
+      description: note.content?.replace(/<[^>]*>?/gm, '').substring(0, 300),
       images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: pageUrl,
+      types: {
+        'text/plain': `${pageUrl}?format=text`,
+      }
     }
   }
 }
@@ -150,10 +164,10 @@ export default async function SharedNotePage({
   searchParams
 }: { 
   params: Promise<{ slug: string }>,
-  searchParams: Promise<{ v?: string }>
+  searchParams: Promise<{ v?: string, format?: string }>
 }) {
   const { slug } = await params
-  const { v: versionId } = await searchParams
+  const { v: versionId, format: formatParam } = await searchParams
   const supabase = await createClient()
   const graph = await buildGraph(slug, versionId)
 
@@ -171,6 +185,20 @@ export default async function SharedNotePage({
   const history = await getVersionHistory(graph.id)
   const isPublic = graph.share_type === 'public'
   const sanitizedContent = sanitizeHtml(graph.content || '')
+
+  // 15.0.8: RAW NEURAL INGRESS FOR AI AGENTS
+  if (versionId === 'text' || formatParam === 'text') {
+    return (
+      <pre style={{ whiteSpace: 'pre-wrap', padding: '2rem', fontFamily: 'monospace' }}>
+        {graph.title}\n
+        ====================\n
+        {graph.content?.replace(/<[^>]*>?/gm, '')}\n
+        ====================\n
+        Metadata: {graph.tags?.join(', ')}\n
+        Author: {graph.profiles?.full_name || 'Anonym'}
+      </pre>
+    )
+  }
   
   // Safe checksum generation (web-standard)
   const checksum = Array.from(new TextEncoder().encode(graph.updated_at))
@@ -198,7 +226,27 @@ export default async function SharedNotePage({
                 </div>
              </Link>
           </div>
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-4 sm:gap-6">
+             {/* Author Identity */}
+             <div className="flex items-center gap-3 pr-4 border-r border-slate-100 dark:border-white/5">
+                <Link href={`/u/${graph.user_id}`} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
+                   <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white text-[10px] font-black shrink-0 overflow-hidden shadow-lg shadow-violet-500/20">
+                      {graph.profiles?.avatar_url ? (
+                        <img src={graph.profiles.avatar_url} alt="Author" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{graph.profiles?.full_name?.[0] || graph.profiles?.email?.[0]?.toUpperCase() || '?'}</span>
+                      )}
+                   </div>
+                   <div className="hidden sm:block">
+                      <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 dark:text-white leading-none mb-0.5">
+                         {graph.profiles?.full_name || 'Anonym'}
+                      </p>
+                      <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">Author</p>
+                   </div>
+                </Link>
+             </div>
+
              <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                 <Sparkles className="w-3 h-3 text-emerald-600" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Verified Readability</span>
@@ -206,7 +254,23 @@ export default async function SharedNotePage({
              
              <ThemeToggle />
              
-             {/* Version Switcher (v10.0.0) */}
+             {/* Ask for Access CTA */}
+             {user && user.id !== graph.user_id && graph.share_permission === 'read' && (
+                <Button 
+                  variant="outline" 
+                  className="h-10 rounded-xl gap-2 border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 text-violet-600 shadow-sm px-4 hover:bg-violet-600 hover:text-white"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
+                      detail: { title: 'Access Request', message: 'Your request for write permission has been transmitted to the owner.', type: 'info' }
+                    }));
+                  }}
+                >
+                   <Plus className="w-3.5 h-3.5" />
+                   <span className="text-[10px] font-black uppercase tracking-widest">Ask for Access</span>
+                </Button>
+             )}
+             
+             {/* Version Switcher */}
              {history.length > 0 && (
                <DropdownMenu>
                  <DropdownMenuTrigger asChild>
@@ -313,6 +377,14 @@ export default async function SharedNotePage({
                   </div>
                )}
             </article>
+
+            {/* AI AGENT RAW INGRESS (Hidden from humans, optimized for LLMs) */}
+            <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
+               <h2>{graph.title}</h2>
+               <div>{graph.content?.replace(/<[^>]*>?/gm, '')}</div>
+               <p>Metadata: {graph.tags?.join(', ')}</p>
+               <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
+            </section>
 
             {/* Neural Broadcast Cluster (Sharing CTA) */}
             <ShareCluster title={graph.title || 'Intelligence Node'} slug={slug} />

@@ -183,15 +183,33 @@ export function DiscoveryFeed({ initialNotes }: DiscoveryFeedProps) {
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black uppercase tracking-tight text-slate-400 italic underline decoration-violet-500/30 shrink-0">
-                        <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        <span>{new Date(note.updated_at).toLocaleDateString('en-GB')}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black uppercase tracking-tight text-slate-400 italic shrink-0">
-                        <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-violet-500" />
-                        <span>{note.view_count || 0}</span>
+                    <div className="flex items-center justify-between gap-2.5 min-w-0">
+                      <Link 
+                        href={`/u/${note.user_id}`}
+                        className="flex items-center gap-1.5 hover:opacity-70 transition-opacity min-w-0"
+                      >
+                         <div className="w-5 h-5 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-[8px] font-black text-violet-600 shrink-0 overflow-hidden">
+                            {note.profiles?.avatar_url ? (
+                              <img src={note.profiles.avatar_url} alt="Author" className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{note.profiles?.full_name?.[0] || note.profiles?.email?.[0]?.toUpperCase() || '?'}</span>
+                            )}
+                         </div>
+                         <span className="text-[8px] font-black uppercase tracking-tight text-slate-500 dark:text-slate-400 truncate">
+                            {note.profiles?.full_name || 'Anonym'}
+                         </span>
+                      </Link>
+
+                      <div className="flex items-center gap-2.5 ml-auto">
+                        <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black uppercase tracking-tight text-slate-400 italic shrink-0">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span>{new Date(note.updated_at).toLocaleDateString('en-GB')}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1 text-[7px] sm:text-[8px] font-black uppercase tracking-tight text-slate-400 italic shrink-0">
+                          <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-violet-500" />
+                          <span>{note.view_count || 0}</span>
+                        </div>
                       </div>
                     </div>
                     

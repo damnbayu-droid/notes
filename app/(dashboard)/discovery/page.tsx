@@ -54,10 +54,17 @@ import { History, Zap, Network } from 'lucide-react'
 export default async function DiscoveryPage() {
   const supabase = await createClient()
 
-  // 1. Fetch from discovery_notes
+  // 1. Fetch from discovery_notes with Profile Join
   const { data: notesRaw, error } = await supabase
     .from('discovery_notes')
-    .select('*')
+    .select(`
+      *,
+      profiles:user_id (
+        full_name,
+        avatar_url,
+        email
+      )
+    `)
     .order('created_at', { ascending: false })
 
   if (error) {

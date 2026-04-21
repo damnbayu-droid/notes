@@ -73,6 +73,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { LineageHub } from './LineageHub'
 import { processImageForNeural } from '@/lib/imageProcessor'
 import { uploadNoteAsset } from '@/lib/supabase/storage'
+import { downloadMarkdown } from '@/lib/googleDrive'
 
 interface NoteEditorProps {
   user: User | null
@@ -595,6 +596,9 @@ export function NoteEditor({
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
+                  <Button variant="outline" size="sm" onClick={() => downloadMarkdown(note?.title || 'Untitled', editorHtml)} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
+                     <Cloud className="w-3.5 h-3.5 mr-2 text-violet-500" /> <span className="hidden sm:inline">Export for AI</span>
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
                      <ImageIcon className="w-3.5 h-3.5 mr-2" /> <span className="hidden sm:inline">Neural Asset</span>
                   </Button>
