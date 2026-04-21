@@ -176,7 +176,7 @@ export default async function SharedNotePage({
   searchParams
 }: { 
   params: Promise<{ slug: string }>,
-  searchParams: Promise<{ v?: string, format?: string }>
+  searchParams: Promise<{ v?: string, format?: string, raw?: string }>
 }) {
   const { slug } = await params
   const { v: versionId, format: formatParam, raw: rawParam } = await searchParams
@@ -188,7 +188,7 @@ export default async function SharedNotePage({
   const isBot = /GPTBot|ChatGPT-User|Googlebot|Google-InspectionTool|Baiduspider|Bingbot|Slurp|DuckDuckBot|YandexBot|ClaudeBot|AnthropicAI|Applebot/i.test(userAgent);
 
   // 2. High-Priority Knowledge Graph Fetch
-  const graph = await buildGraph(slug, versionId) as any;
+  const graph = await buildGraph(slug, versionId) as Note | null;
 
   if (!graph) {
     return notFound();

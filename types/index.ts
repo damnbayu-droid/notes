@@ -60,6 +60,7 @@ export interface Note {
     avatar_url: string | null;
     email?: string;
   };
+  children?: Note[];
 }
 
 export type NoteCategory = 'General' | 'Education' | 'Work' | 'Code' | 'Personal' | 'Other';
