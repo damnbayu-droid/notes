@@ -145,6 +145,34 @@ function renderRecursiveHtml(node: Note, isRoot = true): string {
   return html
 }
 
+// AI-FIRST STRUCTURED EXTRACTION (v16.1.0)
+// Implements 30/40/30 Rule: 30% Titles, 40% Summary, 30% Description
+function extractStructuredData(graph: Note, offloadedFile?: any) {
+  const plainText = renderRecursiveText(graph)
+  const paragraphs = plainText.split(/\n\n+/).filter(p => p.trim().length > 10)
+  
+  // 1. TITLES (30%) - Max 3
+  const titles = [graph.title]
+  const headingRegex = /#{1,3}\s+(.+)/g
+  let match
+  while ((match = headingRegex.exec(plainText)) !== null && titles.length < 3) {
+    if (match[1] && !titles.includes(match[1])) titles.push(match[1])
+  }
+  
+  // 2. SUMMARIES (40%) - Max 4 blocks, 300-500 chars
+  let summaries: string[] = []
+  if (offloadedFile?.summary) {
+    summaries = [offloadedFile.summary]
+  } else {
+    summaries = paragraphs.slice(0, 4).map(p => p.substring(0, 200).trim())
+  }
+  
+  // 3. DESCRIPTIONS (30%) - Max 3 blocks
+  const descriptions = paragraphs.slice(4, 7).map(p => p.substring(0, 500).trim())
+  
+  return { titles, summaries, descriptions }
+}
+
 function JsonLd({ graph, slug }: { graph: any; slug: string }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://notes.biz.id'
   const flattened = flattenGraph(graph)
@@ -220,16 +248,18 @@ export default async function SharedNotePage({
     return notFound();
   }
 
-  // Auth fetch for community logic (optional)
-  const { data: { user } } = await supabase.auth.getUser()
-
+  // 3. Structured Content Engine (v16.1.0)
   const { data: offloadedFiles } = await supabase
     .from('note_files')
     .select('*')
     .eq('note_id', graph.id)
-
-  const offloadedFile = offloadedFiles?.[0]
   
+  const offloadedFile = offloadedFiles?.[0]
+  const { titles, summaries, descriptions } = extractStructuredData(graph, offloadedFile)
+
+  // Auth fetch for community logic (optional)
+  const { data: { user } } = await supabase.auth.getUser()
+
   // Trigger server-side view tracking
   trackNoteMetric(graph.id, 'view').catch(() => {});
 
@@ -238,22 +268,29 @@ export default async function SharedNotePage({
   const isPublic = graph.share_type === 'public'
   const sanitizedContent = sanitizeHtml(graph.content || '')
 
-  // 3. AI-FIRST AUTO-INGRESS: Pure HTML Fallback for Bots
-  if (isBot || versionId === 'text' || formatParam === 'text' || rawParam === '1') {
-    const rawText = renderRecursiveText(graph)
-    const recursiveHtml = renderRecursiveHtml(graph)
+  // 4. AI-FIRST SSR DELIVERY (MANDATORY v16.1.0)
+  // This block ensures content is visible in View-Source and via Curl
+  const structuredSsrHtml = `
+    <article id="ai-structured-ingress" class="sr-only" aria-label="AI Readability Layer">
+      ${titles.map((t, i) => i === 0 ? `<h1>${t}</h1>` : i === 1 ? `<h2>${t}</h2>` : `<h3>${t}</h3>`).join('\n')}
+      ${summaries.map(s => `<p>${s}</p>`).join('\n')}
+      ${descriptions.map((d, i) => `<section><h3>Detail ${i+1}</h3><p>${d}</p></section>`).join('\n')}
+      <div style="display:none" id="ai-structured-block">${JSON.stringify({ titles, summaries, descriptions })}</div>
+    </article>
+  `;
 
+  if (isBot || versionId === 'text' || formatParam === 'text' || rawParam === '1') {
     return (
       <html lang="en">
         <head>
           <title>{graph.title} | Smart Notes AI Oracle</title>
-          <meta name="description" content={graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160)} />
+          <meta name="description" content={summaries[0]} />
           <meta name="robots" content="index, follow" />
           <style>{`
             body { font-family: sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 800px; margin: 40px auto; padding: 20px; }
             h1 { font-size: 2.5rem; margin-bottom: 1rem; }
             .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
-            article { white-space: pre-wrap; }
+            article { margin-bottom: 2rem; }
             footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.8rem; color: #999; }
           `}</style>
         </head>
@@ -270,20 +307,17 @@ export default async function SharedNotePage({
              {offloadedFile && (
                <section style={{ padding: '20px', background: '#fff9db', border: '2px solid #fab005', borderRadius: '12px', marginBottom: '20px' }}>
                  <strong>EXTERNAL INTELLIGENCE NODE DETECTED:</strong>
-                 <p>This node contains high-density content offloaded for stability.</p>
+                 <p>Summary: {offloadedFile.summary}</p>
                  <a href={offloadedFile.file_url}>ACCESS FULL PAYLOAD ({offloadedFile.file_url})</a>
                </section>
              )}
-             <div dangerouslySetInnerHTML={{ __html: recursiveHtml }} />
+             <div dangerouslySetInnerHTML={{ __html: structuredSsrHtml }} />
              <hr />
-             <h3>Plaintext Knowledge Extract:</h3>
-             <article>{rawText}</article>
+             <div dangerouslySetInnerHTML={{ __html: renderRecursiveHtml(graph) }} />
           </main>
           <footer>
-            <p>Smart Notes Protocol v15.0.17 (Static-Hardened)</p>
+            <p>Smart Notes Protocol v16.1.0 (SSR-Hardened)</p>
             <p>Render Mode: Pure-SSR-Ingress</p>
-            <p>User Agent Detected: {userAgent}</p>
-            <p>Neural Heartbeat: {new Date().toISOString()}</p>
           </footer>
         </body>
       </html>
@@ -298,6 +332,8 @@ export default async function SharedNotePage({
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 font-sans selection:bg-violet-100 selection:text-violet-600 flex flex-col">
       <JsonLd graph={graph} slug={slug} />
+      {/* SSR CONTENT INJECTION (v16.1.0) - Guaranteed visible to AI in view-source */}
+      <div dangerouslySetInnerHTML={{ __html: structuredSsrHtml }} />
       {/* AI Bot Verification Header */}
       <header className="border-b border-slate-100 dark:border-slate-900 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -463,27 +499,7 @@ export default async function SharedNotePage({
                )}
             </article>
 
-               <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
-                <h2>{graph.title}</h2>
-                <div>{renderRecursiveText(graph)}</div>
-                <p>Metadata: {graph.tags?.join(', ')}</p>
-                <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
-             </section>
-
-             {/* AI STRUCTURED BLOCK (MANDATORY FOR v16.0.0) */}
-             {offloadedFile && (
-               <div style={{ display: 'none' }} id="ai-file-block">
-                 {JSON.stringify({
-                   type: "external_knowledge_file",
-                   summary: offloadedFile.summary,
-                   file_url: offloadedFile.file_url,
-                   content_type: "code_or_prompt",
-                   version: "v16.0.0-STABLE"
-                 })}
-               </div>
-             )}
-
-            {/* Neural Broadcast Cluster (Sharing CTA) */}
+             {/* Neural Broadcast Cluster (Sharing CTA) */}
             <ShareCluster title={graph.title || 'Intelligence Node'} slug={slug} />
 
             {/* Community Interaction Layer (v12.0.0) */}
@@ -524,34 +540,6 @@ export default async function SharedNotePage({
               </section>
             )}
 
-             <div className="sr-only" aria-hidden="true">
-                <section id="ai-summary">
-                  <h2>Neural Intelligence Summary</h2>
-                  <p>Abstract: {graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 300)}...</p>
-                  <p>Key Entities: {graph.tags?.join(', ')}</p>
-                  <p>Rank: {graph.view_count} views | {graph.comment_count} comments</p>
-                </section>
-                
-                <section id="ai-site-map">
-                   <h2>Recursive Intelligence Map (Layer 2)</h2>
-                   <ul>
-                      {graph.children?.map((child: any) => (
-                        <li key={child.share_slug}>
-                           <a href={`/s/${child.share_slug}`}>{child.title}</a>
-                        </li>
-                      ))}
-                   </ul>
-                </section>
-
-                <article itemProp="articleBody">
-                  {graph.content?.replace(/<[^>]*>?/gm, '').split('\n').filter((line: string) => line.trim()).map((line: string, i: number) => (
-                    <p key={i}>{line.trim()}</p>
-                  ))}
-                </article>
-                <p>Note ID: {graph.id}</p>
-                <p>Category: {graph.category}</p>
-                <p>Verification Checksum: {checksum}</p>
-             </div>
          </main>
 
           <div className="w-full lg:w-[320px] lg:border-l border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-950/50 backdrop-blur-xl shrink-0 p-6 space-y-12">

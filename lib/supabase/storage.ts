@@ -54,7 +54,7 @@ export async function uploadOffloadedFile(
   extension: string = 'md'
 ): Promise<{ url?: string; error?: string }> {
   const supabase = createClient();
-  const bucketName = 'offloaded_files'; // Ensure this bucket exists and is public
+  const bucketName = 'editor_assets'; // Utilizing existing verified bucket
   
   // Deterministic Fingerprint for deduplication
   const encoder = new TextEncoder();
@@ -63,7 +63,7 @@ export async function uploadOffloadedFile(
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   
-  const path = `${userId}/${hashHex}.${extension}`;
+  const path = `offloaded/${userId}/${hashHex}.${extension}`;
 
   try {
     const { data: uploadData, error: uploadError } = await supabase.storage
