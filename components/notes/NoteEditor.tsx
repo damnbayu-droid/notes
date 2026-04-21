@@ -403,15 +403,34 @@ export function NoteEditor({
 
     const processingToast = toast.loading('Synthesizing Neural Media...')
     try {
-        const { blob } = await processImageForNeural(file)
+        // Special case: If it's already a small WebP, we can skip processing or handle specifically
+        let blobToUpload: Blob;
+        let fileName = file.name;
+
+        if (file.type === 'application/pdf') {
+          blobToUpload = file;
+          toast.info('PDF detected. Ingesting as document node...', { id: processingToast });
+        } else {
+          const { blob } = await processImageForNeural(file);
+          blobToUpload = blob;
+          // Ensure extension is webp since processor converts it
+          if (!fileName.toLowerCase().endsWith('.webp')) {
+            fileName = fileName.split('.')[0] + '.webp';
+          }
+        }
+
         const rawAlt = window.prompt("Description (Alt Tag):", "Neural snapshot")
         const altDescription = rawAlt?.trim() || "Visualized intelligence"
-        const { url, error } = await uploadNoteAsset(user.id, blob, file.name)
+        const { url, error } = await uploadNoteAsset(user.id, blobToUpload, fileName)
         
         if (error) throw new Error(error)
         
         if (url) {
-            editor.chain().focus().setImage({ src: url, alt: altDescription }).run()
+            if (file.type === 'application/pdf') {
+              editor.chain().focus().insertContent(`<p><a href="${url}" target="_blank" class="text-violet-600 font-bold underline">Attachment: ${file.name}</a></p>`).run()
+            } else {
+              editor.chain().focus().setImage({ src: url, alt: altDescription }).run()
+            }
             toast.success('Neural Media Ingress Successful', { id: processingToast })
         } else {
             throw new Error('Storage node did not return a valid URL.')
@@ -688,14 +707,15 @@ export function NoteEditor({
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-                  <Tooltip>
+                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="outline" size="sm" onClick={() => downloadMarkdown(note?.title || 'Untitled', editorHtml)} className="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 dark:border-white/5 text-slate-500 font-black uppercase text-[9px] tracking-widest hover:text-violet-600 shadow-sm bg-white dark:bg-slate-900">
                          <Cloud className="w-3.5 h-3.5 mr-2 text-violet-500" /> <span className="hidden sm:inline">Export for AI</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                       <p>High-Fidelity AI Bridge</p>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                       <p className="font-bold mb-1">High-Fidelity AI Bridge</p>
+                       <p className="text-[10px] leading-tight">Generates a machine-readable Markdown snapshot optimized for LLM ingestion and knowledge graph synthesis.</p>
                     </TooltipContent>
                   </Tooltip>
 

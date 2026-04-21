@@ -126,8 +126,6 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
   return (
     <motion.div
       drag={!isMaximized}
-      dragControls={dragControls}
-      dragListener={false}
       dragMomentum={false}
       onDragEnd={handleDragEnd}
       initial={{ opacity: 0, scale: 0.9, x, y }}
@@ -144,33 +142,28 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
       className={`fixed ${isMaximized ? 'top-0 left-0 rounded-none' : 'rounded-sm'} bg-yellow-200 dark:bg-yellow-900/95 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-t-[40px] border-yellow-300/80 dark:border-yellow-800/80 group flex flex-col transition-all duration-300`}
       style={{
         fontFamily: 'Permanent Marker, cursive, sans-serif',
-        minWidth: isMinimized ? '200px' : '200px',
-        minHeight: isMinimized ? '40px' : '40px',
-        overflow: 'visible'
+        minWidth: '200px',
+        minHeight: '40px',
+        overflow: 'visible',
+        cursor: 'move'
       }}
     >
-      {/* Drag Handle (Header Area) */}
-      <div 
-        onPointerDown={(e) => dragControls.start(e)}
-        className="absolute top-[-40px] left-0 right-0 h-10 cursor-grab active:cursor-grabbing z-20"
-      />
-
       {/* MacBook Style Header Dots (Top Left) */}
       <div className="absolute top-[-32px] left-3 flex items-center gap-2 z-30 pointer-events-auto">
         <button 
-           onClick={() => setIsDeleting(true)}
+           onClick={(e) => { e.stopPropagation(); setIsDeleting(true); }}
            className="w-3.5 h-3.5 rounded-full bg-[#FF5F56] border border-[#E0443E] hover:brightness-90 transition-all shadow-sm flex items-center justify-center group/btn"
            title="Delete Intelligence"
         >
            <Trash2 className="w-2 text-white opacity-0 group-hover/btn:opacity-100 transition-opacity" />
         </button>
         <button 
-           onClick={() => setIsMinimized(!isMinimized)}
+           onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
            className="w-3.5 h-3.5 rounded-full bg-[#FFBD2E] border border-[#DEA123] hover:brightness-90 transition-all shadow-sm"
            title="Minimize Node"
         />
         <button 
-           onClick={() => setIsMaximized(!isMaximized)}
+           onClick={(e) => { e.stopPropagation(); setIsMaximized(!isMaximized); }}
            className="w-3.5 h-3.5 rounded-full bg-[#27C93F] border border-[#1AAB29] hover:brightness-90 transition-all shadow-sm"
            title="Focus/Maximize"
         />
@@ -186,17 +179,16 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
       )}
 
       {/* Right Header Actions (X) */}
-      {/* Right Header Actions (X) */}
       <div className="absolute top-[-34px] right-3 flex items-center gap-1 z-30">
         <button 
-           onClick={() => setIsDeleting(true)}
+           onClick={(e) => { e.stopPropagation(); setIsDeleting(true); }}
            className="p-1.5 rounded-lg text-slate-500/50 hover:text-rose-600 hover:bg-rose-50 transition-all"
            title="Delete Node"
         >
            <Trash2 className="w-4 h-4" />
         </button>
         <button 
-          onClick={() => onClose(id)}
+          onClick={(e) => { e.stopPropagation(); onClose(id); }}
           className="p-1.5 rounded-lg text-slate-500/50 hover:text-rose-600 hover:bg-rose-50 transition-all"
           title="Dismiss Note"
         >
@@ -212,6 +204,7 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-[100] bg-rose-600/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center"
+            onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[10px] font-black uppercase tracking-widest text-white mb-4">Purge Intelligence Node?</p>
             <div className="flex gap-2">
@@ -234,7 +227,7 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
 
       {/* Content Area */}
       {!isMinimized && (
-        <div className="flex-1 flex flex-col pt-3 animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col pt-3 animate-in fade-in duration-500 cursor-text" onClick={(e) => e.stopPropagation()}>
           {isEditing ? (
             <textarea
               autoFocus
@@ -260,7 +253,7 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
 
       {/* Footer Tools */}
       {!isMinimized && (
-        <div className="flex items-center justify-between mt-4 pt-2 border-t border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center justify-between mt-4 pt-2 border-t border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1">
             <button
               onClick={handleBroadcast}
@@ -298,11 +291,20 @@ export function StickyNote({ id, content, x, y, width, height, onClose, onUpdate
         <motion.div
           drag
           dragMomentum={false}
-          onDrag={handleResize}
-          onDragEnd={handleResizeEnd}
-          className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize z-40 flex items-center justify-center group/resize"
+          onDrag={(e, info) => {
+            e.stopPropagation();
+            handleResize(e, info);
+          }}
+          onDragEnd={(e) => {
+            e.stopPropagation();
+            handleResizeEnd();
+          }}
+          className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize z-40 flex items-center justify-center group/resize"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="w-1.5 h-1.5 bg-black/10 dark:bg-white/10 rounded-full group-hover/resize:bg-violet-500/50 transition-colors" />
+          <div className="w-3 h-3 bg-black/20 dark:bg-white/20 rounded-sm group-hover/resize:bg-violet-500/50 transition-colors flex items-center justify-center">
+             <Maximize2 className="w-2 h-2 text-white/50" />
+          </div>
         </motion.div>
       )}
     </motion.div>

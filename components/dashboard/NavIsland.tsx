@@ -162,7 +162,7 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
   return (
     <>
       {/* Main Pill — Positioned by Parent Layout with Mobile Left-Shift (v14.2.3) */}
-      <div className="flex flex-col items-center gap-2 transform translate-x-[-12px] sm:translate-x-0">
+      <div className="flex flex-col items-center gap-2 sm:translate-x-0">
         <motion.div
           layout
           onClick={() => {
@@ -172,11 +172,11 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
             }
           }}
           className={`
-            relative flex items-center gap-1.5 sm:gap-3 px-4 sm:px-5 py-2 sm:py-2.5 cursor-pointer select-none
+            relative flex items-center gap-2 sm:gap-3 px-5 py-2.5 sm:py-2.5 cursor-pointer select-none
             bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl
             border border-slate-200/60 dark:border-white/10
             shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]
-            rounded-full transition-all duration-300 scale-95 sm:scale-100
+            rounded-full transition-all duration-300 scale-100
             hover:shadow-[0_12px_40px_rgba(0,0,0,0.16)] hover:border-violet-300/50 dark:hover:border-violet-700/50
           `}
         >

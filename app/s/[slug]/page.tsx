@@ -72,10 +72,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://notes.biz.id'
   const pageUrl = `${baseUrl}/s/${slug}`
   const ogImageUrl = `${baseUrl}/api/og?title=${encodeURIComponent(note.title || 'Shared Intelligence')}`
+  
+  const checksum = Array.from(new TextEncoder().encode(note.updated_at))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('').substring(0, 16);
 
   return {
     title: `${note.title || 'Untitled Dataset'} | Smart Notes AI Oracle`,
     description: note.content?.replace(/<[^>]*>?/gm, '').substring(0, 160) || 'AI-indexable shared intelligence node. Optimized for LLM parsing.',
+    other: {
+      'x-neural-verification': checksum,
+      'x-ai-readability': 'high-priority-raw',
+      'x-smart-notes-version': '15.0.12'
+    },
     robots: {
       index: true,
       follow: true,
@@ -114,49 +123,48 @@ function JsonLd({ graph, slug }: { graph: any; slug: string }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://notes.biz.id'
   const flattened = flattenGraph(graph)
   
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": ["TechArticle", "Dataset"],
+    "headline": graph.title || 'Untitled Intelligence Node',
+    "articleBody": graph.content?.replace(/<[^>]*>?/gm, ''),
+    "description": graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160),
+    "author": {
+      "@type": "Person",
+      "name": "Smart Notes AI Hub"
+    },
+    "datePublished": graph.created_at,
+    "dateModified": graph.updated_at,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/s/${slug}`
+    },
+    "keywords": graph.tags?.join(', ') || 'intelligence, notes, neural, content graph',
+    "interactionStatistic": [
+      {
+        "@type": "InteractionCounter",
+        "interactionType": "https://schema.org/ViewAction",
+        "userInteractionCount": graph.view_count || 0
+      },
+      {
+        "@type": "InteractionCounter",
+        "interactionType": "https://schema.org/CommentAction",
+        "userInteractionCount": graph.comment_count || 0
+      }
+    ],
+    "hasPart": flattened.slice(1).map(node => ({
+      "@type": "TechArticle",
+      "headline": node.title,
+      "url": `${baseUrl}/s/${node.share_slug}`,
+      "description": node.content?.replace(/<[^>]*>?/gm, '').substring(0, 160)
+    }))
+  };
+
   return (
-    <Script
+    <script
       id="shared-node-jsonld"
       type="application/ld+json"
-      strategy="afterInteractive"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": ["TechArticle", "Dataset"],
-          "headline": graph.title || 'Untitled Intelligence Node',
-          "articleBody": graph.content?.replace(/<[^>]*>?/gm, ''),
-          "description": graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160),
-          "author": {
-            "@type": "Person",
-            "name": "Smart Notes AI Hub"
-          },
-          "datePublished": graph.created_at,
-          "dateModified": graph.updated_at,
-          "mainEntityOfPage": {
-            "@type": "WebPage",
-            "@id": `${baseUrl}/s/${slug}`
-          },
-          "keywords": graph.tags?.join(', ') || 'intelligence, notes, neural, content graph',
-          "interactionStatistic": [
-            {
-              "@type": "InteractionCounter",
-              "interactionType": "https://schema.org/ViewAction",
-              "userInteractionCount": graph.view_count || 0
-            },
-            {
-              "@type": "InteractionCounter",
-              "interactionType": "https://schema.org/CommentAction",
-              "userInteractionCount": graph.comment_count || 0
-            }
-          ],
-          "hasPart": flattened.slice(1).map(node => ({
-            "@type": "TechArticle",
-            "headline": node.title,
-            "url": `${baseUrl}/s/${node.share_slug}`,
-            "description": node.content?.replace(/<[^>]*>?/gm, '').substring(0, 160)
-          }))
-        })
-      }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   )
 }
@@ -207,23 +215,21 @@ export default async function SharedNotePage({
       ?.trim();
 
     return (
-      <pre style={{ 
-        whiteSpace: 'pre-wrap', 
-        padding: '2rem', 
-        fontFamily: 'monospace', 
-        backgroundColor: '#0f172a', 
-        color: '#f8fafc',
-        lineHeight: '1.6'
-      }}>
-        {graph.title}\n
-        ========================================\n
-        {rawText}\n
-        ========================================\n
-        Metadata: {graph.tags?.join(', ')}\n
-        Author: {graph.profiles?.full_name || 'Anonym'}\n
-        ID: {graph.id}\n
-        Neural Oracle Status: Verified Ingress
-      </pre>
+      <div style={{ backgroundColor: '#0f172a', color: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
+        <header style={{ borderBottom: '1px solid #1e293b', paddingBottom: '1rem', marginBottom: '2rem' }}>
+          <h1 style={{ fontSize: '2rem', margin: 0 }}>{graph.title}</h1>
+          <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>Neural Intelligence Node • Verified AI Ingress</p>
+        </header>
+        <article style={{ whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '1.1rem' }}>
+          {rawText}
+        </article>
+        <footer style={{ marginTop: '3rem', paddingTop: '1rem', borderTop: '1px solid #1e293b', color: '#94a3b8', fontSize: '0.75rem' }}>
+          <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
+          <p>Metadata: {graph.tags?.join(', ')}</p>
+          <p>Checksum: {graph.updated_at}</p>
+          <p>Smart Notes Protocol v15.0.12</p>
+        </footer>
+      </div>
     )
   }
   
@@ -286,11 +292,6 @@ export default async function SharedNotePage({
                 <Button 
                   variant="outline" 
                   className="h-10 rounded-xl gap-2 border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 text-violet-600 shadow-sm px-4 hover:bg-violet-600 hover:text-white"
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('dcpi-notification', {
-                      detail: { title: 'Access Request', message: 'Your request for write permission has been transmitted to the owner.', type: 'info' }
-                    }));
-                  }}
                 >
                    <Plus className="w-3.5 h-3.5" />
                    <span className="text-[10px] font-black uppercase tracking-widest">Ask for Access</span>
