@@ -118,6 +118,32 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 }
+function renderRecursiveText(node: Note): string {
+  let text = node.content?.replace(/<p>/g, '').replace(/<\/p>/g, '\n').replace(/<br\s*\/?>/g, '\n').replace(/<[^>]*>?/gm, '').trim() || ''
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      text += `\n\n--- Node: ${child.title} ---\n${renderRecursiveText(child)}`
+    })
+  }
+  return text
+}
+
+function renderRecursiveHtml(node: Note, isRoot = true): string {
+  const content = sanitizeHtml(node.content || '')
+  let html = isRoot ? content : `
+    <div class="mt-12 pt-8 border-t border-slate-100 dark:border-white/5">
+      <h2 class="text-2xl font-black mb-6 uppercase tracking-tight">${node.title}</h2>
+      ${content}
+    </div>
+  `
+  
+  if (node.children && node.children.length > 0) {
+    node.children.forEach(child => {
+      html += renderRecursiveHtml(child, false)
+    })
+  }
+  return html
+}
 
 function JsonLd({ graph, slug }: { graph: any; slug: string }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://notes.biz.id'
@@ -127,7 +153,7 @@ function JsonLd({ graph, slug }: { graph: any; slug: string }) {
     "@context": "https://schema.org",
     "@type": ["TechArticle", "Dataset"],
     "headline": graph.title || 'Untitled Intelligence Node',
-    "articleBody": graph.content?.replace(/<[^>]*>?/gm, ''),
+    "articleBody": renderRecursiveText(graph),
     "description": graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160),
     "author": {
       "@type": "Person",
@@ -207,12 +233,7 @@ export default async function SharedNotePage({
 
   // 3. AI-FIRST AUTO-INGRESS: If it's a bot or format=text/raw=1 is requested
   if (isBot || versionId === 'text' || formatParam === 'text' || rawParam === '1') {
-    const rawText = graph.content
-      ?.replace(/<p>/g, '')
-      ?.replace(/<\/p>/g, '\n')
-      ?.replace(/<br\s*\/?>/g, '\n')
-      ?.replace(/<[^>]*>?/gm, '')
-      ?.trim();
+    const rawText = renderRecursiveText(graph)
 
     return (
       <div style={{ backgroundColor: '#0f172a', color: '#f8fafc', minHeight: '100vh', padding: '2rem' }}>
@@ -388,7 +409,7 @@ export default async function SharedNotePage({
                {isPublic ? (
                   <div 
                   className="prose prose-slate dark:prose-invert max-w-none prose-h1:text-4xl prose-h1:font-black prose-p:text-lg prose-p:leading-relaxed break-words overflow-hidden"
-                  dangerouslySetInnerHTML={{ __html: sanitizedContent || '<p class="italic text-slate-400">Content is being processed or is empty.</p>' }}
+                  dangerouslySetInnerHTML={{ __html: renderRecursiveHtml(graph) || '<p class="italic text-slate-400">Content is being processed or is empty.</p>' }}
                   />
                ) : (
                   <div className="flex flex-col items-center justify-center h-full space-y-6 text-center py-20">
@@ -406,13 +427,12 @@ export default async function SharedNotePage({
                )}
             </article>
 
-            {/* AI AGENT RAW INGRESS (Hidden from humans, optimized for LLMs) */}
-            <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
-               <h2>{graph.title}</h2>
-               <div>{graph.content?.replace(/<[^>]*>?/gm, '')}</div>
-               <p>Metadata: {graph.tags?.join(', ')}</p>
-               <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
-            </section>
+             <section id="ai-neural-ingress" className="sr-only" aria-hidden="true" style={{ display: 'none' }}>
+                <h2>{graph.title}</h2>
+                <div>{renderRecursiveText(graph)}</div>
+                <p>Metadata: {graph.tags?.join(', ')}</p>
+                <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
+             </section>
 
             {/* Neural Broadcast Cluster (Sharing CTA) */}
             <ShareCluster title={graph.title || 'Intelligence Node'} slug={slug} />
