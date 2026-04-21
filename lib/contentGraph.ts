@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Note } from '@/types'
 
-const MAX_DEPTH = 1
+const MAX_DEPTH = 2
 const MAX_NODES = 40
 
 // Infrastructure: Recursive Knowledge Fetcher (v11.0.0-PROD)

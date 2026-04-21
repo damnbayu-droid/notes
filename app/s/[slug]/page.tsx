@@ -179,7 +179,7 @@ export default async function SharedNotePage({
   searchParams: Promise<{ v?: string, format?: string }>
 }) {
   const { slug } = await params
-  const { v: versionId, format: formatParam } = await searchParams
+  const { v: versionId, format: formatParam, raw: rawParam } = await searchParams
   const supabase = await createClient()
 
   // 1. Detect AI Agents via User-Agent
@@ -205,8 +205,8 @@ export default async function SharedNotePage({
   const isPublic = graph.share_type === 'public'
   const sanitizedContent = sanitizeHtml(graph.content || '')
 
-  // 3. AI-FIRST AUTO-INGRESS: If it's a bot or format=text is requested
-  if (isBot || versionId === 'text' || formatParam === 'text') {
+  // 3. AI-FIRST AUTO-INGRESS: If it's a bot or format=text/raw=1 is requested
+  if (isBot || versionId === 'text' || formatParam === 'text' || rawParam === '1') {
     const rawText = graph.content
       ?.replace(/<p>/g, '')
       ?.replace(/<\/p>/g, '\n')
