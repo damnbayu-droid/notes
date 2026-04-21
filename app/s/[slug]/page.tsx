@@ -248,7 +248,8 @@ export default async function SharedNotePage({
           <p>Author: {graph.profiles?.full_name || 'Anonym'}</p>
           <p>Metadata: {graph.tags?.join(', ')}</p>
           <p>Checksum: {graph.updated_at}</p>
-          <p>Smart Notes Protocol v15.0.12</p>
+          <p>Smart Notes Protocol v15.0.16 (Hardened)</p>
+          <p>Neural Heartbeat: {new Date().toISOString()}</p>
         </footer>
       </div>
     )
@@ -522,7 +523,7 @@ export default async function SharedNotePage({
       </div>
 
       <footer className="max-w-7xl mx-auto w-full px-6 py-24 border-t border-slate-100 dark:border-slate-900 text-center">
-         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Powered by Smart Notes Collective</p>
+         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Powered by Smart Notes Collective • v15.0.16</p>
          <h4 className="text-xl font-black text-slate-900 dark:text-white">Join the Knowledge Revolution</h4>
          <div className="mt-8">
             <a href="/" className="inline-block px-10 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-2xl">

@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { Note } from '@/types'
 
-const MAX_DEPTH = 2
-const MAX_NODES = 40
+const MAX_DEPTH = 3
+const MAX_NODES = 50
 
 // Infrastructure: Recursive Knowledge Fetcher (v11.0.0-PROD)
 export async function buildGraph(slug: string, versionId?: string, currentDomain: string = 'default', userAccess: 'free' | 'pro' = 'free') {
@@ -47,16 +47,9 @@ export async function buildGraph(slug: string, versionId?: string, currentDomain
     // Safety check for TS compiler
     if (!node) return null
 
-    // DOMAIN GUARD: Strictly enforce boundary unless it's the root node
-    if (depth > 0 && node.domain !== currentDomain) {
-       return {
-          ...node,
-          content: null,
-          is_external_node: true,
-          locked: true
-       }
-    }
-
+    // DOMAIN GUARD: Strictly enforce boundary ONLY for non-shared paths (internal navigation)
+    // For shared content graphs, we allow multi-domain aggregation to ensure full knowledge ingress.
+    
     // MONETIZATION LOCK: Depth-based intelligence guard
     let content = node.content
     let isLocked = false
