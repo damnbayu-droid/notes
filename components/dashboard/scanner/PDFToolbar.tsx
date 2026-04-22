@@ -38,6 +38,7 @@ interface PDFToolbarProps {
   onToolSelect: (tool: PDFTool) => void;
   onDone: () => void;
   onDownload: () => void;
+  onShare: () => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -58,6 +59,7 @@ export function PDFToolbar({
   onToolSelect, 
   onDone, 
   onDownload,
+  onShare,
   canUndo,
   canRedo,
   onUndo,
@@ -110,10 +112,10 @@ export function PDFToolbar({
                </Button>
                <div className="flex items-center gap-1 border-r border-slate-100 dark:border-white/5 pr-3 mr-2">
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg"><Search className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg"><Printer className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={onPrint}><Printer className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg" onClick={onDownload}><Download className="w-4 h-4" /></Button>
                </div>
-               <Button variant="outline" className="h-9 px-4 rounded-lg text-[11px] font-bold gap-2 border-slate-200">
+               <Button variant="outline" onClick={onShare} className="h-9 px-4 rounded-lg text-[11px] font-bold gap-2 border-slate-200">
                   <Share2 className="w-4 h-4" /> Share
                </Button>
                <Button onClick={onDone} className="h-9 px-6 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold gap-2 shadow-lg shadow-rose-500/20">

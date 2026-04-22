@@ -56,3 +56,63 @@ export async function sendSupportEmail(formData: {
     return { success: false, error: error.message };
   }
 }
+
+export async function sendManuscriptEmail(params: {
+  to: string;
+  shareUrl: string;
+  fileName: string;
+}) {
+  const apiKey = process.env.NEXT_PUBLIC_RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+
+  if (!apiKey) {
+    console.error('RESEND_API_KEY is missing');
+    return { success: false, error: 'Identity Bridge Failure: Email API key not found.' };
+  }
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        from: 'SpyMaster Intelligence <smart@notes.biz.id>',
+        to: [params.to],
+        subject: `[INTELLIGENCE] Manuscript Shared: ${params.fileName}`,
+        html: `
+          <div style="font-family: sans-serif; padding: 40px; background-color: #0f172a; color: #f8fafc; border-radius: 24px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <span style="background: #1e293b; padding: 8px 16px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; color: #38bdf8; border: 1px solid #334155;">SOVEREIGNTY PROTOCOL ACTIVATED</span>
+            </div>
+            
+            <h1 style="font-size: 28px; font-weight: 900; color: #ffffff; text-align: center; margin-bottom: 20px;">Manuscript Transmission</h1>
+            
+            <div style="background-color: #1e293b; padding: 32px; border-radius: 20px; border: 1px solid #334155; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);">
+              <p style="margin: 0; margin-bottom: 15px; font-size: 16px; color: #94a3b8;">A secure intelligence document has been shared with you:</p>
+              <p style="margin: 0; margin-bottom: 30px; font-size: 20px; font-weight: 700; color: #38bdf8;">${params.fileName}</p>
+              
+              <div style="text-align: center;">
+                <a href="${params.shareUrl}" style="display: inline-block; background: #38bdf8; color: #0f172a; padding: 16px 32px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px 0 rgba(56, 189, 248, 0.39);">ACCESS MANUSCRIPT</a>
+              </div>
+            </div>
+            
+            <p style="text-align: center; margin-top: 30px; font-size: 12px; color: #64748b;">
+              This transmission is peer-to-peer and encrypted. The link provided may have an expiration period.
+            </p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Resend API error');
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Manuscript email error:', error);
+    return { success: false, error: error.message };
+  }
+}

@@ -42,6 +42,8 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { PDFEngine, PDFPageInfo } from '@/lib/pdf/engine'
+import { uploadSharedPDF } from '@/lib/supabase/storage'
+import { sendManuscriptEmail } from '@/lib/actions/emailActions'
 import { PDFSidebar } from './PDFSidebar'
 import { PDFToolbar, PDFTool } from './PDFToolbar'
 import { PDFPageCanvas } from './PDFPageCanvas'
@@ -103,6 +105,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
   const [pdfLogs, setPdfLogs] = useState<PDFLog[]>([]);
   const [emailInput, setEmailInput] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [isLogsOpen, setIsLogsOpen] = useState(false);
 
   useEffect(() => {
@@ -141,12 +144,93 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
 
   const isPro = user?.access_level === 'pro' || user?.role === 'admin';
 
-  const handleDownloadAttempt = () => {
+  const handleDownloadAttempt = async () => {
     if (!isPro) {
       setIsPremiumModalOpen(true);
       return;
     }
-    setIsPreviewOpen(true);
+    
+    if (!pdfFile) return;
+    
+    const toastId = toast.loading('Synthesizing High-Fidelity Manuscript...');
+    try {
+      const annotations = await PDFEngine.extractAnnotations(canvasRefs);
+      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
+      
+      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `EXTRUDED_${pdfFile.name}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      logPDFAction(pdfFile.name, 'MANUSCRIPT_EXTRUSION', editedBytes.length, blob);
+      toast.success('Manuscript Extruded Successfully', { id: toastId });
+    } catch (error) {
+      console.error('Synthesis Error:', error);
+      toast.error('Synthesis Protocol Failed', { id: toastId });
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!pdfFile) return;
+    const toastId = toast.loading('Preparing Manuscript for Print...');
+    try {
+      const annotations = await PDFEngine.extractAnnotations(canvasRefs);
+      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
+      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.addEventListener('load', () => {
+          printWindow.print();
+        });
+        toast.success('Print Node Activated', { id: toastId });
+      } else {
+        throw new Error('Popup blocked');
+      }
+    } catch (error) {
+      console.error('Print Error:', error);
+      toast.error('Print Protocol Failed', { id: toastId });
+    }
+  };
+
+  const handleShare = async () => {
+    if (!isPro) {
+      setIsPremiumModalOpen(true);
+      return;
+    }
+    if (!user || !pdfFile) return;
+
+    setIsSharing(true);
+    const toastId = toast.loading('Establishing Secure Sharing Node...');
+    
+    try {
+      const annotations = await PDFEngine.extractAnnotations(canvasRefs);
+      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
+      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      
+      const { url, error } = await uploadSharedPDF(user.id, blob, pdfFile.name);
+      
+      if (error) throw new Error(error);
+      if (!url) throw new Error('No URL generated');
+
+      await navigator.clipboard.writeText(url);
+      toast.success('Sharing Link Copied to Clipboard', { 
+        id: toastId,
+        description: 'Manuscript uploaded to secure node.' 
+      });
+      
+      logPDFAction(pdfFile.name, 'MANUSCRIPT_SHARING_ACTIVATED', editedBytes.length, blob);
+    } catch (error: any) {
+      console.error('Sharing Error:', error);
+      toast.error('Sharing Protocol Failed', { id: toastId });
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleSignatureSave = (dataUrl: string) => {
@@ -163,12 +247,40 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       toast.error('Email Distribution Endpoint Required');
       return;
     }
+    if (!user || !pdfFile) return;
+
     setIsSendingEmail(true);
-    setTimeout(() => {
-      setIsSendingEmail(false);
+    const toastId = toast.loading('Initiating Secure Transmission...');
+
+    try {
+      const annotations = await PDFEngine.extractAnnotations(canvasRefs);
+      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
+      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      
+      const { url, error } = await uploadSharedPDF(user.id, blob, pdfFile.name);
+      if (error) throw new Error(error);
+      if (!url) throw new Error('Upload failed');
+
+      const result = await sendManuscriptEmail({
+        to: emailInput,
+        shareUrl: url,
+        fileName: pdfFile.name
+      });
+
+      if (!result.success) throw new Error(result.error);
+
+      toast.success('Manuscript Distributed', { 
+        id: toastId,
+        description: `Successfully transmitted to ${emailInput}` 
+      });
       setIsPreviewOpen(false);
-      toast.success('Manuscript Distributed', { description: `Successfully sent to ${emailInput}` });
-    }, 2000);
+      logPDFAction(pdfFile.name, 'MANUSCRIPT_EMAIL_DISTRIBUTION', editedBytes.length, blob);
+    } catch (error: any) {
+      console.error('Email Error:', error);
+      toast.error('Transmission Failure', { id: toastId, description: error.message });
+    } finally {
+      setIsSendingEmail(false);
+    }
   };
 
   const handleContinueInjection = () => {
@@ -241,13 +353,27 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
           <PDFToolbar
             activeTool={activeTool}
             onToolSelect={setActiveTool}
-            onDone={() => {
+            onDone={async () => {
                if (pdfFile) {
-                 logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', pdfFile.size, pdfFile);
+                 const hasAnnotations = Object.keys(annotations).length > 0;
+                 if (hasAnnotations) {
+                   try {
+                     const extracted = await PDFEngine.extractAnnotations(canvasRefs);
+                     const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), extracted);
+                     const blob = new Blob([editedBytes], { type: 'application/pdf' });
+                     logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', editedBytes.length, blob);
+                   } catch (err) {
+                     console.error('Final Synthesis Failure:', err);
+                     logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS_FAILED', pdfFile.size, pdfFile);
+                   }
+                 } else {
+                   logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', pdfFile.size, pdfFile);
+                 }
                }
                onBack?.();
             }}
             onDownload={handleDownloadAttempt}
+            onShare={handleShare}
             onImageRequest={() => imageInputRef.current?.click()}
             onSignatureRequest={() => setIsSignatureModalOpen(true)}
             onPageLayoutRequest={() => setIsPageLayoutOpen(true)}

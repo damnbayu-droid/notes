@@ -85,3 +85,39 @@ export async function uploadOffloadedFile(
     return { error: err.message };
   }
 }
+
+/**
+ * PDF Sharing Engine (v18.4.0)
+ * Uploads edited manuscripts for public sharing.
+ */
+export async function uploadSharedPDF(
+  userId: string,
+  blob: Blob,
+  fileName: string
+): Promise<{ url?: string; error?: string }> {
+  const supabase = createClient();
+  const bucketName = 'editor_assets';
+  
+  const fingerprint = crypto.randomUUID();
+  const path = `shared_manuscripts/${userId}/${fingerprint}_${fileName}`;
+
+  try {
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(path, blob, {
+        contentType: 'application/pdf',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(path);
+
+    return { url: publicUrl };
+  } catch (err: any) {
+    console.error('PDF Sharing Storage Failure:', err.message);
+    return { error: err.message };
+  }
+}
