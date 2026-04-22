@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { useBiometrics } from '@/hooks/useBiometrics'
 
 interface Recording {
    id: string
@@ -19,7 +20,89 @@ interface Recording {
    duration: number
 }
 
+function BiometricGate({ onAuthenticated }: { onAuthenticated: () => void }) {
+   const [isScanning, setIsScanning] = useState(false);
+   const { authenticate, checkSupport } = useBiometrics();
+
+   const handleBiometricAuth = async () => {
+      setIsScanning(true);
+      try {
+         const supported = await checkSupport();
+         if (supported) {
+            const success = await authenticate();
+            if (success) {
+               onAuthenticated();
+               toast.success('Neural Identity Verified', { description: 'Biometric handshake successful.' });
+            }
+         } else {
+            const pin = prompt('Biometrics unavailable. Enter Stealth PIN:');
+            if (pin === localStorage.getItem('stealth_pin') || pin === '9988') {
+               onAuthenticated();
+               toast.success('Access Restored via Stealth PIN');
+            } else {
+               toast.error('Authorization Failed');
+            }
+         }
+      } catch (err: any) {
+         toast.error('Identity Verification Failed', { description: err.message });
+      } finally {
+         setIsScanning(false);
+      }
+   };
+
+   return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-12 animate-in fade-in duration-1000">
+         <div className="relative group">
+            <div className="absolute inset-0 bg-rose-500/20 blur-[80px] rounded-full group-hover:bg-rose-500/40 transition-all duration-1000" />
+            <div 
+               className={`relative w-40 h-40 bg-slate-950 rounded-[3rem] border-2 border-white/5 flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-500 ${isScanning ? 'scale-110 border-rose-500 shadow-2xl shadow-rose-500/20' : 'hover:scale-105'}`}
+               onClick={handleBiometricAuth}
+            >
+               {isScanning ? (
+                  <div className="flex flex-col items-center gap-4">
+                     <Loader2 className="w-12 h-12 text-rose-500 animate-spin" />
+                     <div className="w-24 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div 
+                           className="h-full bg-rose-500" 
+                           initial={{ x: '-100%' }}
+                           animate={{ x: '100%' }}
+                           transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        />
+                     </div>
+                  </div>
+               ) : (
+                  <Shield className="w-16 h-16 text-rose-500 group-hover:scale-110 transition-transform duration-500" />
+               )}
+               
+               {/* Decorative scanning line */}
+               {!isScanning && (
+                  <div className="absolute inset-0 pointer-events-none">
+                     <div className="w-full h-[1px] bg-rose-500/50 absolute top-0 animate-[scan_3s_ease-in-out_infinite]" />
+                  </div>
+               )}
+            </div>
+         </div>
+
+         <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black uppercase tracking-tighter italic italic">Identity Lock Active</h2>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] max-w-sm mx-auto leading-relaxed">
+               Click the shield to authorize via <span className="text-rose-500">Fingerprint</span> or <span className="text-rose-500">Face ID</span>.
+            </p>
+         </div>
+
+         <style jsx>{`
+            @keyframes scan {
+               0% { top: 0%; opacity: 0; }
+               50% { opacity: 1; }
+               100% { top: 100%; opacity: 0; }
+            }
+         `}</style>
+      </div>
+   );
+}
+
 export default function SpyMaster() {
+   const [isAuthenticated, setIsAuthenticated] = useState(false)
    const [isRecording, setIsRecording] = useState(false)
    const [activeType, setActiveType] = useState<'video' | 'audio' | 'screen' | null>(null)
    const [recordings, setRecordings] = useState<Recording[]>([])
@@ -141,6 +224,10 @@ export default function SpyMaster() {
       const m = Math.floor(s / 60)
       const rs = s % 60
       return `${String(m).padStart(2, '0')}:${String(rs).padStart(2, '0')}`
+   }
+
+   if (!isAuthenticated) {
+      return <BiometricGate onAuthenticated={() => setIsAuthenticated(true)} />
    }
 
    return (

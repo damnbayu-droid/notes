@@ -21,7 +21,7 @@ import {
   AlertTriangle, 
   Database,
   Unplug,
-  Fingerprint
+  FingerprintPattern
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -219,7 +219,7 @@ export function AdminDashboard() {
                                onClick={runDiagnostics}
                                className="h-10 rounded-xl px-4 border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 text-[9px] font-black uppercase tracking-widest gap-2 hover:bg-violet-600 hover:text-white transition-all"
                            >
-                              <Fingerprint className="w-3.5 h-3.5" /> Neural Diagnostics
+                              <FingerprintPattern className="w-3.5 h-3.5" /> Neural Diagnostics
                            </Button>
                         </div>
 
@@ -281,7 +281,7 @@ export function AdminDashboard() {
                             {[
                                 { label: 'Total Users', value: stats.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-600/10' },
                                 { label: 'Revenue Tier', value: stats.paidUsers, icon: Crown, color: 'text-amber-600', bg: 'bg-amber-600/10' },
-                                { label: 'Neural Nodes', value: stats.neuralNodes || 0, icon: Fingerprint, color: 'text-rose-600', bg: 'bg-rose-600/10' },
+                                { label: 'Neural Nodes', value: stats.neuralNodes || 0, icon: FingerprintPattern, color: 'text-rose-600', bg: 'bg-rose-600/10' },
                                 { label: 'Cloud Data', value: stats.totalFiles, icon: FileText, color: 'text-violet-600', bg: 'bg-violet-600/10' },
                             ].map((stat, i) => (
                                 <Card key={i} className="p-8 rounded-[2.5rem] border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 hover:scale-[1.02] transition-all group cursor-default">

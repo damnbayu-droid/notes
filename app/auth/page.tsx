@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Command, Sparkles, Chrome, ArrowLeft, Mail, Lock, User as UserIcon, ShieldCheck } from 'lucide-react'
+import { Command, Sparkles, Globe, ArrowLeft, Mail, Lock, User as UserIcon, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -65,7 +65,7 @@ export default function AuthPage() {
                  variant="outline" 
                  className="w-full h-14 rounded-2xl border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 gap-3 font-black uppercase text-[10px] tracking-widest"
               >
-                 <Chrome className="w-5 h-5 text-blue-600" />
+                 <Globe className="w-5 h-5 text-rose-500" />
                  Synchronize via Google Cluster
               </Button>
 

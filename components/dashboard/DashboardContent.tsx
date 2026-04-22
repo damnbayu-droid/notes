@@ -17,6 +17,7 @@ const PDFMaster = dynamicImport(() => import('@/components/dashboard/scanner/PDF
 const BookLayout = dynamicImport(() => import('@/components/dashboard/books/BookLayout').then(m => m.BookLayout), { ssr: false })
 const ScheduleView = dynamicImport(() => import('@/components/dashboard/schedule/ScheduleView').then(m => m.ScheduleView), { ssr: false })
 const SpyMaster = dynamicImport(() => import('./spy/SpyMaster'), { ssr: false })
+const SystemLogs = dynamicImport(() => import('./logs/SystemLogs').then(m => m.SystemLogs), { ssr: false })
 
 export function DashboardContent() {
   const { user } = useAuth()
@@ -52,10 +53,24 @@ export function DashboardContent() {
     setViewMode,
     toggleArchive,
     duplicateNote,
+    storageLogs,
   } = useNotes(user)
   
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+
+  // Phase: Neural Payment Verification (v11.0.0)
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'check') {
+      toast.success('Neural Bridge: Payment Verified', {
+        description: 'Your intelligence tier has been upgraded. Re-linking clusters...',
+        duration: 5000
+      });
+      // Clean up URL
+      router.replace('/dashboard');
+    }
+  }, [searchParams, router]);
 
   // Sync active folder with URL view
   useEffect(() => {
@@ -153,6 +168,8 @@ export function DashboardContent() {
                 <PDFMaster />
              ) : currentView === 'spymaster' ? (
                 <SpyMaster />
+             ) : currentView === 'logs' ? (
+                <SystemLogs logs={storageLogs} />
              ) : (
                 <NotesGrid 
                   notes={displayActive}

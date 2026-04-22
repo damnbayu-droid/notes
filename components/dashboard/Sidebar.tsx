@@ -42,7 +42,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin' | 'discovery';
+type ViewType = 'notes' | 'archive' | 'trash' | 'scanner' | 'settings' | 'schedule' | 'books' | 'admin' | 'discovery' | 'logs';
 
 interface SidebarProps {
   currentView?: ViewType;
@@ -146,6 +146,7 @@ export function Sidebar({
     { id: 'archive', label: 'Archive', icon: Archive, path: '/?view=archive' },
     { id: 'trash', label: 'Trash', icon: Trash2, path: '/?view=trash' },
     { id: 'scanner', label: 'PDF Master', icon: FileStack, path: '/?view=scanner' },
+    { id: 'logs', label: 'Storage Trace', icon: Shield, path: '/?view=logs' },
   ];
 
   const sortedFolders = useMemo(() => {

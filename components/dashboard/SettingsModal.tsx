@@ -16,7 +16,9 @@ import {
   HardDrive,
   FolderOpen,
   PenTool,
-  FileImage as ImageIcon
+  FileImage as ImageIcon,
+  Lock,
+  Fingerprint
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -25,13 +27,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useNotes } from '@/hooks/useNotes'
 import { useAuth } from '@/hooks/useAuth'
+import { useBiometrics } from '@/hooks/useBiometrics'
 
 export function SettingsModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('registry')
   const { user } = useAuth()
   const { diagnostics, forceSync, isOffline } = useNotes(user)
+  const { authenticate, checkSupport } = useBiometrics()
   const [repoPath, setRepoPath] = useState('~/Documents/SmartNotes/Intelligence_Capture/')
+  const [biometricEnabled, setBiometricEnabled] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('biometric_enabled') === 'true'
+    setBiometricEnabled(saved)
+  }, [])
 
   const handlePathChange = async () => {
     try {
@@ -299,20 +309,91 @@ export function SettingsModal() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="security" className="space-y-4 mt-0">
-                 <div className="p-6 rounded-[2rem] bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/20 flex flex-col items-center text-center space-y-4">
-                    <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/10">
-                       <Shield className="w-8 h-8 text-emerald-500" />
-                    </div>
-                    <div>
-                       <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">End-to-End Encryption</h4>
-                       <p className="text-[10px] font-medium text-slate-500 max-w-xs mx-auto mt-2">All intelligence nodes are cryptographically secured at the edge. Your master key never leaves the local cluster.</p>
-                    </div>
-                    <Button variant="outline" className="h-10 rounded-xl font-black uppercase text-[9px] tracking-widest px-6 border-emerald-200 text-emerald-600">
-                       Regenerate Master Key
-                    </Button>
-                 </div>
-              </TabsContent>
+               <TabsContent value="security" className="space-y-6 mt-0">
+                  <div className="p-6 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5 space-y-6">
+                     <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 dark:border-white/5">
+                           <Shield className="w-6 h-6 text-rose-500" />
+                        </div>
+                        <div>
+                           <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Security & Identity</h4>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Neural Access Protocols</p>
+                        </div>
+                     </div>
+
+                     <div className="space-y-3">
+                        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 flex flex-col items-center text-center space-y-4">
+                           <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center">
+                              <Lock className="w-7 h-7 text-rose-500" />
+                           </div>
+                           <div className="space-y-2">
+                              <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">System Lock Sequence</p>
+                              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest max-w-[220px]">Immediately lock the neural cluster. Requires FaceID or Fingerprint to unlock.</p>
+                           </div>
+                           <Button 
+                              onClick={() => {
+                                 toast.info('Neural Lock Engaged', { description: 'Synchronizing with device-level biometrics...' });
+                                 // Dispatch global lock event
+                                 window.dispatchEvent(new CustomEvent('neural-lock-system'));
+                                 setIsOpen(false);
+                              }}
+                              className="w-full h-12 rounded-2xl bg-rose-500 text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-rose-500/20"
+                           >
+                              Lock Neural Node
+                           </Button>
+                        </div>
+
+                        <div className="flex items-center justify-between p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5">
+                           <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                                 <Fingerprint className="w-5 h-5 text-emerald-500" />
+                              </div>
+                              <div>
+                                 <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">Biometric Gateway</p>
+                                 <p className="text-[9px] font-medium text-slate-400 uppercase tracking-widest">Use FaceID / Fingerprint</p>
+                              </div>
+                           </div>
+                           <Switch 
+                              checked={biometricEnabled}
+                              onCheckedChange={async (val) => {
+                                 if (val) {
+                                    try {
+                                       const supported = await checkSupport();
+                                       if (!supported) throw new Error('Biometrics not supported on this device');
+                                       
+                                       toast.loading('Initializing Biometric Handshake...', { id: 'bio-init' });
+                                       const success = await authenticate();
+                                       if (success) {
+                                          setBiometricEnabled(true);
+                                          localStorage.setItem('biometric_enabled', 'true');
+                                          toast.success('Biometric Gateway Activated', { id: 'bio-init' });
+                                       }
+                                    } catch (err: any) {
+                                       toast.error('Activation Failed', { id: 'bio-init', description: err.message });
+                                    }
+                                 } else {
+                                    setBiometricEnabled(false);
+                                    localStorage.setItem('biometric_enabled', 'false');
+                                    toast.info('Biometric Gateway Deactivated');
+                                 }
+                              }}
+                           />
+                        </div>
+                     </div>
+
+                     <div className="p-5 rounded-3xl bg-violet-500/5 border border-violet-500/10 flex flex-col space-y-4">
+                        <div className="flex items-center gap-4">
+                           <Shield className="w-5 h-5 text-violet-500 shrink-0" />
+                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                              Hardware keys and biometric handshakes are processed via the Neural Security Bus. Your master key remains in the local cluster.
+                           </p>
+                        </div>
+                        <Button variant="outline" className="h-10 rounded-xl font-black uppercase text-[9px] tracking-widest px-6 border-violet-200 text-violet-600">
+                           Regenerate Master Key
+                        </Button>
+                     </div>
+                  </div>
+               </TabsContent>
 
                <TabsContent value="offline" className="space-y-6 mt-0">
                   <div className="p-6 rounded-[2.5rem] bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-white/5 space-y-6">

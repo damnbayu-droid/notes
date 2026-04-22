@@ -23,7 +23,7 @@ import {
   Check,
   Tag,
   Info,
-  Fingerprint,
+  FingerprintPattern,
 } from 'lucide-react';
 import type { SortOption } from '@/types';
 
@@ -192,7 +192,7 @@ export function SearchBar({
               title="Secure Intelligence Access (Login)"
               className="h-14 w-14 text-violet-600 hover:bg-violet-600 hover:text-white rounded-2xl border-slate-100 dark:border-slate-800 shadow-sm transition-all active:scale-95 bg-white/50 dark:bg-slate-900/50"
             >
-              <Fingerprint className="w-5 h-5 transition-transform duration-500 hover:rotate-12" />
+              <FingerprintPattern className="w-5 h-5 transition-transform duration-500 hover:rotate-12" />
             </Button>
           )}
         </div>

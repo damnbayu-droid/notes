@@ -19,7 +19,7 @@ import {
     Lock, 
     User, 
     Sparkles, 
-    Chrome,
+    Globe,
     Loader2,
     Eye,
     EyeOff
@@ -242,7 +242,7 @@ export default function LoginPage() {
                         variant="outline"
                         className="w-full h-14 rounded-2xl border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-black uppercase text-[10px] tracking-widest shadow-sm active:scale-95 transition-all"
                     >
-                        <Chrome className="w-4 h-4 mr-3 text-violet-600" />
+                        <Globe className="w-5 h-5 mr-3 text-rose-500" />
                         Synchronize with Google
                     </Button>
                 </div>

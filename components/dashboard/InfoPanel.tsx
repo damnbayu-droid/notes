@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Shield, Bot, Database, Book, Scan, Mic, Zap, Compass, Share2, Github, Info, ChevronRight, Monitor, Camera, Lock, Pin, Globe } from 'lucide-react'
+import { X, Shield, Bot, Database, Book, Scan, Mic, Zap, Compass, Share2, Info, ChevronRight, Monitor, Camera, Lock, Pin, Globe } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 

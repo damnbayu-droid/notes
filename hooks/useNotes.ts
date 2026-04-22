@@ -62,6 +62,8 @@ interface UseNotesReturn {
   reconcileDiscovery: () => Promise<{ success: boolean; count?: number; error?: string }>;
   syncGuestNotes: (targetUserId: string) => Promise<{ success: boolean; count: number; error?: string }>;
   forkNote: (noteId: string, content: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
+  storageLogs: any[];
+  logStorageEvent: (action: string, details: any) => Promise<void>;
 }
 
 type SyncAction =
@@ -74,7 +76,8 @@ export function useNotes(user: User | null): UseNotesReturn {
   const [notes, setNotes] = useState<Note[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const storageKey = user ? `notes_${user.id}` : 'notes_guest';
+        const dId = localStorage.getItem('neural_device_id') || 'root';
+        const storageKey = user ? `notes_${user.id}_${dId}` : 'notes_guest';
         const cached = localStorage.getItem(storageKey);
         return cached ? JSON.parse(cached) : [];
       } catch (e) { return []; }
@@ -111,6 +114,16 @@ export function useNotes(user: User | null): UseNotesReturn {
     return [];
   });
 
+  const deviceId = useMemo(() => {
+    if (typeof window === 'undefined') return 'root';
+    let id = localStorage.getItem('neural_device_id');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('neural_device_id', id);
+    }
+    return id;
+  }, []);
+
   const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -122,8 +135,44 @@ export function useNotes(user: User | null): UseNotesReturn {
   });
 
   const [logs, setLogs] = useState<NoteLog[]>([]);
+  const [storageLogs, setStorageLogs] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('storage_logs');
+        return cached ? JSON.parse(cached) : [];
+      } catch (e) { return []; }
+    }
+    return [];
+  });
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([]);
   const isMounted = useRef(true);
+
+  // Phase: Neural Quota Guard (v14.0.0)
+  // Ensures storage operations survive browser quota limits through tiered pruning.
+  const safeSetItem = useCallback((key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.warn('Neural Storage Quota Exceeded. Initiating Emergency Purge...');
+        // Tier 1: Purge Recovery Buffer
+        localStorage.removeItem('recovery_buffer');
+        // Tier 2: Purge Legacy Storage Keys
+        const keys = Object.keys(localStorage);
+        const legacyKeys = keys.filter(k => k.startsWith('notes_') && !k.includes(deviceId));
+        legacyKeys.forEach(k => localStorage.removeItem(k));
+        
+        try {
+          // Retry original operation
+          localStorage.setItem(key, value);
+        } catch (retryError) {
+          toast.error('Local Storage Critical', { 
+            description: 'Database is full. Cloud-only mode active.' 
+          });
+        }
+      }
+    }
+  }, [deviceId]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -140,13 +189,17 @@ export function useNotes(user: User | null): UseNotesReturn {
 
   // Local Storage persistence
   useEffect(() => { 
-    const storageKey = user ? `notes_${user.id}` : 'notes_guest';
-    localStorage.setItem(storageKey, JSON.stringify(notes)); 
-  }, [notes, user]);
-  useEffect(() => { localStorage.setItem('syncQueue', JSON.stringify(syncQueue)); }, [syncQueue]);
-  useEffect(() => { localStorage.setItem('pinnedFolders', JSON.stringify(pinnedFolders)); }, [pinnedFolders]);
+    const storageKey = user ? `notes_${user.id}_${deviceId}` : 'notes_guest';
+    // Limit local storage to top 50 notes for performance and quota safety
+    const localSlice = notes.slice(0, 50);
+    safeSetItem(storageKey, JSON.stringify(localSlice)); 
+  }, [notes, user, deviceId, safeSetItem]);
+
+  useEffect(() => { safeSetItem('syncQueue', JSON.stringify(syncQueue)); }, [syncQueue, safeSetItem]);
+  useEffect(() => { safeSetItem('pinnedFolders', JSON.stringify(pinnedFolders)); }, [pinnedFolders, safeSetItem]);
   useEffect(() => { localStorage.setItem('notes_sort_by', sortBy); }, [sortBy]);
   useEffect(() => { localStorage.setItem('notes_view_mode', viewMode); }, [viewMode]);
+  useEffect(() => { safeSetItem('storage_logs', JSON.stringify(storageLogs)); }, [storageLogs, safeSetItem]);
 
   const syncGuestNotes = async (targetUserId: string) => {
     const guestNotes = JSON.parse(localStorage.getItem('notes_guest') || '[]');
@@ -155,7 +208,7 @@ export function useNotes(user: User | null): UseNotesReturn {
     const { error } = await supabase.from('notes').insert(notesToSync);
     if (error) return { success: false, error: error.message, count: 0 };
     localStorage.removeItem('notes_guest');
-    loadNotes();
+    loadNotesWithMerge();
     return { success: true, count: notesToSync.length };
   };
 
@@ -264,67 +317,68 @@ export function useNotes(user: User | null): UseNotesReturn {
     };
   }, []);
 
-  const loadNotes = useCallback(async () => {
+  const loadNotesWithMerge = useCallback(async () => {
     if (!user || isOffline) return;
-    if (isMounted.current) setIsLoading(true);
     
     try {
-      let { data: ownedNotes, error: loadError } = await supabase
+      const { data: cloudNotes, error } = await supabase
         .from('notes')
-        .select('*, is_premium, domain')
+        .select('*')
         .eq('user_id', user.id);
-      
-      // Fallback for Schema Mismatch (v11.0.0 Migration)
-      if (loadError && loadError.message?.includes('column "is_premium" does not exist')) {
-        console.warn('Intelligence Engine Schema Mismatch: Falling back to basic fetch.');
-        const fallback = await supabase
-          .from('notes')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        ownedNotes = fallback.data;
-        loadError = fallback.error;
-        
-        if (!loadError) {
-          toast.warning("Intelligence Engine Upgrade Pending", {
-            description: "Please apply the MIGRATION_V11_INTELLIGENCE.sql in your Supabase SQL editor to enable premium features.",
-            duration: 10000
-          });
-        }
-      }
 
-      if (loadError) throw loadError;
+      if (error) throw error;
 
-      const { data: collabData } = await supabase.from('note_collaborators').select('note_id').eq('email', user.email);
-      let allFetchedNotes = [...(ownedNotes || [])];
-      
-      if (collabData && collabData.length > 0) {
-        const collabIds = collabData.map((c: any) => c.note_id);
-        const { data: sharedWithMe } = await supabase.from('notes').select('*').in('id', collabIds);
-        if (sharedWithMe) allFetchedNotes = [...allFetchedNotes, ...sharedWithMe];
-      }
+      // Smart Checker: Mirroring & Conflict Resolution
+      setNotes(prev => {
+        const localMap = new Map(prev.map(n => [n.id, n]));
+        const merged = [...prev];
 
-      const hydratedNotes = allFetchedNotes.map(n => ({
-        ...n,
-        folder: n.folder || 'Main',
-        tags: Array.isArray(n.tags) ? n.tags : [],
-        is_pinned: Boolean(n.is_pinned),
-        is_archived: Boolean(n.is_archived),
-        color: n.color || 'default',
-        category: n.category || 'General'
-      }));
+        (cloudNotes as any[])?.forEach(cn => {
+          const ln = localMap.get(cn.id);
+          if (!ln) {
+            // New cloud note, inject to local
+            merged.push(cn);
+          } else {
+            // Check timestamps
+            const cloudTime = new Date(cn.updated_at).getTime();
+            const localTime = new Date(ln.updated_at).getTime();
+            
+            if (cloudTime > localTime) {
+              // Cloud is newer, mirror to local
+              const idx = merged.findIndex(n => n.id === cn.id);
+              merged[idx] = cn;
+            }
+          }
+        });
 
-      if (isMounted.current) {
-        setNotes(hydratedNotes as Note[]);
-      }
-    } catch (err: any) {
-      console.error('Fetch error:', err);
-    } finally {
-      if (isMounted.current) setIsLoading(false);
+        return merged;
+      });
+
+      toast.info('Neural Mirroring Complete', { 
+        description: 'Intelligence layers synchronized across local and cloud nodes.' 
+      });
+    } catch (err) {
+      console.error('Mirroring Protocol Failed:', err);
     }
   }, [user, isOffline, supabase]);
 
-  useEffect(() => { loadNotes(); }, [loadNotes]);
+  // Phase: Neural Sync Bridge (v12.0.0)
+  // Implements 15-second delayed mirroring for high-performance local-first access.
+  useEffect(() => {
+    if (!user) return;
+
+    // Phase: Neural Sync Deferral (v12.0.0)
+    // We prioritize local storage for the first 30 seconds of the session.
+    // Cloud sync only triggers if explicitly needed or after the stability window.
+    const isPwa = window.matchMedia('(display-mode: standalone)').matches;
+    const deferTime = isPwa ? 60000 : 30000; // Longer deferral for installed apps
+
+    const timer = setTimeout(() => {
+      loadNotesWithMerge();
+    }, deferTime);
+
+    return () => clearTimeout(timer);
+  }, [user, loadNotesWithMerge]);
 
   const createNote = useCallback(async (noteData: Partial<Note>) => {
     const newNote: Note = {
@@ -596,7 +650,7 @@ export function useNotes(user: User | null): UseNotesReturn {
       try {
         const { data, error } = await supabase.rpc('reconcile_by_master_id', { p_legacy_id: 'cfd6e46f-c2d7-45b1-978f-0a4401fe35da' });
         if (error) throw error;
-        loadNotes();
+        loadNotesWithMerge();
         return { success: true, count: data };
       } catch (err: any) {
         return { success: false, error: err.message };
@@ -611,18 +665,22 @@ export function useNotes(user: User | null): UseNotesReturn {
       try {
         toast.loading('Synchronizing Neural Bridge...', { id: 'force-sync' });
         
+        // Phase: Neural Storage Trace (v13.0.0)
+        const logEntry = {
+          timestamp: new Date().toISOString(),
+          action: 'FORCE_SYNC_PURGE',
+          details: { notesBeforePurge: notes.length },
+          device: deviceLabel
+        };
+        setStorageLogs(prev => [logEntry, ...prev]);
+
         // 1. Purge Local Cache
-        localStorage.clear();
+        localStorage.removeItem(`notes_${user?.id || 'guest'}`);
+        localStorage.removeItem('syncQueue');
         setNotes([]);
         
         // 2. Fetch Owned Notes
-        await loadNotes();
-        
-        // 3. Reconcile with Master Hub (Recovery Protocol)
-        if (user) {
-          await supabase.rpc('reconcile_by_master_id', { p_legacy_id: user.id });
-          await loadNotes();
-        }
+        await loadNotesWithMerge();
         
         toast.success('Neural Database Re-linked', { 
           id: 'force-sync',
@@ -663,6 +721,23 @@ export function useNotes(user: User | null): UseNotesReturn {
         setNotes(prev => [forkedNote, ...prev]);
         toast.success('Neural Node Forked', { description: 'New independent dataset initialized with ancestry tracking.' });
         return { success: true, note: forkedNote };
-    }
+    },
+    storageLogs,
+    logStorageEvent: async (action, details) => {
+      const entry = {
+        timestamp: new Date().toISOString(),
+        action,
+        details,
+        device: deviceLabel
+      };
+      setStorageLogs(prev => [entry, ...prev]);
+      if (user && !isOffline) {
+        await supabase.from('note_logs').insert({
+          action: `STORAGE_${action}`,
+          details: entry,
+          user_id: user.id
+        });
+      }
+    },
   };
 }
