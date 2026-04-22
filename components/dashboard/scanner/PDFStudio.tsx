@@ -225,8 +225,9 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       });
       
       logPDFAction(pdfFile.name, 'MANUSCRIPT_SHARING_ACTIVATED', editedBytes.length, blob);
-    } catch (error: any) {
-      console.error('Sharing Error:', error);
+    } catch (error) {
+      const err = error as Error;
+      console.error('Sharing Error:', err);
       toast.error('Sharing Protocol Failed', { id: toastId });
     } finally {
       setIsSharing(false);
@@ -275,9 +276,10 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       });
       setIsPreviewOpen(false);
       logPDFAction(pdfFile.name, 'MANUSCRIPT_EMAIL_DISTRIBUTION', editedBytes.length, blob);
-    } catch (error: any) {
-      console.error('Email Error:', error);
-      toast.error('Transmission Failure', { id: toastId, description: error.message });
+    } catch (error) {
+      const err = error as Error;
+      console.error('Email Error:', err);
+      toast.error('Transmission Failure', { id: toastId, description: err.message });
     } finally {
       setIsSendingEmail(false);
     }

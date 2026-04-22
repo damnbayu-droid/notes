@@ -102,7 +102,7 @@ export async function uploadSharedPDF(
   const path = `shared_manuscripts/${userId}/${fingerprint}_${fileName}`;
 
   try {
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucketName)
       .upload(path, blob, {
         contentType: 'application/pdf',
@@ -116,7 +116,8 @@ export async function uploadSharedPDF(
       .getPublicUrl(path);
 
     return { url: publicUrl };
-  } catch (err: any) {
+  } catch (error) {
+    const err = error as Error;
     console.error('PDF Sharing Storage Failure:', err.message);
     return { error: err.message };
   }

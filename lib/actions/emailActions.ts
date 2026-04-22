@@ -111,8 +111,9 @@ export async function sendManuscriptEmail(params: {
     }
 
     return { success: true };
-  } catch (error: any) {
-    console.error('Manuscript email error:', error);
-    return { success: false, error: error.message };
+  } catch (error) {
+    const err = error as Error;
+    console.error('Manuscript email error:', err);
+    return { success: false, error: err.message };
   }
 }
