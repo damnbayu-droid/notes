@@ -66,6 +66,7 @@ interface UseNotesReturn {
   logStorageEvent: (action: string, details: any) => Promise<void>;
   deviceList: any[];
   registerDevice: () => Promise<void>;
+  setPreferredFolder: (folderName: string) => Promise<void>;
 }
 
 type SyncAction =
@@ -126,17 +127,28 @@ export function useNotes(user: User | null): UseNotesReturn {
     return id;
   }, []);
 
-  const deviceLabel = useMemo(() => {
-    if (typeof window === 'undefined') return 'Neural Node';
+  const { deviceType, osFamily } = useMemo(() => {
+    if (typeof window === 'undefined') return { deviceType: 'desktop', osFamily: 'unknown' };
     const ua = navigator.userAgent;
-    let label = 'Generic Device';
-    if (ua.includes('Macintosh')) label = 'Apple MacBook Node';
-    else if (ua.includes('iPhone')) label = 'Apple iPhone Node';
-    else if (ua.includes('Android')) label = 'Android Intelligence Node';
-    else if (ua.includes('Windows')) label = 'Windows Workstation Node';
-    else if (ua.includes('iPad')) label = 'Apple iPad Node';
-    return label;
+    let type = 'desktop';
+    let os = 'unknown';
+
+    if (ua.includes('iPhone')) { type = 'mobile'; os = 'iOS'; }
+    else if (ua.includes('Android')) { type = 'mobile'; os = 'Android'; }
+    else if (ua.includes('iPad')) { type = 'tablet'; os = 'iOS'; }
+    else if (ua.includes('Macintosh')) { type = 'desktop'; os = 'macOS'; }
+    else if (ua.includes('Windows')) { type = 'desktop'; os = 'Windows'; }
+    
+    return { deviceType: type, osFamily: os };
   }, []);
+
+  const deviceLabel = useMemo(() => {
+    if (osFamily === 'macOS') return 'Apple MacBook Node';
+    if (osFamily === 'iOS') return deviceType === 'mobile' ? 'Apple iPhone Node' : 'Apple iPad Node';
+    if (osFamily === 'Android') return 'Android Intelligence Node';
+    if (osFamily === 'Windows') return 'Windows Workstation Node';
+    return 'Neural Intelligence Node';
+  }, [deviceType, osFamily]);
 
   const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -183,7 +195,10 @@ export function useNotes(user: User | null): UseNotesReturn {
       browser_engine: browser,
       storage_key: storageKey,
       last_seen: new Date().toISOString(),
-      notes_count: notes.length
+      notes_count: notes.length,
+      device_type: deviceType,
+      os_family: osFamily,
+      preferred_folder: deviceType === 'mobile' ? 'Mobile Hub' : 'Main'
     };
 
     try {
@@ -206,7 +221,22 @@ export function useNotes(user: User | null): UseNotesReturn {
       console.warn('Device Registry Trace Failed: Using local fallback node.');
       setDeviceList([{ ...deviceData, is_current_node: true }]);
     }
-  }, [user, deviceId, deviceLabel, notes.length, supabase]);
+  }, [user, deviceId, deviceLabel, notes.length, supabase, deviceType, osFamily]);
+
+  const setPreferredFolder = useCallback(async (folderName: string) => {
+    if (!user) return;
+    setActiveFolder(folderName);
+    try {
+      await supabase
+        .from('user_devices')
+        .update({ preferred_folder: folderName })
+        .match({ user_id: user.id, device_id: deviceId });
+      
+      toast.success('Repository Path Updated', { description: `Device now targeting ${folderName} cluster.` });
+    } catch (err) {
+      console.error('Storage Path Update Failed:', err);
+    }
+  }, [user, deviceId]);
 
   useEffect(() => {
     if (user) registerDevice();
@@ -795,5 +825,6 @@ export function useNotes(user: User | null): UseNotesReturn {
     },
     deviceList,
     registerDevice,
+    setPreferredFolder,
   };
 }

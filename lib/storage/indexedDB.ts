@@ -2,7 +2,7 @@ import { openDB, IDBPDatabase } from 'idb';
 
 const DB_NAME = 'SmartNotes_Intelligence_Hub';
 const STORE_NAME = 'manuscript_cache';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface CachedManuscript {
   id: string;
@@ -28,6 +28,12 @@ function getDB() {
       upgrade(db) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('engineering_logs')) {
+          db.createObjectStore('engineering_logs', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('recordings')) {
+          db.createObjectStore('recordings', { keyPath: 'id' });
         }
       },
     });

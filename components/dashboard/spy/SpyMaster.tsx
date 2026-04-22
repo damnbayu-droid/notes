@@ -12,7 +12,8 @@ import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotes } from '@/hooks/useNotes'
 import { useAudioBridge } from '@/hooks/useAudioBridge'
-import { Laptop, Smartphone, Tablet, Activity, Link as LinkIcon, Link2Off, UserPlus, Fingerprint } from 'lucide-react'
+import { useBackgroundRecorder } from '@/hooks/useBackgroundRecorder'
+import { Laptop, Smartphone, Tablet, Activity, Link as LinkIcon, Link2Off, UserPlus, Fingerprint, FolderCheck } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 
 
@@ -103,8 +104,9 @@ export default function SpyMaster() {
 
     // Settings State
     const { user } = useAuth()
-    const { deviceList } = useNotes(user)
+    const { deviceList, activeFolder, setActiveFolder, folders, setPreferredFolder } = useNotes(user)
     const { initiateBridge, terminateBridge, isConnected, isConnecting, remoteStream, currentTargetId, requestCollaboration, externalNodes } = useAudioBridge(user)
+    const { isBackgroundRecording, startBackgroundRecording, stopBackgroundRecording } = useBackgroundRecorder()
     
     // Collaboration State
     const [extEmail, setExtEmail] = useState('')
@@ -564,49 +566,186 @@ export default function SpyMaster() {
                             </Dialog>
                         </div>
 
-                        <div className="space-y-4">
-                            {[
-                                ...deviceList.filter(d => d.device_id !== localStorage.getItem('neural_device_id')),
-                                ...externalNodes
-                            ].map(device => (
-                                    <div 
-                                        key={device.id}
-                                        className="p-6 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-900/50 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-violet-600 group-hover:text-white transition-all">
-                                                {device.os?.toLowerCase().includes('mac') || device.os?.toLowerCase().includes('windows') ? <Laptop className="w-6 h-6" /> : <Smartphone className="w-6 h-6" />}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-black uppercase tracking-tight truncate">{device.label || 'Unknown Intelligence Node'}</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${device.is_external ? 'bg-violet-500' : (new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}`} />
-                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        {device.is_external ? 'COLLABORATIVE NODE' : `${device.os} • ${device.browser}`}
-                                                    </p>
+                    <div className="space-y-12">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <h3 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Intelligence <span className="text-violet-600">Nodes</span></h3>
+                                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Global Node Registry</p>
+                            </div>
+
+                            <Dialog open={isHandshakeOpen} onOpenChange={setIsHandshakeOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="h-12 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-white/5 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all">
+                                        <UserPlus className="w-4 h-4 mr-2 text-violet-600" />
+                                        Neural Handshake
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="rounded-[2.5rem] border-slate-100 dark:border-white/10 shadow-3xl bg-white dark:bg-slate-950 max-w-sm">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic">External <span className="text-violet-600">Link</span></DialogTitle>
+                                        <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connect to nodes outside your primary cluster</DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="space-y-4 py-6">
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black uppercase text-slate-400 ml-4">Target Email</p>
+                                            <Input 
+                                                value={extEmail} 
+                                                onChange={(e) => setExtEmail(e.target.value)} 
+                                                placeholder="node@intelligence.net"
+                                                className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-white/5 px-5 font-bold text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black uppercase text-slate-400 ml-4">Handshake PIN (4 Digits)</p>
+                                            <Input 
+                                                value={extPin} 
+                                                onChange={(e) => setExtPin(e.target.value)} 
+                                                placeholder="0000"
+                                                maxLength={4}
+                                                className="h-14 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-white/5 px-5 font-bold text-sm tracking-widest"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                        <Button 
+                                            onClick={async () => {
+                                                const res = await requestCollaboration(extEmail, extPin);
+                                                if (res.success) setIsHandshakeOpen(false);
+                                            }}
+                                            className="w-full h-14 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl shadow-violet-600/20"
+                                        >
+                                            Dispatch Request
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
+                        {/* Current Node Configuration */}
+                        <div className="p-10 rounded-[3.5rem] bg-violet-600 text-white shadow-2xl shadow-violet-500/20 space-y-8 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:scale-110 transition-transform duration-700" />
+                            
+                            <div className="flex items-center gap-6 relative">
+                                <div className="w-16 h-16 rounded-[2rem] bg-white/10 flex items-center justify-center border border-white/20">
+                                    <Shield className="w-8 h-8 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-xl font-black uppercase tracking-tighter italic">Local <span className="text-violet-200">Intelligence Node</span></h4>
+                                    <p className="text-[10px] font-bold text-violet-200/60 uppercase tracking-widest mt-1">Status: Active Sovereign Unit</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6 relative">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-black uppercase text-violet-100 tracking-widest ml-4">Target Repository Local Intelligence Storage Path</p>
+                                    <div className="relative">
+                                        <FolderCheck className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-violet-300 z-10" />
+                                        <select 
+                                            value={activeFolder}
+                                            onChange={(e) => setPreferredFolder(e.target.value)}
+                                            className="w-full h-20 rounded-[2.2rem] bg-white/10 border-2 border-white/10 px-16 font-black uppercase text-[11px] tracking-widest outline-none focus:bg-white/20 focus:border-white/30 transition-all appearance-none cursor-pointer"
+                                        >
+                                            {folders.map(f => (
+                                                <option key={f} value={f} className="text-slate-900">{f} Cluster</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                        </div>
+                                    </div>
+                                    <p className="text-[9px] font-bold text-violet-200/40 uppercase tracking-widest ml-4 italic">Choice persists across app lifecycles and device node resets.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Background Stealth Engine */}
+                        <div className="p-8 rounded-[3rem] bg-gradient-to-br from-rose-500/5 to-rose-600/10 border border-rose-500/20 shadow-2xl shadow-rose-500/5 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                        <ShieldAlert className={`w-5 h-5 ${isBackgroundRecording ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
+                                        <h4 className="text-lg font-black uppercase tracking-tighter italic">Sovereign <span className="text-rose-600">Background Engine</span></h4>
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest max-w-xs">Record audio/video continuously even when the app is minimized or closed.</p>
+                                </div>
+                                <Switch 
+                                    checked={isBackgroundRecording} 
+                                    onCheckedChange={(checked) => {
+                                        if (checked) {
+                                            const type = prompt("Type 'video' or 'audio' to initiate stealth mode:", "video");
+                                            if (type === 'video' || type === 'audio') {
+                                                startBackgroundRecording(type as any);
+                                            }
+                                        } else {
+                                            stopBackgroundRecording();
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-6">Cluster Registry</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                {[
+                                    ...deviceList.filter(d => d.device_id !== localStorage.getItem('neural_device_id')),
+                                    ...externalNodes
+                                ].map(device => (
+                                        <div 
+                                            key={device.id}
+                                            className="p-8 rounded-[3rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-900/50 transition-all group shadow-xl hover:shadow-2xl hover:-translate-y-1 duration-500"
+                                        >
+                                            <div className="flex items-center gap-5 mb-8">
+                                                <div className="w-14 h-14 rounded-3xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:bg-violet-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                                                    {device.device_type === 'mobile' ? <Smartphone className="w-7 h-7" /> : device.device_type === 'tablet' ? <Tablet className="w-7 h-7" /> : <Laptop className="w-7 h-7" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-black uppercase tracking-tight truncate">{device.label || 'Unknown Node'}</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <div className={`w-2 h-2 rounded-full ${device.is_external ? 'bg-violet-500' : (new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}`} />
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                            {device.is_external ? 'COLLABORATIVE' : `${device.os_family || 'Neural'} • ${device.device_type?.toUpperCase() || 'NODE'}`}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <Button 
-                                            disabled={isConnected || isConnecting}
-                                            onClick={() => initiateBridge(device.device_id)}
-                                            className="w-full h-11 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[9px] tracking-widest shadow-xl group-hover:bg-violet-600 group-hover:text-white transition-all"
-                                        >
-                                            <LinkIcon className="w-3.5 h-3.5 mr-2" /> 
-                                            {isConnected && currentTargetId.current === device.device_id ? 'Linked' : 'Neural Link'}
-                                        </Button>
-                                    </div>
-                                ))
-                            }
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-white/5">
+                                                    <FolderCheck className="w-4 h-4 text-violet-500" />
+                                                    <div className="flex-1">
+                                                        <p className="text-[8px] font-black uppercase text-slate-400">Default Segment</p>
+                                                        <p className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">{device.preferred_folder || 'Main'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <Button 
+                                                    disabled={isConnected || isConnecting}
+                                                    onClick={() => initiateBridge(device.device_id)}
+                                                    className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[10px] tracking-widest shadow-xl group-hover:bg-violet-600 group-hover:text-white transition-all duration-500"
+                                                >
+                                                    <LinkIcon className="w-4 h-4 mr-2" /> 
+                                                    {isConnected && currentTargetId.current === device.device_id ? 'Linked' : 'Initialize Audio Bridge'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))
+                                }
+                            </div>
                             
                             {deviceList.filter(d => d.device_id !== localStorage.getItem('neural_device_id')).length === 0 && externalNodes.length === 0 && (
-                                <div className="py-20 text-center space-y-4 opacity-40">
-                                    <Activity className="w-10 h-10 mx-auto text-slate-300" />
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 italic">No remote clusters detected in current deployment.</p>
+                                <div className="py-32 text-center space-y-6 opacity-40 animate-pulse">
+                                    <Activity className="w-16 h-16 mx-auto text-slate-300" />
+                                    <div className="space-y-2">
+                                        <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 italic">Listening for Remote Clusters...</p>
+                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Ensure other nodes are active on the dashboard.</p>
+                                    </div>
                                 </div>
                             )}
                         </div>
+                    </div>
                     </div>
                 </div>
             </TabsContent>

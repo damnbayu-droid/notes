@@ -541,6 +541,14 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
                       <ShieldCheck className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
                       <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Security & Access</span>
                     </button>
+
+                    <button 
+                      onClick={() => { router.push('/?view=logs'); setIsExpanded(false) }}
+                      className="w-full h-14 flex items-center gap-4 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group"
+                    >
+                      <Shield className="w-4 h-4 text-violet-600 group-hover:scale-110 transition-transform" />
+                      <span className="flex-1 text-left text-[11px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Storage Trace</span>
+                    </button>
                     
                     <button 
                       onClick={() => { window.dispatchEvent(new CustomEvent('open-settings-modal', { detail: { tab: 'database' } })); setIsExpanded(false) }}
