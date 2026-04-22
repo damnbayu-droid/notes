@@ -66,8 +66,8 @@ export class PDFEngine {
   /**
    * Applies annotations to the actual PDF bytes using pdf-lib
    */
-  static async applyAnnotations(originalBytes: Uint8Array, pageAnnotations: Record<number, any>): Promise<Uint8Array> {
-    const pdfDoc = await PDFDocument.load(originalBytes);
+  static async applyAnnotations(originalBytes: ArrayBuffer, pageAnnotations: Record<number, any>): Promise<Uint8Array> {
+    const pdfDoc = await PDFDocument.load(new Uint8Array(originalBytes));
     const pages = pdfDoc.getPages();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -130,6 +130,19 @@ export class PDFEngine {
     }
 
     return await pdfDoc.save();
+  }
+
+  /**
+   * Orchestrates annotation extraction from all active canvas nodes
+   */
+  static async extractAnnotations(canvasRefs: { current: Record<number, any> }): Promise<Record<number, any>> {
+    const annotations: Record<number, any> = {};
+    for (const [pageNum, instance] of Object.entries(canvasRefs.current)) {
+      if (instance && typeof instance.getAnnotations === 'function') {
+        annotations[parseInt(pageNum)] = await instance.getAnnotations();
+      }
+    }
+    return annotations;
   }
 
   private static hexToRgb(hex: string): { r: number, g: number, b: number } {

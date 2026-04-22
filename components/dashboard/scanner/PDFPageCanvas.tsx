@@ -67,6 +67,10 @@ export const PDFPageCanvas = forwardRef(({
         loadHistory(newIndex);
         setHistoryIndex(newIndex);
       }
+    },
+    getAnnotations: () => {
+      const fCanvas = fabricCanvasRef.current;
+      return fCanvas ? fCanvas.toJSON() : null;
     }
   }));
 

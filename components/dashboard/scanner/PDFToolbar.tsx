@@ -37,6 +37,7 @@ interface PDFToolbarProps {
   activeTool: PDFTool;
   onToolSelect: (tool: PDFTool) => void;
   onDone: () => void;
+  onPrint: () => void;
   onDownload: () => void;
   onShare: () => void;
   canUndo: boolean;
@@ -58,6 +59,7 @@ export function PDFToolbar({
   activeTool, 
   onToolSelect, 
   onDone, 
+  onPrint,
   onDownload,
   onShare,
   canUndo,

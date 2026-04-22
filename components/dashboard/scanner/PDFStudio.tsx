@@ -157,7 +157,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       const annotations = await PDFEngine.extractAnnotations(canvasRefs);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
       
-      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -181,7 +181,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
     try {
       const annotations = await PDFEngine.extractAnnotations(canvasRefs);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
-      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const printWindow = window.open(url, '_blank');
       if (printWindow) {
@@ -211,7 +211,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
     try {
       const annotations = await PDFEngine.extractAnnotations(canvasRefs);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
-      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       
       const { url, error } = await uploadSharedPDF(user.id, blob, pdfFile.name);
       
@@ -256,7 +256,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
     try {
       const annotations = await PDFEngine.extractAnnotations(canvasRefs);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), annotations);
-      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       
       const { url, error } = await uploadSharedPDF(user.id, blob, pdfFile.name);
       if (error) throw new Error(error);
@@ -362,7 +362,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                    try {
                      const extracted = await PDFEngine.extractAnnotations(canvasRefs);
                      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), extracted);
-                     const blob = new Blob([editedBytes], { type: 'application/pdf' });
+                     const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
                      logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', editedBytes.length, blob);
                    } catch (err) {
                      console.error('Final Synthesis Failure:', err);
