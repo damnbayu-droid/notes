@@ -230,7 +230,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
       {/* Hidden Inputs */}
       <input type="file" ref={imageInputRef} onChange={handleImageInjection} accept="image/*" className="hidden" />
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" multiple className="hidden" />
