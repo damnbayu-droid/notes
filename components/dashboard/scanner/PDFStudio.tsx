@@ -126,19 +126,21 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       fileSize: fileSize ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : undefined
     };
 
-    if (blob) {
-      try {
+    try {
+      if (blob) {
         await ManuscriptStorage.save(id, fileName, blob, annotations);
-      } catch (err) {
-        console.error('Failed to cache manuscript:', err);
       }
-    }
-
-    setPdfLogs(prev => {
-      const updated = [newLog, ...prev].slice(0, 50);
+      
+      const cached = localStorage.getItem('pdf_engineering_logs');
+      const currentLogs = cached ? JSON.parse(cached) : [];
+      const updated = [newLog, ...currentLogs].slice(0, 50);
       localStorage.setItem('pdf_engineering_logs', JSON.stringify(updated));
-      return updated;
-    });
+      setPdfLogs(updated);
+      
+      console.log(`[PDF Master] Persistence committed: ${action} for ${fileName}`);
+    } catch (err) {
+      console.error('[PDF Master] Persistence failure:', err);
+    }
   };
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -365,11 +367,16 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
             onToolSelect={setActiveTool}
             onDone={async () => {
                if (pdfFile) {
-                 const hasAnnotations = Object.keys(annotations).length > 0;
+                 const hasAnnotations = Object.keys(annotations).length > 0 || Object.keys(canvasRefs.current).length > 0;
                  if (hasAnnotations) {
                    try {
                      const extracted = await PDFEngine.extractAnnotations(canvasRefs);
                      const mergedAnnotations = { ...annotations, ...extracted };
+                     
+                     if (Object.keys(mergedAnnotations).length === 0) {
+                        console.warn('[PDF Master] No annotations detected for final synthesis');
+                     }
+
                      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), mergedAnnotations);
                      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
                      await logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', editedBytes.length, blob);

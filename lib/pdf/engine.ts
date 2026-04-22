@@ -82,14 +82,15 @@ export class PDFEngine {
       
       // Fabric canvas was initialized at scale 1.0 relative to PDF points
       for (const obj of json.objects) {
-        if (obj.type === 'i-text' || obj.type === 'text') {
-          const color = typeof obj.fill === 'string' ? this.hexToRgb(obj.fill) : { r: 0, g: 0, b: 0 };
+        if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
+          const color = this.hexToRgb(typeof obj.fill === 'string' ? obj.fill : '#000000');
           page.drawText(obj.text, {
             x: obj.left,
-            y: height - obj.top - (obj.fontSize * 0.8), // Adjust for baseline
-            size: obj.fontSize,
+            y: height - (obj.top + (obj.fontSize * (obj.scaleY || 1)) * 0.8), 
+            size: obj.fontSize * (obj.scaleY || 1),
             font: obj.fontWeight === 'bold' ? boldFont : font,
             color: rgb(color.r, color.g, color.b),
+            opacity: color.a ?? (obj.opacity || 1)
           });
         } else if (obj.type === 'image') {
           try {
@@ -101,30 +102,80 @@ export class PDFEngine {
             
             page.drawImage(img, {
               x: obj.left,
-              y: height - obj.top - (obj.height * (obj.scaleY || 1)),
+              y: height - (obj.top + (obj.height * (obj.scaleY || 1))),
               width: obj.width * (obj.scaleX || 1),
               height: obj.height * (obj.scaleY || 1),
+              opacity: obj.opacity || 1
             });
           } catch (e) { console.error('Failed to embed image:', e); }
         } else if (obj.type === 'rect') {
-           const color = typeof obj.fill === 'string' ? this.hexToRgb(obj.fill) : { r: 1, g: 1, b: 1 };
+           const color = this.hexToRgb(typeof obj.fill === 'string' ? obj.fill : '#ffffff');
            page.drawRectangle({
              x: obj.left,
-             y: height - obj.top - obj.height,
-             width: obj.width,
-             height: obj.height,
+             y: height - (obj.top + (obj.height * (obj.scaleY || 1))),
+             width: obj.width * (obj.scaleX || 1),
+             height: obj.height * (obj.scaleY || 1),
              color: rgb(color.r, color.g, color.b),
+             opacity: color.a ?? (obj.opacity || 1)
            });
         } else if (obj.type === 'ellipse') {
-           const color = typeof obj.stroke === 'string' ? this.hexToRgb(obj.stroke) : { r: 1, g: 0, b: 0 };
+           const color = this.hexToRgb(typeof obj.stroke === 'string' ? obj.stroke : '#ff0000');
            page.drawEllipse({
-             x: obj.left + obj.rx,
-             y: height - obj.top - obj.ry,
-             xRadius: obj.rx,
-             yRadius: obj.ry,
+             x: obj.left + (obj.rx * (obj.scaleX || 1)),
+             y: height - (obj.top + (obj.ry * (obj.scaleY || 1))),
+             xRadius: obj.rx * (obj.scaleX || 1),
+             yRadius: obj.ry * (obj.scaleY || 1),
              borderColor: rgb(color.r, color.g, color.b),
-             borderWidth: obj.strokeWidth || 1,
+             borderWidth: (obj.strokeWidth || 1) * (obj.scaleX || 1),
+             opacity: color.a ?? (obj.opacity || 1)
            } as any);
+        } else if (obj.type === 'path') {
+           const color = this.hexToRgb(typeof obj.stroke === 'string' ? obj.stroke : '#ff0000');
+           const strokeWidth = (obj.strokeWidth || 1) * (obj.scaleX || 1);
+           const opacity = color.a ?? (obj.opacity || 1);
+           
+           // Fabric paths are relative to their center by default
+           // We'll use the bounding box to offset
+           const pathData = obj.path;
+           if (Array.isArray(pathData)) {
+             let lastX = 0;
+             let lastY = 0;
+             const offsetX = obj.left + (obj.width * (obj.scaleX || 1)) / 2;
+             const offsetY = height - (obj.top + (obj.height * (obj.scaleY || 1)) / 2);
+
+             for (const segment of pathData) {
+               const command = segment[0];
+               if (command === 'M') {
+                 lastX = segment[1] * (obj.scaleX || 1) + offsetX;
+                 lastY = offsetY - (segment[2] * (obj.scaleY || 1));
+               } else if (command === 'L') {
+                 const nextX = segment[1] * (obj.scaleX || 1) + offsetX;
+                 const nextY = offsetY - (segment[2] * (obj.scaleY || 1));
+                 page.drawLine({
+                   start: { x: lastX, y: lastY },
+                   end: { x: nextX, y: nextY },
+                   thickness: strokeWidth,
+                   color: rgb(color.r, color.g, color.b),
+                   opacity: opacity
+                 });
+                 lastX = nextX;
+                 lastY = nextY;
+               } else if (command === 'Q') {
+                 // Quadratic curve approximation
+                 const nextX = segment[3] * (obj.scaleX || 1) + offsetX;
+                 const nextY = offsetY - (segment[4] * (obj.scaleY || 1));
+                 page.drawLine({
+                    start: { x: lastX, y: lastY },
+                    end: { x: nextX, y: nextY },
+                    thickness: strokeWidth,
+                    color: rgb(color.r, color.g, color.b),
+                    opacity: opacity
+                 });
+                 lastX = nextX;
+                 lastY = nextY;
+               }
+             }
+           }
         }
       }
     }
@@ -145,20 +196,25 @@ export class PDFEngine {
     return annotations;
   }
 
-  private static hexToRgb(hex: string): { r: number, g: number, b: number } {
+  private static hexToRgb(hex: string): { r: number, g: number, b: number, a?: number } {
     if (hex.startsWith('rgba')) {
         const parts = hex.match(/[\d.]+/g);
-        if (parts) return { r: parseInt(parts[0])/255, g: parseInt(parts[1])/255, b: parseInt(parts[2])/255 };
+        if (parts) return { 
+          r: parseInt(parts[0])/255, 
+          g: parseInt(parts[1])/255, 
+          b: parseInt(parts[2])/255,
+          a: parts[3] ? parseFloat(parts[3]) : 1
+        };
     }
     if (hex.startsWith('#')) {
         const r = parseInt(hex.slice(1, 3), 16) / 255;
         const g = parseInt(hex.slice(3, 5), 16) / 255;
         const b = parseInt(hex.slice(5, 7), 16) / 255;
-        return { r, g, b };
+        return { r, g, b, a: 1 };
     }
-    if (hex === 'black') return { r: 0, g: 0, b: 0 };
-    if (hex === 'white') return { r: 1, g: 1, b: 1 };
-    return { r: 0, g: 0, b: 0 };
+    if (hex === 'black') return { r: 0, g: 0, b: 0, a: 1 };
+    if (hex === 'white') return { r: 1, g: 1, b: 1, a: 1 };
+    return { r: 0, g: 0, b: 0, a: 1 };
   }
 
   /**
