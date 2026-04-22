@@ -68,6 +68,10 @@ interface UseNotesReturn {
   registerDevice: () => Promise<void>;
   setPreferredFolder: (folderName: string) => Promise<void>;
   updateDeviceLabel: (deviceId: string, newLabel: string) => Promise<void>;
+  requests: any[];
+  forks: any[];
+  fetchRequests: (noteId: string) => Promise<void>;
+  fetchForks: (noteId: string) => Promise<void>;
 }
 
 type SyncAction =
@@ -253,6 +257,27 @@ export function useNotes(user: User | null): UseNotesReturn {
       console.error('Label Update Failed:', err);
     }
   }, [user]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [forks, setForks] = useState<any[]>([]);
+
+  const fetchRequests = useCallback(async (noteId: string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('access_requests')
+      .select('*, requester:profiles(full_name, avatar_url, email)')
+      .eq('note_id', noteId)
+      .order('created_at', { ascending: false });
+    if (data) setRequests(data);
+  }, [user, supabase]);
+
+  const fetchForks = useCallback(async (noteId: string) => {
+    const { data } = await supabase
+      .from('notes')
+      .select('id, title, share_slug, user_id, updated_at, profiles:user_id(full_name, avatar_url)')
+      .eq('fork_of', noteId)
+      .order('updated_at', { ascending: false });
+    if (data) setForks(data);
+  }, [supabase]);
 
   useEffect(() => {
     if (user) registerDevice();
@@ -803,7 +828,7 @@ export function useNotes(user: User | null): UseNotesReturn {
           title: sourceNote ? `${sourceNote.title} (Forked)` : 'Forked Intelligence',
           content,
           user_id: user.id,
-          parent_id: noteId,
+          fork_of: noteId,
           tags: sourceNote?.tags || [],
           folder: 'Main',
           color: 'default',
@@ -843,5 +868,9 @@ export function useNotes(user: User | null): UseNotesReturn {
     registerDevice,
     setPreferredFolder,
     updateDeviceLabel,
+    requests,
+    forks,
+    fetchRequests,
+    fetchForks
   };
 }

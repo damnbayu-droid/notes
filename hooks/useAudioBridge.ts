@@ -12,10 +12,14 @@ interface AudioBridgeReturn {
     terminateBridge: () => void;
     currentTargetId: React.MutableRefObject<string | null>;
     requestCollaboration: (email: string, pin: string) => Promise<{ success: boolean; error?: string }>;
-    externalNodes: any[];
+interface ExternalNode {
+    user_id: string;
+    device_id: string;
+    label: string;
+    is_external: boolean;
 }
 
-export function useAudioBridge(user: any): AudioBridgeReturn {
+export function useAudioBridge(user: { id: string, email: string } | null): AudioBridgeReturn {
     const supabase = useMemo(() => createClient(), []);
     const instanceId = useMemo(() => Math.random().toString(36).slice(2, 9), []);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -30,7 +34,7 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
     const peerConnection = useRef<RTCPeerConnection | null>(null);
     const localStream = useRef<MediaStream | null>(null);
     const currentTargetId = useRef<string | null>(null);
-    const [externalNodes, setExternalNodes] = useState<any[]>([]);
+    const [externalNodes, setExternalNodes] = useState<ExternalNode[]>([]);
 
     const cleanup = useCallback(() => {
         if (peerConnection.current) {
@@ -151,7 +155,7 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
                 schema: 'public', 
                 table: 'device_commands',
                 filter: `target_device_id=eq.${deviceId}`
-            }, async (payload: any) => {
+            }, async (payload: { new: { command: string, sender_id: string, payload: any } }) => {
                 const { command, sender_id, payload: data } = payload.new;
 
                 if (command === 'START_AUDIO_STREAM' || command === 'START_VIDEO_STREAM') {

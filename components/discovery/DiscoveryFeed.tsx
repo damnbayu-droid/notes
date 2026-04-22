@@ -54,7 +54,7 @@ export function DiscoveryFeed({ initialNotes }: DiscoveryFeedProps) {
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
       {/* Search & Filter Controls */}
-      <div className="flex flex-col items-center gap-8 max-w-4xl mx-auto w-full">
+      <div className="flex flex-col items-center gap-4 sm:gap-8 max-w-4xl mx-auto w-full">
          <div className="relative w-full group">
             <div className="absolute inset-0 bg-violet-500/10 blur-2xl rounded-2xl group-hover:bg-violet-500/20 transition-all duration-500" />
             <div className="relative flex items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-slate-200 dark:border-slate-800 p-2 shadow-2xl transition-all group-within:border-violet-500 group-within:ring-4 group-within:ring-violet-500/10">
@@ -142,8 +142,8 @@ export function DiscoveryFeed({ initialNotes }: DiscoveryFeedProps) {
           <motion.div 
             layout
             className={viewMode === 'grid' 
-              ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
-              : "flex flex-col gap-4"
+              ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-6"
+              : "flex flex-col gap-3 sm:gap-4"
             }
           >
             {filteredNotes.map((note) => (
@@ -154,7 +154,7 @@ export function DiscoveryFeed({ initialNotes }: DiscoveryFeedProps) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   key={note.id}
-                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 hover:shadow-2xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-500 flex flex-col overflow-hidden"
+                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 p-3.5 sm:p-5 hover:shadow-2xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-500 flex flex-col overflow-hidden"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="p-2.5 rounded-xl bg-violet-50 dark:bg-violet-950/20 text-violet-600 dark:text-violet-400 shadow-sm shrink-0">

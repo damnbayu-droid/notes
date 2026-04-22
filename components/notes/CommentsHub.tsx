@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { MessageSquare, Send, User, Clock, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { addComment, getComments } from '@/lib/actions/analytics'
+import { addComment, getComments, deleteComment } from '@/lib/actions/analytics'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
+import { createClient } from '@/lib/supabase/client'
 
 interface CommentsHubProps {
   noteId: string
@@ -20,18 +21,27 @@ export function CommentsHub({ noteId, user }: CommentsHubProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  const [currentUser, setCurrentUser] = useState(user)
+
   useEffect(() => {
     async function load() {
       const data = await getComments(noteId)
       setComments(data)
       setIsLoading(false)
+
+      // Fallback auth check if prop is missing (v16.2.0 Hardening)
+      if (!user) {
+        const supabase = createClient()
+        const { data: { user: authedUser } } = await supabase.auth.getUser()
+        if (authedUser) setCurrentUser(authedUser)
+      }
     }
     load()
-  }, [noteId])
+  }, [noteId, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) {
+    if (!currentUser) {
       toast.error('Authentication Required', { description: 'Please sign in to join the intelligence exchange.' })
       return
     }
@@ -66,7 +76,7 @@ export function CommentsHub({ noteId, user }: CommentsHubProps) {
 
       <div className="bg-slate-50/50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-10 space-y-10">
         {/* Input Area (v12.0.0 - User-Only Hardening) */}
-        {user ? (
+        {currentUser ? (
           <form onSubmit={handleSubmit} className="relative group">
             <div className="absolute inset-x-4 inset-y-0 bg-white dark:bg-slate-950 rounded-2xl shadow-xl border border-slate-200 dark:border-violet-500/20 group-within:border-violet-500 transition-all" />
             <div className="relative flex items-center p-2 pr-4">
@@ -126,6 +136,22 @@ export function CommentsHub({ noteId, user }: CommentsHubProps) {
                          <Clock className="w-2.5 h-2.5" /> {formatDistanceToNow(new Date(comment.created_at))} ago
                       </span>
                     </div>
+
+                    {/* Delete Functionality (v16.2.0) */}
+                    {currentUser && (currentUser.id === comment.user_id || currentUser.id === comment.notes?.user_id) && (
+                      <button 
+                        onClick={async () => {
+                          const res = await deleteComment(comment.id)
+                          if (res.success) {
+                            setComments(prev => prev.filter(c => c.id !== comment.id))
+                            toast.success('Observation purged.')
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed break-words">
                     {comment.content}

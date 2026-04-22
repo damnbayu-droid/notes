@@ -6,9 +6,9 @@ import { revalidatePath } from 'next/cache'
 export async function trackNoteMetric(noteId: string, metric: 'view' | 'click' | 'fork' | 'permission') {
   const supabase = await createClient()
   
-  const { error } = await supabase.rpc('increment_note_metric', {
-    note_id: noteId,
-    metric_name: metric
+  const { error } = await supabase.rpc(metric === 'view' ? 'increment_note_view' : 'increment_note_metric', {
+    [metric === 'view' ? 'note_uuid' : 'note_id']: noteId,
+    ...(metric !== 'view' ? { metric_name: metric } : {})
   })
 
   if (error) {
@@ -62,4 +62,34 @@ export async function getComments(noteId: string) {
   }
 
   return data
+}
+
+export async function deleteComment(commentId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  // 1. Get comment and note author
+  const { data: comment, error: cError } = await supabase
+    .from('note_comments')
+    .select('*, notes(user_id)')
+    .eq('id', commentId)
+    .single()
+
+  if (cError || !comment) return { success: false, error: 'Comment not found' }
+
+  // 2. Only author or owner can delete
+  if (comment.user_id !== user.id && comment.notes.user_id !== user.id) {
+    return { success: false, error: 'Forbidden' }
+  }
+
+  const { error } = await supabase
+    .from('note_comments')
+    .delete()
+    .eq('id', commentId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/s/[slug]', 'page')
+  return { success: true }
 }

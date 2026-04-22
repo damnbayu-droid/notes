@@ -26,6 +26,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { RequestAccessButton } from '@/components/notes/RequestAccessButton'
+import { ForkButton } from '@/components/notes/ForkButton'
+import { Eye, ShieldCheck } from 'lucide-react'
 
 // Unified Neural Fetch for ISR Stability
 async function getNoteData(slug: string) {
@@ -260,6 +263,43 @@ export default async function SharedNotePage({
   // Auth fetch for community logic (optional)
   const { data: { user } } = await supabase.auth.getUser()
 
+  // 4. Collaborative State Detection
+  let isCollaborator = false;
+  let hasRequestedAccess = false;
+  
+  if (user) {
+    const { data: collab } = await supabase
+      .from('note_collaborators')
+      .select('*')
+      .eq('note_id', graph.id)
+      .eq('user_id', user.id)
+      .single();
+    
+    if (collab) isCollaborator = true;
+
+    if (!isCollaborator) {
+      const { data: req } = await supabase
+        .from('access_requests')
+        .select('*')
+        .eq('note_id', graph.id)
+        .eq('requester_id', user.id)
+        .eq('status', 'approved')
+        .single();
+      
+      if (req) isCollaborator = true;
+      else {
+        const { data: pendingReq } = await supabase
+          .from('access_requests')
+          .select('*')
+          .eq('note_id', graph.id)
+          .eq('requester_id', user.id)
+          .eq('status', 'pending')
+          .single();
+        if (pendingReq) hasRequestedAccess = true;
+      }
+    }
+  }
+
   // Trigger server-side view tracking
   trackNoteMetric(graph.id, 'view').catch(() => {});
 
@@ -381,14 +421,13 @@ export default async function SharedNotePage({
              <ThemeToggle />
              
              {/* Ask for Access CTA */}
-             {user && user.id !== graph.user_id && graph.share_permission === 'read' && (
-                <Button 
-                  variant="outline" 
-                  className="h-10 rounded-xl gap-2 border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-900/10 text-violet-600 shadow-sm px-4 hover:bg-violet-600 hover:text-white"
-                >
-                   <Plus className="w-3.5 h-3.5" />
-                   <span className="text-[10px] font-black uppercase tracking-widest">Ask for Access</span>
-                </Button>
+             {user && user.id !== graph.user_id && !isCollaborator && (
+                <RequestAccessButton noteId={graph.id} isRequested={hasRequestedAccess} />
+             )}
+
+             {/* Fork & Edit CTA (v16.2.0) */}
+             {user && (user.id === graph.user_id || isCollaborator) && (
+                <ForkButton noteId={graph.id} content={graph.content || ''} title={graph.title} />
              )}
              
              {/* Version Switcher */}
@@ -439,7 +478,7 @@ export default async function SharedNotePage({
       </header>
 
       <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full">
-         <main className="flex-1 px-6 py-16 space-y-12">
+         <main className="flex-1 px-4 sm:px-6 py-8 sm:py-16 space-y-12">
             {/* SEO Header Section */}
             <section className="space-y-6">
                {graph.is_discoverable && (
@@ -456,7 +495,7 @@ export default async function SharedNotePage({
                   {!graph.tags?.length && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No metadata tags</span>}
                </div>
 
-               <h2 className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight break-words overflow-hidden">
+               <h2 className="text-3xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-tight break-words overflow-hidden">
                   {graph.title || 'Untitled Intelligence Dataset'}
                </h2>
 
@@ -473,11 +512,15 @@ export default async function SharedNotePage({
                      <BadgeIcon className="w-4 h-4 opacity-50" /> 
                      <p>Security Mode: {graph.share_type}</p>
                   </div>
+                  <div className="flex items-center gap-2 text-emerald-500">
+                     <Eye className="w-4 h-4 opacity-50" /> 
+                     <p>{graph.view_count || 0} Neural Views</p>
+                  </div>
                </div>
             </section>
 
             {/* Content Section - The real optimization for AI */}
-            <article className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 sm:p-14 border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none min-h-[500px]">
+            <article className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 sm:p-14 border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none min-h-[500px]">
                {isPublic ? (
                   <div 
                   className="prose prose-slate dark:prose-invert max-w-none prose-h1:text-4xl prose-h1:font-black prose-p:text-lg prose-p:leading-relaxed break-words overflow-hidden"
