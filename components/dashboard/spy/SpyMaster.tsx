@@ -113,6 +113,11 @@ export default function SpyMaster() {
     const [extPin, setExtPin] = useState('')
     const [isHandshakeOpen, setIsHandshakeOpen] = useState(false)
 
+    // Identity Calibration State
+    const { updateDeviceLabel } = useNotes(user)
+    const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+    const [tempLabel, setTempLabel] = useState('')
+
     const [stealthPin, setStealthPin] = useState('')
    const [isChangingPin, setIsChangingPin] = useState(false)
    const [selectedCamera, setSelectedCamera] = useState('default')
@@ -235,7 +240,73 @@ export default function SpyMaster() {
    }
 
    return (
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="relative min-h-[80vh] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+         {/* Live Surveillance Overlay */}
+         <AnimatePresence>
+            {isConnected && remoteStream && (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, y: 50 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 50 }}
+                    className="fixed bottom-12 right-12 z-50 w-96 rounded-[3.5rem] bg-slate-950/90 backdrop-blur-3xl border-4 border-violet-500/30 shadow-[0_0_50px_rgba(139,92,246,0.3)] overflow-hidden group"
+                >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-emerald-500 to-violet-500 animate-gradient-x" />
+                    
+                    <div className="p-8 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-white italic">Live Neural Intercept</h4>
+                            </div>
+                            <Button 
+                                onClick={terminateBridge}
+                                variant="ghost" 
+                                className="h-8 w-8 rounded-full hover:bg-white/10 text-white/40 hover:text-white"
+                            >
+                                <StopCircle className="w-4 h-4" />
+                            </Button>
+                        </div>
+
+                        <div className="aspect-video rounded-[2.5rem] bg-black/40 border border-white/5 overflow-hidden relative">
+                            {remoteStream.getVideoTracks().length > 0 ? (
+                                <video 
+                                    autoPlay 
+                                    playsInline
+                                    ref={(el) => { if (el) el.srcObject = remoteStream }} 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        {[1,2,3,4,5].map(i => (
+                                            <motion.div 
+                                                key={i}
+                                                animate={{ height: [10, 30, 10] }}
+                                                transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
+                                                className="w-1.5 bg-violet-500 rounded-full"
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-violet-400 italic">Acoustic Signal Only</p>
+                                    <audio autoPlay ref={(el) => { if (el) el.srcObject = remoteStream }} />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between bg-white/5 p-4 rounded-3xl border border-white/10">
+                            <div className="flex items-center gap-3">
+                                <Activity className="w-4 h-4 text-emerald-500" />
+                                <p className="text-[9px] font-black uppercase text-white/60 tracking-widest">Signal Integrity: Optimal</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Monitor className="w-3 h-3 text-violet-500" />
+                                <p className="text-[9px] font-black uppercase text-violet-400 tracking-widest">P2P Encrypted</p>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+         </AnimatePresence>
          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
                <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 group overflow-hidden">
@@ -695,40 +766,89 @@ export default function SpyMaster() {
                                 ].map(device => (
                                         <div 
                                             key={device.id}
-                                            className="p-8 rounded-[3rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-900/50 transition-all group shadow-xl hover:shadow-2xl hover:-translate-y-1 duration-500"
+                                            className={`p-10 rounded-[4rem] bg-white dark:bg-slate-900 border-2 transition-all group shadow-2xl duration-500 relative overflow-hidden ${currentTargetId.current === device.device_id ? 'border-violet-500 ring-4 ring-violet-500/10' : 'border-slate-100 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-900/50'}`}
                                         >
-                                            <div className="flex items-center gap-5 mb-8">
-                                                <div className="w-14 h-14 rounded-3xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:bg-violet-600 group-hover:text-white transition-all duration-500 shadow-inner">
-                                                    {device.device_type === 'mobile' ? <Smartphone className="w-7 h-7" /> : device.device_type === 'tablet' ? <Tablet className="w-7 h-7" /> : <Laptop className="w-7 h-7" />}
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-violet-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-violet-600/10 transition-all" />
+                                            
+                                            <div className="flex items-start justify-between mb-10 relative">
+                                                <div className="flex items-center gap-6">
+                                                    <div className={`w-16 h-16 rounded-[2rem] flex items-center justify-center transition-all duration-500 shadow-xl ${currentTargetId.current === device.device_id ? 'bg-violet-600 text-white' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400'}`}>
+                                                        {device.device_type === 'mobile' ? <Smartphone className="w-8 h-8" /> : device.device_type === 'tablet' ? <Tablet className="w-8 h-8" /> : <Laptop className="w-8 h-8" />}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        {editingNodeId === device.device_id ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Input 
+                                                                    value={tempLabel}
+                                                                    onChange={(e) => setTempLabel(e.target.value)}
+                                                                    className="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border-none font-black uppercase text-[10px] tracking-widest px-4"
+                                                                    autoFocus
+                                                                    onBlur={() => {
+                                                                        updateDeviceLabel(device.device_id, tempLabel);
+                                                                        setEditingNodeId(null);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-3">
+                                                                <p className="text-lg font-black uppercase tracking-tighter italic truncate">{device.label || 'Unknown Node'}</p>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        setEditingNodeId(device.device_id);
+                                                                        setTempLabel(device.label || '');
+                                                                    }}
+                                                                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 text-slate-300 hover:text-violet-500 transition-colors"
+                                                                >
+                                                                    <Settings className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <div className={`w-2 h-2 rounded-full ${device.is_external ? 'bg-violet-500' : (new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}`} />
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                                                {device.is_external ? 'COLLABORATIVE NODE' : `${device.os_family || 'Neural'} • ${device.device_type?.toUpperCase() || 'NODE'}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-black uppercase tracking-tight truncate">{device.label || 'Unknown Node'}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <div className={`w-2 h-2 rounded-full ${device.is_external ? 'bg-violet-500' : (new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}`} />
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                                                            {device.is_external ? 'COLLABORATIVE' : `${device.os_family || 'Neural'} • ${device.device_type?.toUpperCase() || 'NODE'}`}
-                                                        </p>
+                                                
+                                                <div className="flex flex-col items-end">
+                                                    <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                        {new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'Active' : 'Offline'}
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-white/5">
-                                                    <FolderCheck className="w-4 h-4 text-violet-500" />
-                                                    <div className="flex-1">
-                                                        <p className="text-[8px] font-black uppercase text-slate-400">Default Segment</p>
-                                                        <p className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">{device.preferred_folder || 'Main'}</p>
-                                                    </div>
-                                                </div>
+                                            <div className="grid grid-cols-2 gap-4 relative">
+                                                <Button 
+                                                    disabled={isConnecting && currentTargetId.current !== device.device_id}
+                                                    onClick={() => initiateBridge(device.device_id, 'audio')}
+                                                    className={`h-20 rounded-[2rem] flex flex-col items-center justify-center gap-1.5 transition-all shadow-xl ${isConnected && currentTargetId.current === device.device_id && !remoteStream?.getVideoTracks().length ? 'bg-emerald-600 text-white animate-pulse' : 'bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/5 text-slate-900 dark:text-white hover:border-violet-500 hover:text-violet-500'}`}
+                                                >
+                                                    <Mic className="w-6 h-6" />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">Hear Voice</span>
+                                                </Button>
 
                                                 <Button 
-                                                    disabled={isConnected || isConnecting}
-                                                    onClick={() => initiateBridge(device.device_id)}
-                                                    className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[10px] tracking-widest shadow-xl group-hover:bg-violet-600 group-hover:text-white transition-all duration-500"
+                                                    disabled={isConnecting && currentTargetId.current !== device.device_id}
+                                                    onClick={() => initiateBridge(device.device_id, 'video')}
+                                                    className={`h-20 rounded-[2rem] flex flex-col items-center justify-center gap-1.5 transition-all shadow-xl ${isConnected && currentTargetId.current === device.device_id && remoteStream?.getVideoTracks().length ? 'bg-rose-600 text-white animate-pulse' : 'bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-white/5 text-slate-900 dark:text-white hover:border-violet-500 hover:text-violet-500'}`}
                                                 >
-                                                    <LinkIcon className="w-4 h-4 mr-2" /> 
-                                                    {isConnected && currentTargetId.current === device.device_id ? 'Linked' : 'Initialize Audio Bridge'}
+                                                    <Eye className="w-6 h-6" />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest">See Camera</span>
                                                 </Button>
+                                            </div>
+
+                                            <div className="mt-8 flex items-center justify-between px-2">
+                                                <div className="flex items-center gap-2">
+                                                    <FolderCheck className="w-3.5 h-3.5 text-violet-500" />
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{device.preferred_folder || 'Main'} Cluster</p>
+                                                </div>
+                                                {isConnected && currentTargetId.current === device.device_id && (
+                                                    <button onClick={terminateBridge} className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:underline underline-offset-4">
+                                                        Sever Link
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))

@@ -67,6 +67,7 @@ interface UseNotesReturn {
   deviceList: any[];
   registerDevice: () => Promise<void>;
   setPreferredFolder: (folderName: string) => Promise<void>;
+  updateDeviceLabel: (deviceId: string, newLabel: string) => Promise<void>;
 }
 
 type SyncAction =
@@ -237,6 +238,21 @@ export function useNotes(user: User | null): UseNotesReturn {
       console.error('Storage Path Update Failed:', err);
     }
   }, [user, deviceId]);
+
+  const updateDeviceLabel = useCallback(async (targetDeviceId: string, newLabel: string) => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('user_devices')
+        .update({ label: newLabel })
+        .match({ user_id: user.id, device_id: targetDeviceId });
+      
+      setDeviceList(prev => prev.map(d => d.device_id === targetDeviceId ? { ...d, label: newLabel } : d));
+      toast.success('Identity Recalibrated', { description: `Node renamed to ${newLabel}.` });
+    } catch (err) {
+      console.error('Label Update Failed:', err);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) registerDevice();
@@ -826,5 +842,6 @@ export function useNotes(user: User | null): UseNotesReturn {
     deviceList,
     registerDevice,
     setPreferredFolder,
+    updateDeviceLabel,
   };
 }

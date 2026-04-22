@@ -8,7 +8,7 @@ interface AudioBridgeReturn {
     isConnecting: boolean;
     isConnected: boolean;
     remoteStream: MediaStream | null;
-    initiateBridge: (targetDeviceId: string) => Promise<void>;
+    initiateBridge: (targetDeviceId: string, type?: 'audio' | 'video') => Promise<void>;
     terminateBridge: () => void;
     currentTargetId: React.MutableRefObject<string | null>;
     requestCollaboration: (email: string, pin: string) => Promise<{ success: boolean; error?: string }>;
@@ -79,7 +79,7 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
         return pc;
     }, [user, supabase, cleanup]);
 
-    const initiateBridge = async (targetId: string) => {
+    const initiateBridge = async (targetId: string, type: 'audio' | 'video' = 'audio') => {
         if (!user) return;
         setIsConnecting(true);
         currentTargetId.current = targetId;
@@ -88,8 +88,10 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
             const pc = createPeerConnection(targetId);
             
             // Controller doesn't need to send its own mic, just receive
-            // But we add a transceiver to negotiate audio
             pc.addTransceiver('audio', { direction: 'recvonly' });
+            if (type === 'video') {
+                pc.addTransceiver('video', { direction: 'recvonly' });
+            }
 
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
@@ -97,11 +99,11 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
             await supabase.from('device_commands').insert({
                 sender_id: user.id,
                 target_device_id: targetId,
-                command: 'START_AUDIO_STREAM',
+                command: type === 'video' ? 'START_VIDEO_STREAM' : 'START_AUDIO_STREAM',
                 payload: { sdp: offer.sdp, type: offer.type }
             });
 
-            toast.info('Neural Link Initialized', { description: 'Waiting for remote node to bridge acoustic stream...' });
+            toast.info('Neural Link Initialized', { description: `Waiting for remote node to bridge ${type} stream...` });
         } catch (err: any) {
             console.error('Bridge Failure:', err);
             toast.error('Bridge Connection Failed');
@@ -152,13 +154,17 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
             }, async (payload: any) => {
                 const { command, sender_id, payload: data } = payload.new;
 
-                if (command === 'START_AUDIO_STREAM') {
-                    // Target Node: Received request to stream audio
+                if (command === 'START_AUDIO_STREAM' || command === 'START_VIDEO_STREAM') {
+                    // Target Node: Received request to stream audio/video
                     try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        const constraints = command === 'START_VIDEO_STREAM' 
+                            ? { audio: true, video: { facingMode: 'user' } }
+                            : { audio: true };
+                        
+                        const stream = await navigator.mediaDevices.getUserMedia(constraints);
                         localStream.current = stream;
 
-                        const pc = createPeerConnection(sender_id); // Here sender_id is used to reply
+                        const pc = createPeerConnection(sender_id); 
                         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
                         await pc.setRemoteDescription(new RTCSessionDescription(data));
@@ -172,11 +178,12 @@ export function useAudioBridge(user: any): AudioBridgeReturn {
                             payload: { sdp: answer.sdp, type: answer.type }
                         });
                         
-                        toast.success('Remote Audio Bridge Active', { description: 'Mic stream established with controller.' });
+                        toast.success('Remote Intelligence Bridged', { description: `${command.includes('VIDEO') ? 'Video' : 'Audio'} stream established with controller.` });
                     } catch (err) {
                         console.error('Incoming Bridge Failure:', err);
                     }
-                } else if (command === 'SIGNAL_SDP') {
+                }
+ else if (command === 'SIGNAL_SDP') {
                     // Controller Node: Received Answer
                     if (peerConnection.current) {
                         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data));
