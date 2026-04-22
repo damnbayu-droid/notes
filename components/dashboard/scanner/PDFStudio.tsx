@@ -374,6 +374,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                }
                onBack?.();
             }}
+            onPrint={handlePrint}
             onDownload={handleDownloadAttempt}
             onShare={handleShare}
             onImageRequest={() => imageInputRef.current?.click()}
@@ -739,7 +740,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                     setIsLoading(true);
                     try {
                       const originalBytes = await pdfFile.arrayBuffer();
-                      const editedBytes = await PDFEngine.applyAnnotations(new Uint8Array(originalBytes), annotations);
+                      const editedBytes = await PDFEngine.applyAnnotations(originalBytes, annotations);
                       const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
