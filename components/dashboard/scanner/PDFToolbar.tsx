@@ -13,6 +13,7 @@ import {
   Signature, 
   Link, 
   MessageSquare,
+  Mail,
   Undo2,
   Redo2,
   MousePointer2,
@@ -40,6 +41,7 @@ interface PDFToolbarProps {
   onPrint: () => void;
   onDownload: () => void;
   onShare: () => void;
+  onEmailRequest: () => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -62,6 +64,7 @@ export function PDFToolbar({
   onPrint,
   onDownload,
   onShare,
+  onEmailRequest,
   canUndo,
   canRedo,
   onUndo,
@@ -119,6 +122,9 @@ export function PDFToolbar({
                </div>
                <Button variant="outline" onClick={onShare} className="h-9 px-4 rounded-lg text-[11px] font-bold gap-2 border-slate-200">
                   <Share2 className="w-4 h-4" /> Share
+               </Button>
+               <Button variant="outline" onClick={onEmailRequest} className="h-9 px-4 rounded-lg text-[11px] font-bold gap-2 border-slate-200">
+                  <Mail className="w-4 h-4" /> Email
                </Button>
                <Button onClick={onDone} className="h-9 px-6 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-bold gap-2 shadow-lg shadow-rose-500/20">
                   <CheckCircle2 className="w-4 h-4" /> Done
