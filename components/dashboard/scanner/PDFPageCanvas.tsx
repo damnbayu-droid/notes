@@ -99,15 +99,28 @@ export const PDFPageCanvas = forwardRef(({
       
       if (!isMounted) return;
 
-      if (fabricCanvasRef.current) {
-        fabricCanvasRef.current.dispose();
-      }
-
       const fCanvas = new fabric.Canvas(canvasRef.current, {
         width: bgCanvas.width / 2,
         height: bgCanvas.height / 2,
         backgroundColor: 'white',
       });
+      
+      // Store instance for global toolbar access (v18.1.7)
+      (canvasRef.current as any).__fabricCanvas = fCanvas;
+      (canvasRef.current as any).__undo = () => {
+         if (historyIndex > 0) {
+           const newIndex = historyIndex - 1;
+           loadHistory(newIndex);
+           setHistoryIndex(newIndex);
+         }
+      };
+      (canvasRef.current as any).__redo = () => {
+         if (historyIndex < history.length - 1) {
+           const newIndex = historyIndex + 1;
+           loadHistory(newIndex);
+           setHistoryIndex(newIndex);
+         }
+      };
 
       // Custom Delete Control
       const deleteIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ff0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'%3E%3C/line%3E%3Cline x1='6' y1='6' x2='18' y2='18'%3E%3C/line%3E%3Csvg%3E";
@@ -155,37 +168,39 @@ export const PDFPageCanvas = forwardRef(({
 
       fabricCanvasRef.current = fCanvas;
       
-      // 4. Load initial annotations
-      if (initialAnnotations.length > 0) {
-        for (const ann of initialAnnotations) {
-          if (ann.type === 'image') {
-            fabric.Image.fromURL(ann.dataUrl).then(img => {
-              img.set({
-                left: ann.left || ann.x || 100,
-                top: ann.top || ann.y || 100,
-                scaleX: ann.scaleX || 0.4,
-                scaleY: ann.scaleY || 0.4,
-              });
-              fCanvas.add(img);
-            });
-          }
+      // 4. Load initial state
+      if (initialAnnotations) {
+        await fCanvas.loadFromJSON(initialAnnotations);
+        // Ensure background image is at the back and non-selectable
+        const objects = fCanvas.getObjects();
+        const possibleBg = objects.find(o => o.type === 'image' && (o as any).selectable === false);
+        if (possibleBg) {
+          fCanvas.sendObjectToBack(possibleBg);
+        } else {
+          fCanvas.add(bgImage);
+          fCanvas.sendObjectToBack(bgImage);
         }
+      } else {
+        fCanvas.add(bgImage);
+        fCanvas.sendObjectToBack(bgImage);
       }
       
+      const updateParent = () => {
+        const json = fCanvas.toJSON();
+        onAnnotationsChange(json);
+      };
+
       fCanvas.on('object:modified', () => {
-        const objs = fCanvas.getObjects().filter(o => o !== bgImage);
-        onAnnotationsChange(objs);
+        updateParent();
         saveHistory();
       });
 
       fCanvas.on('object:added', () => {
-        const objs = fCanvas.getObjects().filter(o => o !== bgImage);
-        onAnnotationsChange(objs);
+        updateParent();
       });
 
       fCanvas.on('object:removed', () => {
-        const objs = fCanvas.getObjects().filter(o => o !== bgImage);
-        onAnnotationsChange(objs);
+        updateParent();
       });
 
       setIsLoading(false);
@@ -215,7 +230,10 @@ export const PDFPageCanvas = forwardRef(({
     return () => {
       isMounted = false;
       window.removeEventListener('keydown', handleKeyDown);
-      if (fabricCanvasRef.current) fabricCanvasRef.current.dispose();
+      if (fabricCanvasRef.current) {
+        fabricCanvasRef.current.dispose();
+        fabricCanvasRef.current = null;
+      }
     };
   }, [pdf, pageNumber]);
 
@@ -251,20 +269,27 @@ export const PDFPageCanvas = forwardRef(({
       fCanvas.freeDrawingBrush = brush;
     }
 
+    let mouseDownPos = { x: 0, y: 0 };
+
     const handleMouseDown = (opt: any) => {
+      const pointer = fCanvas.getScenePoint(opt.e);
+      mouseDownPos = { x: pointer.x, y: pointer.y };
+    };
+
+    const handleMouseUp = (opt: any) => {
       const fCanvas = fabricCanvasRef.current;
       if (!fCanvas || fCanvas.isDrawingMode) return;
 
       const pointer = fCanvas.getScenePoint(opt.e);
       const target = fCanvas.findTarget(opt.e);
       
-      // Select logic or if we are clicking on an existing object to drag/edit
-      if (target && target.selectable) {
-        fCanvas.setActiveObject(target);
-        return;
-      }
+      // Calculate movement distance to distinguish click from drag
+      const dist = Math.sqrt(Math.pow(pointer.x - mouseDownPos.x, 2) + Math.pow(pointer.y - mouseDownPos.y, 2));
+      
+      // If we are dragging an existing object or if the mouse moved too much, don't create new
+      if (target || dist > 5) return;
 
-      // DO NOT create if we are in select mode or if we missed a target but clicked near handles
+      // DO NOT create if we are in select mode
       if (tool === 'select') return;
 
       if (tool === 'text') {
@@ -279,7 +304,6 @@ export const PDFPageCanvas = forwardRef(({
         fCanvas.add(text);
         fCanvas.setActiveObject(text);
         text.enterEditing();
-        // Auto-select text for quick replacement
         text.selectAll();
       } else if (tool === 'ellipse') {
         const ellipse = new fabric.Ellipse({
@@ -298,8 +322,8 @@ export const PDFPageCanvas = forwardRef(({
         const check = new fabric.IText('✓', {
           left: pointer.x,
           top: pointer.y,
-          fontSize: 22, // Smaller to fit boxes
-          fill: 'black', // Default black
+          fontSize: 22,
+          fill: signColor === 'black' ? 'black' : '#10b981', // Emerald 500
           fontWeight: 'bold',
         });
         fCanvas.add(check);
@@ -307,8 +331,8 @@ export const PDFPageCanvas = forwardRef(({
         const cross = new fabric.IText('✗', {
           left: pointer.x,
           top: pointer.y,
-          fontSize: 22, // Smaller to fit boxes
-          fill: 'black', // Default black
+          fontSize: 22,
+          fill: signColor === 'black' ? 'black' : '#f43f5e', // Rose 500
           fontWeight: 'bold',
         });
         fCanvas.add(cross);
@@ -362,9 +386,11 @@ export const PDFPageCanvas = forwardRef(({
     };
 
     fCanvas.on('mouse:down', handleMouseDown);
+    fCanvas.on('mouse:up', handleMouseUp);
     fCanvas.on('path:created', () => saveHistory());
     return () => {
       fCanvas.off('mouse:down', handleMouseDown);
+      fCanvas.off('mouse:up', handleMouseUp);
       fCanvas.off('path:created');
     };
   }, [tool, signColor]);
@@ -372,6 +398,7 @@ export const PDFPageCanvas = forwardRef(({
   return (
     <div 
       ref={containerRef} 
+      data-page={pageNumber}
       className="relative flex justify-center bg-slate-100 dark:bg-slate-900/50 p-10 h-full overflow-auto"
       style={{ zoom: zoom }}
     >
@@ -381,7 +408,7 @@ export const PDFPageCanvas = forwardRef(({
              <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
           </div>
         )}
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} data-page={pageNumber} />
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ import { Loader2 } from 'lucide-react';
 
 type ToolType = 'merge' | 'split' | 'compress' | 'image-to-pdf';
 
-export function PDFTools({ initialTab = 'merge', onBack }: { initialTab?: ToolType, onBack?: () => void }) {
+export function PDFTools({ initialTab = 'merge', onBack, onPayloadReady }: { initialTab?: ToolType, onBack?: () => void, onPayloadReady?: (file: File) => void }) {
     const [activeTab, setActiveTab] = useState<ToolType>(initialTab);
     const [files, setFiles] = useState<File[]>([]);
     const [splitRange, setSplitRange] = useState('');
@@ -249,24 +249,43 @@ export function PDFTools({ initialTab = 'merge', onBack }: { initialTab?: ToolTy
                             <span className="text-[9px] font-black text-violet-600 uppercase tracking-widest">{files.length} Node(s) Locked</span>
                         )}
                     </div>
-                    <div className="flex gap-3">
-                        <div className="flex-1 relative group">
-                            <Input
-                                type="file"
-                                accept={activeTab === 'image-to-pdf' ? 'image/jpeg,image/png' : '.pdf'}
-                                multiple={activeTab === 'merge' || activeTab === 'image-to-pdf'}
-                                onChange={handleFileChange}
-                                disabled={isProcessing}
-                                className="bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10 h-16 rounded-2xl px-6 text-[10px] font-bold cursor-pointer transition-all hover:border-violet-300 dark:hover:border-violet-500/30"
-                            />
-                             <div className="absolute inset-y-0 right-6 flex items-center pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity">
-                                <FileUp className="w-5 h-5 text-violet-600" />
-                             </div>
+                    <div className="space-y-3">
+                        <div className="flex gap-3">
+                            <div className="flex-1 relative group">
+                                <Input
+                                    type="file"
+                                    accept={activeTab === 'image-to-pdf' ? 'image/jpeg,image/png' : '.pdf'}
+                                    multiple={activeTab === 'merge' || activeTab === 'image-to-pdf'}
+                                    onChange={handleFileChange}
+                                    disabled={isProcessing}
+                                    className="bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/10 h-16 rounded-2xl px-6 text-[10px] font-bold cursor-pointer transition-all hover:border-violet-300 dark:hover:border-violet-500/30"
+                                />
+                                 <div className="absolute inset-y-0 right-6 flex items-center pointer-events-none opacity-20 group-hover:opacity-100 transition-opacity">
+                                    <FileUp className="w-5 h-5 text-violet-600" />
+                                 </div>
+                            </div>
+                            {files.length > 0 && (
+                                <Button variant="ghost" size="icon" onClick={() => { setFiles([]); setDownloadUrl(null); }} className="h-16 w-16 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 border border-slate-100 dark:border-white/5">
+                                    <X className="w-5 h-5" />
+                                </Button>
+                            )}
                         </div>
+
+                        {/* Payload Manifest */}
                         {files.length > 0 && (
-                            <Button variant="ghost" size="icon" onClick={() => { setFiles([]); setDownloadUrl(null); }} className="h-16 w-16 rounded-2xl hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 border border-slate-100 dark:border-white/5">
-                                <X className="w-5 h-5" />
-                            </Button>
+                            <div className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/10 max-h-40 overflow-y-auto space-y-2 custom-scrollbar">
+                                {files.map((f, i) => (
+                                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-50 dark:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-6 h-6 rounded-lg bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center">
+                                                <span className="text-[9px] font-black text-violet-600">{i + 1}</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[200px]">{f.name}</span>
+                                        </div>
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{(f.size / 1024).toFixed(1)} KB</span>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -324,11 +343,24 @@ export function PDFTools({ initialTab = 'merge', onBack }: { initialTab?: ToolTy
                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                              <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest italic">Temporal Artifact Solidified</label>
                         </div>
-                        <a href={downloadUrl} download={downloadName} className="block">
-                            <Button className="w-full h-16 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[11px] tracking-[0.1em] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all">
-                                <Download className="w-5 h-5 mr-3" /> Extrude Artifact
+                        <div className="flex gap-4">
+                            <a href={downloadUrl} download={downloadName} className="flex-1">
+                                <Button className="w-full h-16 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[11px] tracking-[0.1em] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all">
+                                    <Download className="w-5 h-5 mr-3" /> Extrude
+                                </Button>
+                            </a>
+                            <Button 
+                                onClick={async () => {
+                                    const response = await fetch(downloadUrl);
+                                    const blob = await response.blob();
+                                    const file = new File([blob], downloadName, { type: 'application/pdf' });
+                                    onPayloadReady?.(file);
+                                }}
+                                className="flex-1 h-16 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black uppercase text-[11px] tracking-[0.1em] shadow-xl shadow-violet-500/20 active:scale-95 transition-all"
+                            >
+                                <Sparkles className="w-5 h-5 mr-3" /> Open in Studio
                             </Button>
-                        </a>
+                        </div>
                     </div>
                 )}
             </div>

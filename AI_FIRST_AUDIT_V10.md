@@ -2,7 +2,7 @@
 
 **Project State**: Published Snapshot Milestone
 **Audit Authority**: Antigravity Autonomous Systems
-**Note**: This is a legacy audit. For the latest Social Ecosystem audit, refer to [AI_FIRST_AUDIT_V11.md](file:///Users/bayu/Documents/Antigravity/notes-main/AI_FIRST_AUDIT_V11.md) (v15.0.8).
+**Note**: This is a legacy audit. For the latest Neural Sovereignty audit, refer to [AI_FIRST_AUDIT_V11.md](file:///Users/bayu/Documents/Antigravity/notes-main/AI_FIRST_AUDIT_V11.md) (v18.1.6).
 
 ---
 

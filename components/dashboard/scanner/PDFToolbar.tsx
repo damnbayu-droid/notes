@@ -27,6 +27,7 @@ import {
   Settings2,
   Maximize2,
   Layers,
+  Clock,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -45,6 +46,9 @@ interface PDFToolbarProps {
   onSignatureRequest: () => void;
   onPageLayoutRequest: () => void;
   onManagePagesRequest: () => void;
+  onLogsRequest: () => void;
+  onSidebarToggle: () => void;
+  isSidebarOpen: boolean;
   signColor: 'colored' | 'black';
   onSignColorToggle: () => void;
 }
@@ -62,6 +66,9 @@ export function PDFToolbar({
   onSignatureRequest,
   onPageLayoutRequest,
   onManagePagesRequest,
+  onLogsRequest,
+  onSidebarToggle,
+  isSidebarOpen,
   signColor,
   onSignColorToggle
 }: PDFToolbarProps) {
@@ -98,6 +105,9 @@ export function PDFToolbar({
             </div>
             
             <div className="flex items-center gap-3">
+               <Button onClick={onLogsRequest} variant="ghost" className="h-9 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 gap-2">
+                  <Clock className="w-4 h-4" /> Logs
+               </Button>
                <div className="flex items-center gap-1 border-r border-slate-100 dark:border-white/5 pr-3 mr-2">
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg"><Search className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg"><Printer className="w-4 h-4" /></Button>
@@ -122,15 +132,27 @@ export function PDFToolbar({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={`h-11 w-11 rounded-xl transition-all ${activeTool === 'select' ? 'bg-rose-50 text-rose-600 shadow-inner' : 'text-slate-500'}`}
-                        onClick={() => onToolSelect('select')}
+                        className={`h-11 w-11 rounded-xl transition-all ${isSidebarOpen ? 'bg-rose-50 text-rose-600 shadow-inner' : 'text-slate-500'}`}
+                        onClick={onSidebarToggle}
                       >
                         <LayoutGrid className="w-5 h-5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Thumbnails</TooltipContent>
+                    <TooltipContent>Toggle Sidebar</TooltipContent>
                  </Tooltip>
-                 <Button variant="ghost" size="icon" onClick={() => onToolSelect('select')} className={`h-11 w-11 rounded-xl ${activeTool === 'select' ? 'text-rose-600' : 'text-slate-500'}`}><MousePointer2 className="w-5 h-5" /></Button>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={`h-11 w-11 rounded-xl ${activeTool === 'select' ? 'bg-slate-100 text-rose-600' : 'text-slate-500'}`}
+                        onClick={() => onToolSelect('select')}
+                      >
+                        <MousePointer2 className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Select Tool</TooltipContent>
+                 </Tooltip>
                  <div className="flex items-center gap-1 ml-2">
                     <Button variant="ghost" size="icon" disabled={!canUndo} onClick={onUndo} className="h-9 w-9 rounded-lg text-slate-400"><Undo2 className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" disabled={!canRedo} onClick={onRedo} className="h-9 w-9 rounded-lg text-slate-400"><Redo2 className="w-4 h-4" /></Button>
@@ -209,16 +231,6 @@ export function PDFToolbar({
               </div>
             </div>
           
-          <div className="flex items-center gap-4 ml-6">
-             <div className="h-10 flex items-center gap-3 px-4 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><LayoutGrid className="w-4 h-4" /></Button>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-3">Page layout</span>
-             </div>
-             <div className="h-10 flex items-center gap-3 px-4 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5">
-                <FileText className="w-4 h-4 text-slate-400" />
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-l border-slate-200 pl-3">Manage Pages</span>
-             </div>
-          </div>
         </div>
       </div>
     </TooltipProvider>

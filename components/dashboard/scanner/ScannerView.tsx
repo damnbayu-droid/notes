@@ -30,17 +30,16 @@ import {
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { CameraView } from './CameraView';
-import { PDFStudio } from './PDFStudio';
 import { PDFTools } from './PDFTools';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
-export function ScannerView({ onBack }: { onBack?: () => void }) {
+export function ScannerView({ onBack, onPayloadReady }: { onBack?: () => void, onPayloadReady?: (file: File) => void }) {
     const [capturedImages, setCapturedImages] = useState<string[]>([]);
     const [isCompressing, setIsCompressing] = useState(false);
     const [scanType, setScanType] = useState<'document' | 'photo'>('document');
     const [paperSize, setPaperSize] = useState<'a4' | 'f4' | 'letter'>('a4');
-    const [activeSecondaryView, setActiveSecondaryView] = useState<'none' | 'studio' | 'tools'>('studio');
+    const [activeSecondaryView, setActiveSecondaryView] = useState<'none' | 'tools'>('none');
 
     const handleCapture = async (imageSrc: string) => {
         setIsCompressing(true);
@@ -154,8 +153,26 @@ export function ScannerView({ onBack }: { onBack?: () => void }) {
         }
     };
 
-    if (activeSecondaryView === 'studio') return <PDFStudio />;
-    if (activeSecondaryView === 'tools') return <PDFTools />;
+    const handleOpenStudio = async () => {
+        if (capturedImages.length === 0) {
+            onPayloadReady?.(undefined as any); // Open empty studio
+            return;
+        }
+        
+        try {
+            setIsCompressing(true);
+            const pdfBytes = await generatePDF();
+            const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
+            const file = new File([blob], `neural-scan-${Date.now()}.pdf`, { type: 'application/pdf' });
+            onPayloadReady?.(file);
+        } catch (error) {
+            toast.error('Synthesis Failed');
+        } finally {
+            setIsCompressing(false);
+        }
+    };
+
+    if (activeSecondaryView === 'tools') return <PDFTools onPayloadReady={onPayloadReady} onBack={() => setActiveSecondaryView('none')} />;
 
     return (
         <div className="flex-1 flex flex-col h-full bg-slate-50/20 dark:bg-slate-950/20 animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
@@ -203,7 +220,7 @@ export function ScannerView({ onBack }: { onBack?: () => void }) {
                     </DropdownMenu>
 
                     <Button 
-                        onClick={() => setActiveSecondaryView('studio')}
+                        onClick={handleOpenStudio}
                         className="h-12 px-6 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all"
                     >
                         <FileText className="w-4 h-4 mr-2" /> Open Studio

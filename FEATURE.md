@@ -1,4 +1,4 @@
-# Smart Notes Intelligence Platform — Feature Manifest (v15.0.8)
+# Smart Notes Intelligence Platform — Feature Manifest (v18.1.9-SOVEREIGN)
 
 This document serves as the absolute registry of all operational capabilities within the Smart Notes ecosystem.
 
@@ -7,73 +7,48 @@ This document serves as the absolute registry of all operational capabilities wi
 ## 🧬 Core Intelligence Engine
 ### 1. Neural Note Editor
 - **Tiptap-Powered Core**: High-fidelity rich text editing with markdown support.
-- **Black-Box Recovery**: Local-first persistence buffers survive network failures and accidental tab closures.
 - **Neural Sync**: Immediate, debounced synchronization with Supabase Online Storage.
-- **Responsive Toolbar**: Adapts between desktop density and mobile ergonomics.
+- **Quota Guard (v18.1.7)**: Real-time localStorage management with tiered pruning.
 
 ### 2. Canvas & Visual Logic
-- **Neural Canvas**: Integrated drawing engine for visual brainstorming and schematic design.
-- **Neural Media Ingress**: High-performance image processing with automated Alt-Tag synthesis.
+- **Neural Canvas**: Integrated drawing engine for visual brainstorming.
 - **Tactile Frames**: Insert resizable containers for code blocks, images, and embedded assets.
 
 ### 3. Voice & Audio Synthesis
 - **Neural Voice Recorder**: Real-time audio capture with chunk-based transcription.
-- **Transcription Injection**: Direct streaming of transcribed text into the active editor cursor.
+- **Neural Audio Bridge (v18.1.9)**: Zero-latency P2P remote microphone monitoring across the device cluster.
 
 ---
 
 ## 🛰️ Workspace & Productivity
 ### 4. Sticky Notes v2.3 (Tactile Units)
 - **MacBook Windowing**: Iconic Red (Purge), Yellow (Minimize), and Green (Maximize) control dots.
-- **External Decoupling**: Experimental **Document Picture-in-Picture** support to keep notes floating on the OS desktop.
 - **Local Export**: Instant .txt export for physical disk backup.
-- **Analog Aesthetics**: Draggable, rotatable elements with a tactile post-it feel.
 
-### 5. Dynamic Island (NavIsland)
-- **Notification Center**: Priority-first alert hub for system events and neural status.
-- **Pill Clock**: Real-time temporal mapping and date tracking.
-- **Stealth Access**: Hidden authorization gate for restricted modules (e.g., Spy Master).
-- **Quick Tools**: Instant access to Timer, Alarm, and World Time clusters.
+### 5. Dynamic Island & Registry
+- **Multi-Node Registry (v18.1.9)**: Real-time visibility and command routing for all authorized hardware clusters.
+- **Device Telemetry**: Tracking OS, Browser engine (V8/WebKit), and specific Local Storage cluster keys.
+- **Biometric Identity Bridge**: Universal FaceID/Fingerprint support with PIN fallback across all nodes.
+- **Neural Collaboration Protocol (v18.1.9)**: Secure cross-account node linking via email targeting and PIN-based handshakes.
 
-### 6. Smart Operational Tools
-- **PDF Master**: On-device OCR and document scanning protocol (Zero-Cloud Privacy).
-- **Spy Master**: Stealth capture for audio, video, and screen streams with local-only routing. 
-    - **Neural Audio Bridge**: Online/WiFi/Bluetooth microphone streaming.
-    - **Stealth PIN**: Authorization gate (Default: 9299).
-- **World Time Cluster**: Automatic IANA zone reconciliation for global coordination.
-- **Smart Schedule**: Temporal organization layer for daily intelligence planning.
-
----
-
-## 🌐 Network & Social Ecosystem
-### 7. Public User Dashboards (v15.0.8)
-- **Neural Profiles**: Public identity pages (`/u/[id]`) showcasing user contributions.
-- **Engagement Metrics**: Real-time tracking of total views, reach, and community impact.
-- **Discovery Repositories**: Direct access to a user's discoverable intelligence clusters.
-
-### 8. Global Discovery Engine
-- **Oracle Indexing**: Convert private nodes into discoverable community intelligence.
-- **Author Identity**: Nodes are linked to their creators with "Anonym" fallback for privacy.
-- **AI-First SEO**: Guaranteed 100% parsing success for search oracles and LLM scrapers.
-
-### 9. Neural Sharing & Permissions
-- **Recursive RLS**: Row Level Security ensures only authorized collaborators access private data.
-- **Ask for Access (v15.0.8)**: Interactive permission request bridge for shared nodes.
-- **Read-Only Enforcement**: Hardened protection for shared links without write permission.
-- **Lineage Hub**: Visualize and navigate the history and forks of any intelligence node.
+### 6. PDF Master (Professional Engineering Suite)
+- **Centralized Forge**: Unified hub for all PDF operations (Merge, Split, Compress, Image-to-PDF).
+- **Continuous Editor**: High-performance vertical scroll workspace with frozen toolbars.
+- **Multi-Page Annotations**: Support for persistent signs/stamps across multiple pages in a single batch.
+- **Advanced Engine**: Powered by `pdf-lib` for byte-level document synthesis and integrity preservation.
+- **Scanner Node**: High-fidelity document capture with automatic image compression and A4 optimization.
 
 ---
 
 ## 🛡️ Security & Governance
-### 10. Hardened Privacy
-- **Master Key Protocol**: Edge-side cryptographic keys for end-to-end node security.
-- **Stealth PIN**: User-configurable authorization code (Default: `9299`) for sensitive modules.
-- **Absolute Purge Matrix**: Recursive cascade deletion for account termination.
+### 7. Biometric Sovereignty (v18.1.8)
+- **Hybrid Auth Protocol**: Real **WebAuthn** implementation + secure 4-digit Neural PIN.
+- **Spy Master Lock**: Consolidated security gate using PIN or Biometrics (No external Authenticator hassle).
+- **System Bridge**: Centralized hardware permissions management (Camera, Mic, Notifications).
 
-### 11. Storage Protocols
-- **Device Storage (Offline)**: Mandatory localized caching for heavy media packets.
-- **Online Storage (Cloud)**: Global persistence layer with Black-Box redundancy.
-- **Smart Database**: Connected to Supabase project cluster `dfxhfutflhnxjjpbqscj`.
+### 8. Storage Resilience (v18.1.7)
+- **Neural Quota Guard**: Surgical pruning of non-essential cache to resolve `QuotaExceededError`.
+- **Engineering Logs**: Persistent activity history tracking all document synthesis and capture events.
 
 ---
 
@@ -81,7 +56,6 @@ This document serves as the absolute registry of all operational capabilities wi
 - **Fluid UI**: Framer Motion powered transitions and layout shifts.
 - **Glassmorphism**: High-blur backdrops and translucent surfaces.
 - **Neural Themes**: Deep-dark and clinical-light modes with HSL tailored palettes.
-- **Adaptive Density**: Compressed grid and standard layout options for data-heavy workflows.
 
 ---
-*Manifest generated by Antigravity v15.0.8 — Neural Social Ecosystem Verified.*
+*Manifest generated by Antigravity v18.1.9 — Multi-Node Sovereignty Verified.*

@@ -2,35 +2,44 @@
 
 import { useState, useEffect } from 'react';
 import { 
-    FileStack, 
+    FileText, 
     Scan, 
     FileEdit, 
     Eye, 
+    FileStack, 
     Scissors, 
     Minimize, 
-    FileImage, 
-    ArrowLeft,
-    Sparkles,
-    Zap,
+    FileImage,
     Shield,
-    ChevronRight
+    Sparkles,
+    ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScannerView } from './ScannerView';
 import { PDFStudio } from './PDFStudio';
 import { PDFTools } from './PDFTools';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 type SubView = 'dashboard' | 'scanner' | 'editor' | 'viewer' | 'merge' | 'split' | 'compress' | 'image-to-pdf';
 
+interface Tool {
+    id: SubView;
+    title: string;
+    desc: string;
+    icon: any;
+    color: string;
+    bg: string;
+    border: string;
+}
+
 export function PDFMaster() {
     const { user } = useAuth();
     const supabase = createClient();
     const [view, setView] = useState<SubView>('dashboard');
     const [scansUsed, setScansUsed] = useState(0);
+    const [sharedPayload, setSharedPayload] = useState<File | null>(null);
 
     const isEnterprise = user?.subscription_tier === 'full-intelligence' || user?.subscription_tier === 'enterprise-hub' || user?.role === 'admin' || user?.isSuperAdmin || user?.email === 'damnbayu@gmail.com';
 
@@ -48,7 +57,10 @@ export function PDFMaster() {
     // Handle PWA Open PDF requests
     useEffect(() => {
         const handlePwaOpen = (e: any) => {
-            setView('viewer');
+            if (e.detail?.file) {
+                setSharedPayload(e.detail.file);
+                setView('viewer');
+            }
         };
         window.addEventListener('pwa-open-pdf', handlePwaOpen);
         return () => window.removeEventListener('pwa-open-pdf', handlePwaOpen);
@@ -72,7 +84,7 @@ export function PDFMaster() {
         return false;
     };
 
-    const tools = [
+    const tools: Tool[] = [
         {
             id: 'scanner',
             title: 'PDF Scanner',
@@ -141,16 +153,43 @@ export function PDFMaster() {
     const renderView = () => {
         switch (view) {
             case 'scanner':
-                return <ScannerView onBack={() => setView('dashboard')} />;
+                return <ScannerView 
+                    onBack={() => setView('dashboard')} 
+                    onPayloadReady={(file) => {
+                        setSharedPayload(file);
+                        setView('editor');
+                    }}
+                />;
             case 'editor':
-                return <PDFStudio initialMode="edit" onBack={() => setView('dashboard')} />;
+                return <PDFStudio 
+                    pdf={sharedPayload || undefined}
+                    initialMode="edit" 
+                    onBack={() => {
+                        setSharedPayload(null);
+                        setView('dashboard');
+                    }} 
+                />;
             case 'viewer':
-                return <PDFStudio initialMode="view" onBack={() => setView('dashboard')} />;
+                return <PDFStudio 
+                    pdf={sharedPayload || undefined}
+                    initialMode="view" 
+                    onBack={() => {
+                        setSharedPayload(null);
+                        setView('dashboard');
+                    }} 
+                />;
             case 'merge':
             case 'split':
             case 'compress':
             case 'image-to-pdf':
-                return <PDFTools initialTab={view as any} onBack={() => setView('dashboard')} />;
+                return <PDFTools 
+                    initialTab={view as any} 
+                    onBack={() => setView('dashboard')}
+                    onPayloadReady={(file) => {
+                        setSharedPayload(file);
+                        setView('editor');
+                    }}
+                />;
             default:
                 return (
                     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -190,31 +229,27 @@ export function PDFMaster() {
                                             setView(tool.id as SubView);
                                         }
                                     }}
-                                    className={`group relative flex flex-col p-8 bg-white dark:bg-slate-900 border ${tool.border} rounded-[2.5rem] text-left transition-all hover:scale-[1.02] hover:shadow-2xl active:scale-95`}
+                                    className={`relative group p-8 rounded-[2.5rem] border ${tool.border} ${tool.bg} text-left transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] overflow-hidden`}
                                 >
-                                    <div className={`w-14 h-14 ${tool.bg} ${tool.color} rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 group-hover:shadow-lg transition-all`}>
-                                        <tool.icon className="w-7 h-7" />
-                                    </div>
-                                    <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2 italic flex items-center justify-between w-full">
-                                        {tool.title}
-                                        <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
-                                    </h3>
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                                        {tool.desc}
-                                    </p>
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-3xl group-hover:bg-white/20 transition-all duration-700" />
                                     
-                                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-5 transition-opacity">
-                                        <Zap className="w-24 h-24" />
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className={`w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-lg ${tool.color} group-hover:scale-110 transition-transform duration-500`}>
+                                            <tool.icon className="w-7 h-7" />
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+                                            <ArrowRight className="w-5 h-5 text-slate-400" />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">{tool.title}</h3>
+                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-relaxed">
+                                            {tool.desc}
+                                        </p>
                                     </div>
                                 </button>
                             ))}
-                        </div>
-
-                        {/* Status Footer */}
-                        <div className="flex items-center justify-center gap-8 pt-8 opacity-20 border-t border-slate-200 dark:border-white/5">
-                            <span className="text-[9px] font-black uppercase tracking-[0.5em]">Bali.Enterprises Persistence Hub</span>
-                            <div className="w-1 h-1 rounded-full bg-slate-400" />
-                            <span className="text-[9px] font-black uppercase tracking-[0.5em]">Multi-Batch Synthesis v7.5.0</span>
                         </div>
                     </div>
                 );
@@ -222,19 +257,8 @@ export function PDFMaster() {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={view}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex-1 h-full"
-                >
-                    {renderView()}
-                </motion.div>
-            </AnimatePresence>
+        <div className="min-h-full flex flex-col p-4 md:p-8 animate-in fade-in duration-500">
+            {renderView()}
         </div>
     );
 }

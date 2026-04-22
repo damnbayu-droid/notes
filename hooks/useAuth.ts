@@ -51,18 +51,20 @@ const initializeAuth = async () => {
       .eq('id', user.id)
       .single();
       
+    const isAdmin = profile?.role === 'admin' || profile?.is_super_admin === true;
+      
     const mappedUser: User = {
       id: user.id,
       email: user.email || '',
       name: profile?.full_name || user.user_metadata?.full_name || 'Anonymous',
       avatar: profile?.avatar_url || user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
       created_at: user.created_at,
-      subscription_tier: profile?.subscription_tier || 'free',
-      ads_disabled: profile?.ads_disabled || false,
+      subscription_tier: isAdmin ? 'enterprise' : (profile?.subscription_tier || 'free'),
+      ads_disabled: isAdmin || (profile?.ads_disabled || false),
       role: profile?.role || 'user',
       isSuperAdmin: profile?.is_super_admin || false,
       interests: profile?.interests || [],
-      access_level: profile?.access_level || 'free'
+      access_level: isAdmin ? 'pro' : (profile?.access_level || 'free')
     };
     
     notifySubscribers({ user: mappedUser, isAuthenticated: true, isLoading: false });

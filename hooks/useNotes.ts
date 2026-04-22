@@ -64,6 +64,8 @@ interface UseNotesReturn {
   forkNote: (noteId: string, content: string) => Promise<{ success: boolean; note?: Note; error?: string }>;
   storageLogs: any[];
   logStorageEvent: (action: string, details: any) => Promise<void>;
+  deviceList: any[];
+  registerDevice: () => Promise<void>;
 }
 
 type SyncAction =
@@ -124,6 +126,18 @@ export function useNotes(user: User | null): UseNotesReturn {
     return id;
   }, []);
 
+  const deviceLabel = useMemo(() => {
+    if (typeof window === 'undefined') return 'Neural Node';
+    const ua = navigator.userAgent;
+    let label = 'Generic Device';
+    if (ua.includes('Macintosh')) label = 'Apple MacBook Node';
+    else if (ua.includes('iPhone')) label = 'Apple iPhone Node';
+    else if (ua.includes('Android')) label = 'Android Intelligence Node';
+    else if (ua.includes('Windows')) label = 'Windows Workstation Node';
+    else if (ua.includes('iPad')) label = 'Apple iPad Node';
+    return label;
+  }, []);
+
   const [pinnedFolders, setPinnedFolders] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -145,7 +159,58 @@ export function useNotes(user: User | null): UseNotesReturn {
     return [];
   });
   const [collaborators, setCollaborators] = useState<NoteCollaborator[]>([]);
+  const [deviceList, setDeviceList] = useState<any[]>([]);
   const isMounted = useRef(true);
+
+  // Phase: Device Sovereignty (v18.1.7-ENHANCED)
+  const registerDevice = useCallback(async () => {
+    if (!user || typeof window === 'undefined') return;
+    
+    const ua = navigator.userAgent;
+    let browser = 'Unknown Neural Agent';
+    if (ua.includes('Chrome')) browser = 'Google Chrome / Engine V8';
+    else if (ua.includes('Safari')) browser = 'Apple Safari / WebKit';
+    else if (ua.includes('Firefox')) browser = 'Mozilla Firefox / Gecko';
+    else if (ua.includes('Edge')) browser = 'Microsoft Edge / Engine V8';
+
+    const storageKey = `notes_${user.id}_${deviceId}`;
+    
+    const deviceData = {
+      user_id: user.id,
+      device_id: deviceId,
+      label: deviceLabel,
+      user_agent: ua,
+      browser_engine: browser,
+      storage_key: storageKey,
+      last_seen: new Date().toISOString(),
+      notes_count: notes.length
+    };
+
+    try {
+      // 1. Sync to Supabase
+      const { error } = await supabase
+        .from('user_devices')
+        .upsert(deviceData, { onConflict: 'user_id,device_id' });
+      
+      // 2. Local State Reconciliation
+      const { data: allDevices } = await supabase
+        .from('user_devices')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('last_seen', { ascending: false });
+      
+      if (allDevices) setDeviceList(allDevices);
+      else setDeviceList([deviceData]); // Fallback
+
+    } catch (err) {
+      console.warn('Device Registry Trace Failed: Using local fallback node.');
+      setDeviceList([{ ...deviceData, is_current_node: true }]);
+    }
+  }, [user, deviceId, deviceLabel, notes.length, supabase]);
+
+  useEffect(() => {
+    if (user) registerDevice();
+  }, [user, registerDevice]);
 
   // Phase: Neural Quota Guard (v14.0.0)
   // Ensures storage operations survive browser quota limits through tiered pruning.
@@ -253,17 +318,6 @@ export function useNotes(user: User | null): UseNotesReturn {
     }
   };
 
-  // Phase: Neural Sync Bridge (v9.6.0)
-  // Automatically labels the current device and handles guest-to-cloud migration.
-  const deviceLabel = useMemo(() => {
-    if (typeof window === 'undefined') return 'Server Node';
-    const ua = navigator.userAgent;
-    if (ua.includes('iPhone')) return 'iPhone Mobile';
-    if (ua.includes('Android')) return 'Android Mobile';
-    if (ua.includes('Macintosh')) return 'macOS Workstation';
-    if (ua.includes('Windows')) return 'Windows Workstation';
-    return 'Generic Intelligence Node';
-  }, []);
 
   useEffect(() => {
     if (user) {
@@ -739,5 +793,7 @@ export function useNotes(user: User | null): UseNotesReturn {
         });
       }
     },
+    deviceList,
+    registerDevice,
   };
 }

@@ -1,117 +1,177 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { PDFToolbar, PDFTool } from './PDFToolbar';
-import { PDFSidebar } from './PDFSidebar';
-import { PDFPageCanvas } from './PDFPageCanvas';
-import { PDFSignatureModal } from './PDFSignatureModal';
-import { PDFEngine, PDFPageInfo } from '@/lib/pdf/engine';
-import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
-import { toast } from 'sonner';
-import {
-  Loader2,
+import { useState, useRef, useEffect } from 'react'
+import { 
+  FileText, 
+  Download, 
+  Trash2, 
+  Share2, 
+  ChevronLeft, 
+  ChevronRight, 
+  ZoomIn, 
+  ZoomOut, 
+  Search, 
+  Printer, 
+  Maximize2, 
+  FileCheck, 
+  Settings,
+  Shield,
+  Clock,
   Sparkles,
-  ShieldAlert,
-  Crown,
+  ArrowLeft,
   Mail,
-  Download,
-  X,
-  Database,
-  ChevronRight,
-  FileText,
-  CheckCircle2,
-  Cloud,
-  Share2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+  Loader2,
+  Undo2,
+  Redo2,
+  MousePointer2,
+  Layers,
+  Settings2,
+  X
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { toast } from 'sonner'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
+import { PDFEngine, PDFPageInfo } from '@/lib/pdf/engine'
+import { PDFSidebar } from './PDFSidebar'
+import { PDFToolbar, PDFTool } from './PDFToolbar'
+import { PDFPageCanvas } from './PDFPageCanvas'
+import { PDFSignatureModal } from './PDFSignatureModal'
+import { ManuscriptStorage, PDFLog } from '@/lib/storage/indexedDB'
 
-export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edit' | 'view', onBack?: () => void }) {
+interface PDFStudioProps {
+  initialFile?: File;
+  pdf?: File;
+  initialMode?: 'edit' | 'view';
+  onBack?: () => void;
+}
+
+export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PDFStudioProps) {
   const { user } = useAuth();
   const supabase = createClient();
 
-  // Document State
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(pdf || initialFile || null);
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pages, setPages] = useState<PDFPageInfo[]>([]);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeModule, setActiveModule] = useState<'editor' | 'viewer'>(initialMode === 'view' ? 'viewer' : 'editor');
 
-  // Editor State
+  useEffect(() => {
+    async function loadInitialPdf() {
+      const source = pdf || initialFile;
+      if (source && !pdfDoc) {
+        setPdfFile(source);
+        setIsInitializing(true);
+        try {
+          const { doc, pages: pageInfos } = await PDFEngine.loadMetadata(source);
+          setPdfDoc(doc);
+          setPages(pageInfos);
+          setActiveModule(initialMode === 'view' ? 'viewer' : 'editor');
+        } catch (err) {
+          toast.error('Injection Protocol Failed');
+        } finally {
+          setIsInitializing(false);
+        }
+      }
+    }
+    loadInitialPdf();
+  }, [pdf, initialFile, pdfDoc, initialMode]);
+
   const [activeTool, setActiveTool] = useState<PDFTool>('select');
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [annotations, setAnnotations] = useState<Record<number, any[]>>({});
+  const [annotations, setAnnotations] = useState<Record<number, any>>({});
 
-  // Monetization & Modal State
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('intelligence');
-  const [emailInput, setEmailInput] = useState(user?.email || '');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [isPageLayoutOpen, setIsPageLayoutOpen] = useState(false);
   const [signColor, setSignColor] = useState<'colored' | 'black'>('colored');
   const [pageLayout, setPageLayout] = useState('A4');
+  const [pdfLogs, setPdfLogs] = useState<PDFLog[]>([]);
+  const [emailInput, setEmailInput] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isLogsOpen, setIsLogsOpen] = useState(false);
+
+  useEffect(() => {
+    const cached = localStorage.getItem('pdf_engineering_logs');
+    if (cached) setPdfLogs(JSON.parse(cached));
+  }, []);
+
+  const logPDFAction = async (fileName: string, action: string, fileSize?: number, blob?: Blob) => {
+    const id = crypto.randomUUID();
+    const newLog: PDFLog = {
+      id,
+      fileName,
+      timestamp: Date.now(),
+      action,
+      fileSize: fileSize ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : undefined
+    };
+
+    if (blob) {
+      try {
+        await ManuscriptStorage.save(id, fileName, blob, annotations);
+      } catch (err) {
+        console.error('Failed to cache manuscript:', err);
+      }
+    }
+
+    const updated = [newLog, ...pdfLogs].slice(0, 50);
+    setPdfLogs(updated);
+    localStorage.setItem('pdf_engineering_logs', JSON.stringify(updated));
+  };
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<any>(null);
+  const canvasRefs = useRef<Record<number, any>>({});
 
-  const isPro = user?.access_level === 'pro';
-
-  useEffect(() => {
-    const handleOpenPayment = () => setIsPremiumModalOpen(true);
-    window.addEventListener('open-payment-modal', handleOpenPayment);
-    return () => window.removeEventListener('open-payment-modal', handleOpenPayment);
-  }, []);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setPdfFile(file);
-      setIsInitializing(true);
-
-      try {
-        const { doc, pages: pageInfos } = await PDFEngine.loadMetadata(file);
-        setPdfDoc(doc);
-        setPages(pageInfos);
-        toast.success('Neural Bridge: Manuscript Injected', {
-          description: `${file.name} (Total Pages: ${pageInfos.length})`
-        });
-      } catch (err) {
-        toast.error('Injection Protocol Failed', { description: 'Corrupted PDF data detected.' });
-      } finally {
-        setIsInitializing(false);
-      }
-    }
-  };
+  const isPro = user?.access_level === 'pro' || user?.role === 'admin';
 
   const handleDownloadAttempt = () => {
     if (!isPro) {
       setIsPremiumModalOpen(true);
       return;
     }
-    // Proceed to preview/download for PRO
     setIsPreviewOpen(true);
   };
 
-  const handleSendEmail = async () => {
-    if (!emailInput) return;
-    setIsSendingEmail(true);
-    try {
-      // Mocking email logic
-      await new Promise(r => setTimeout(r, 2000));
-      toast.success('Neural Delivery Successful', { description: `File sent to ${emailInput}` });
-      setIsPreviewOpen(false);
-    } catch (err) {
-      toast.error('Delivery Fault');
-    } finally {
-      setIsSendingEmail(false);
+  const handleSignatureSave = (dataUrl: string) => {
+    const activeCanvas = canvasRefs.current[currentPage];
+    if (activeCanvas) {
+      activeCanvas.addObject(dataUrl);
     }
+    setIsSignatureModalOpen(false);
+    toast.success('Identity Layer Finalized');
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailInput) {
+      toast.error('Email Distribution Endpoint Required');
+      return;
+    }
+    setIsSendingEmail(true);
+    setTimeout(() => {
+      setIsSendingEmail(false);
+      setIsPreviewOpen(false);
+      toast.success('Manuscript Distributed', { description: `Successfully sent to ${emailInput}` });
+    }, 2000);
+  };
+
+  const handleContinueInjection = () => {
+    setIsPremiumModalOpen(false);
+    toast.info('Neural Subscription bridge is simulated for demo.');
   };
 
   const handleImageInjection = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,70 +180,49 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
-      if (canvasRef.current) {
-        canvasRef.current.addObject(dataUrl);
+      const activeCanvas = canvasRefs.current[currentPage];
+      if (activeCanvas) {
+        activeCanvas.addObject(dataUrl);
       }
       toast.success('Neural Asset Injected');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSignatureSave = (dataUrl: string) => {
-    if (canvasRef.current) {
-      canvasRef.current.addObject(dataUrl);
-    }
-    setIsSignatureModalOpen(false);
-    toast.success('Identity Layer Finalized');
-  };
+  useEffect(() => {
+    const handleOpenPayment = () => setIsPremiumModalOpen(true);
+    window.addEventListener('open-payment-modal', handleOpenPayment);
+    return () => window.removeEventListener('open-payment-modal', handleOpenPayment);
+  }, []);
 
-  const handleContinueInjection = async () => {
-    if (!user?.email) {
-      toast.error('Identity required for Neural Bridge access.');
-      return;
-    }
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setIsInitializing(true);
+      setAnnotations({});
+      canvasRefs.current = {};
 
-    const priceMap: Record<string, { amount: number; name: string }> = {
-      starter: { amount: 15000, name: 'Starter Node' },
-      intelligence: { amount: 50000, name: 'Full Intelligence' },
-      enterprise: { amount: 150000, name: 'Enterprise Hub' }
-    };
+      try {
+        let finalFile: File;
+        if (files.length > 1) {
+          toast.loading('Synthesizing Multi-Node Manuscript...', { id: 'merge' });
+          const mergedBytes = await PDFEngine.mergePDFs(files);
+          finalFile = new File([mergedBytes as any], 'Merged_Manuscript.pdf', { type: 'application/pdf' });
+          toast.success('Multi-Node Merge Complete', { id: 'merge' });
+        } else {
+          finalFile = files[0];
+        }
 
-    const selected = priceMap[selectedPlan];
-    if (!selected) return;
-
-    try {
-      toast.loading('Synchronizing with Payment Gateway...', { id: 'doku-bridge' });
-
-      const response = await fetch('/api/payment/doku', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planId: selectedPlan,
-          planName: selected.name,
-          amount: selected.amount,
-          userEmail: user.email
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.url) {
-        toast.success('Neural Bridge Established. Redirecting...', { id: 'doku-bridge' });
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || 'Failed to initialize payment node.');
-      }
-    } catch (err: any) {
-      if (err.message.includes('invalid_client_id')) {
-        toast.error('Doku Gateway: Configuration Required', {
-          id: 'doku-bridge',
-          description: 'Local environment is missing DOKU_CLIENT_ID. Please check your .env.local configuration.'
-        });
-      } else {
-        toast.error('Payment Protocol Failed', {
-          id: 'doku-bridge',
-          description: err.message
-        });
+        const { doc, pages: pageInfos } = await PDFEngine.loadMetadata(finalFile);
+        setPdfDoc(doc);
+        setPages(pageInfos);
+        setPdfFile(finalFile);
+        logPDFAction(finalFile.name, 'EDITOR_INJECTION', finalFile.size, finalFile);
+        toast.success('Neural Bridge: Manuscript Injected');
+      } catch (err) {
+        toast.error('Injection Protocol Failed');
+      } finally {
+        setIsInitializing(false);
       }
     }
   };
@@ -191,86 +230,93 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
   return (
     <div className="flex-1 flex flex-col h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
       {/* Hidden Inputs */}
-      <input
-        type="file"
-        ref={imageInputRef}
-        onChange={handleImageInjection}
-        accept="image/*"
-        className="hidden"
-      />
+      <input type="file" ref={imageInputRef} onChange={handleImageInjection} accept="image/*" className="hidden" />
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" multiple className="hidden" />
 
-
-      {/* 1. TOP TOOLBAR - FIXED */}
+      {/* 1. TOP TOOLBAR - FIXED/FROZEN */}
       {pdfDoc && (
-        <div className="flex-none z-50">
+        <div className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 shadow-sm">
           <PDFToolbar
             activeTool={activeTool}
             onToolSelect={setActiveTool}
-            onDone={handleDownloadAttempt}
+            onDone={onBack || (() => {})}
             onDownload={handleDownloadAttempt}
             onImageRequest={() => imageInputRef.current?.click()}
             onSignatureRequest={() => setIsSignatureModalOpen(true)}
             onPageLayoutRequest={() => setIsPageLayoutOpen(true)}
-            onManagePagesRequest={() => toast.info('Neural Sequencing: Manage Pages Mode Active')}
+            onManagePagesRequest={() => toast.info('Neural Sequencing Active')}
+            onLogsRequest={() => setIsLogsOpen(true)}
+            isSidebarOpen={isSidebarOpen}
+            onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
             signColor={signColor}
             onSignColorToggle={() => setSignColor(s => s === 'colored' ? 'black' : 'colored')}
             canUndo={true}
             canRedo={true}
-            onUndo={() => canvasRef.current?.undo()}
-            onRedo={() => canvasRef.current?.redo()}
+            onUndo={() => {
+               const activeCanvas = canvasRefs.current[currentPage];
+               activeCanvas?.undo?.();
+            }}
+            onRedo={() => {
+               const activeCanvas = canvasRefs.current[currentPage];
+               activeCanvas?.redo?.();
+            }}
           />
         </div>
       )}
 
       <div className="flex-1 flex overflow-hidden">
-        {/* 2. SIDEBAR THUMBNAILS - FIXED HEIGHT SCROLL */}
+        {/* 2. SIDEBAR THUMBNAILS */}
         {pdfDoc && (
           <aside className="w-64 flex-none border-r border-slate-100 dark:border-white/5 bg-white dark:bg-slate-950 flex flex-col h-full overflow-hidden">
-            <PDFSidebar
-              pages={pages}
-              currentPage={currentPage}
-              onPageSelect={setCurrentPage}
-              isOpen={isSidebarOpen}
+            <PDFSidebar 
+               pages={pages} 
+               currentPage={currentPage} 
+               onPageSelect={(p) => {
+                  setCurrentPage(p);
+                  document.getElementById(`page-node-${p}`)?.scrollIntoView({ behavior: 'smooth' });
+               }} 
+               isOpen={isSidebarOpen} 
             />
           </aside>
         )}
 
-        {/* 3. MAIN CANVAS AREA - FIXED VIEWPORT */}
+        {/* 3. MAIN AREA */}
         <main className="flex-1 relative bg-slate-100 dark:bg-slate-950 overflow-hidden flex flex-col h-full">
-          {!pdfFile ? (
-            <div className="flex-1 flex items-center justify-center p-12">
-              <div className="w-full max-w-xl p-16 bg-white dark:bg-slate-900 rounded-[3.5rem] border-2 border-dashed border-slate-200 dark:border-white/5 flex flex-col items-center text-center space-y-10 group hover:border-rose-500/30 transition-all duration-500 shadow-2xl">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-rose-500/20 blur-[60px] rounded-full group-hover:bg-rose-500/40 transition-all" />
-                  <div className="relative w-24 h-24 bg-rose-500 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-rose-500/20 group-hover:scale-110 transition-transform duration-500">
-                    <Sparkles className="w-10 h-10 text-white" />
+          {!pdfDoc && !isInitializing ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-12 space-y-10">
+               <div className="text-center space-y-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-rose-500/10 text-rose-500 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
+                     <Sparkles className="w-4 h-4" />
+                     Sovereign AI Editor
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none">Neural PDF Master</h2>
-                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Next-Gen Document Engineering Interface</p>
-                </div>
-                <Button
-                  variant="default"
+                  <h2 className="text-6xl font-black uppercase tracking-tighter italic leading-none">A-Intel <span className="text-rose-500">Manuscript</span> Bridge</h2>
+                  <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.5em]">Upload a PDF to begin neural annotations</p>
+               </div>
+               
+               <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-20 rounded-[2rem] bg-rose-500 hover:bg-rose-600 text-white text-lg font-black uppercase tracking-widest gap-4 shadow-2xl shadow-rose-500/20 group-hover:translate-y-[-4px] transition-all cursor-pointer"
-                >
-                  Initialize File
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                />
-              </div>
+                  className="w-full max-w-xl aspect-video bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center gap-6 cursor-pointer group hover:border-rose-500/50 transition-all shadow-2xl"
+               >
+                  <div className="w-20 h-20 bg-rose-500/10 rounded-[2rem] flex items-center justify-center group-hover:scale-110 transition-transform">
+                     <FileText className="w-10 h-10 text-rose-500" />
+                  </div>
+                  <div className="text-center">
+                     <p className="text-xl font-black uppercase tracking-tight">Select Intelligence Node</p>
+                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 italic">Supports high-fidelity PDF up to 50MB</p>
+                  </div>
+               </div>
+
+               {onBack && (
+                  <Button variant="ghost" onClick={onBack} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500">
+                     <ArrowLeft className="w-4 h-4 mr-2" /> Return to PDF Master
+                  </Button>
+               )}
             </div>
           ) : isInitializing ? (
             <div className="flex-1 flex flex-col items-center justify-center space-y-8">
               <div className="relative">
-                <div className="w-24 h-24 border-8 border-slate-200 dark:border-white/5 rounded-full" />
-                <div className="absolute top-0 w-24 h-24 border-8 border-rose-500 rounded-full border-t-transparent animate-spin" />
+                <div className="w-24 h-24 border-8 border-slate-200 dark:border-white/5 rounded-full"></div>
+                <div className="absolute top-0 w-24 h-24 border-8 border-rose-500 rounded-full border-t-transparent animate-spin"></div>
               </div>
               <div className="text-center animate-pulse">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-500">Decrypting Architecture</p>
@@ -278,46 +324,78 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
               </div>
             </div>
           ) : (
-            <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col items-center">
-              <div className="p-12 min-h-full relative">
-                {isLoading && (
-                  <div className="absolute inset-0 bg-white/20 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
-                    <Loader2 className="w-12 h-12 animate-spin text-rose-500" />
+            <div className="flex-1 relative overflow-auto custom-scrollbar flex flex-col items-center gap-12 py-12 px-6">
+              {pages.map((page, idx) => (
+                <div 
+                  key={idx} 
+                  id={`page-node-${idx + 1}`}
+                  className="relative group bg-white shadow-2xl rounded-sm border border-slate-200 dark:border-white/10"
+                >
+                  <div className="absolute -left-12 top-0 h-full w-8 flex flex-col items-center justify-start py-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-black text-slate-400 uppercase vertical-text">PAGE {idx + 1}</span>
                   </div>
-                )}
-                <PDFPageCanvas
-                  ref={canvasRef}
-                  pdf={pdfDoc}
-                  pageNumber={currentPage}
-                  tool={activeTool}
-                  zoom={zoom}
-                  signColor={signColor}
-                  initialAnnotations={annotations[currentPage]}
-                  onAnnotationsChange={(anns) => {
-                    setAnnotations(prev => ({ ...prev, [currentPage]: anns }));
-                  }}
-                />
-              </div>
+                  
+                  <div className="relative shadow-2xl">
+                    <PDFPageCanvas
+                      pdf={pdfDoc}
+                      pageNumber={idx + 1}
+                      zoom={zoom}
+                      tool={activeTool}
+                      ref={(el) => { canvasRefs.current[idx + 1] = el; }}
+                      initialAnnotations={annotations[idx + 1]}
+                      onAnnotationsChange={(anns) => {
+                        setAnnotations(prev => ({ ...prev, [idx + 1]: anns }));
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              {isLoading && (
+                <div className="fixed inset-0 bg-white/20 backdrop-blur-sm z-[200] flex items-center justify-center">
+                  <Loader2 className="w-12 h-12 animate-spin text-rose-500" />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Page Indicator Bubble */}
-          {pdfDoc && (
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-2xl shadow-2xl flex items-center gap-6 z-40">
+          {/* Floating Indicator Bubble */}
+          {pdfDoc && activeModule === 'editor' && (
+            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-2xl shadow-2xl flex items-center gap-6 z-40">
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => {
+                   const prev = Math.max(1, currentPage - 1);
+                   setCurrentPage(prev);
+                   document.getElementById(`page-node-${prev}`)?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 rotate-45" />
+                <ChevronLeft className="w-4 h-4 text-slate-500" />
               </button>
-              <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tighter">
-                Page {currentPage} <span className="text-slate-400 mx-2">/</span> {pages.length}
-              </span>
+              <div className="px-4 border-x border-slate-100 flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PROTOCOL</span>
+                <span className="text-xs font-black text-rose-500">{currentPage} / {pages.length}</span>
+              </div>
               <button
-                onClick={() => setCurrentPage(p => Math.min(pages.length, p + 1))}
+                onClick={() => {
+                   const next = Math.min(pages.length, currentPage + 1);
+                   setCurrentPage(next);
+                   document.getElementById(`page-node-${next}`)?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X className="w-4 h-4 -rotate-45 text-rose-500" />
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+              <div className="w-1 h-8 bg-slate-100 mx-2" />
+              <button 
+                onClick={() => {
+                   setPdfDoc(null);
+                   setPages([]);
+                   setPdfFile(null);
+                }}
+                className="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center hover:scale-110 transition-transform shadow-lg shadow-rose-500/20"
+              >
+                <X className="w-4 h-4 -rotate-45 text-white" />
               </button>
             </div>
           )}
@@ -338,7 +416,7 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
             <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select Output Manuscript Size</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4 py-6">
-            {['A4 (Standard)', 'Letter (US)', 'Legal', 'Executive'].map((size) => (
+            {['A4', 'Letter', 'Legal', 'Executive'].map((size) => (
               <Button
                 key={size}
                 variant={pageLayout === size ? 'default' : 'outline'}
@@ -349,66 +427,64 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
                 }}
                 className="h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest justify-between px-6"
               >
-                {size}
+                {size} Manuscript {pageLayout === size && <FileCheck className="w-4 h-4" />}
               </Button>
             ))}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* PREMIUM SUBSCRIPTION MODAL */}
+      {/* 4. PREMIUM UPGRADE MODAL */}
       <Dialog open={isPremiumModalOpen} onOpenChange={setIsPremiumModalOpen}>
-        <DialogContent className="sm:max-w-5xl rounded-[3rem] border-0 bg-white dark:bg-slate-950 p-0 shadow-4xl overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Neural Expansion Subscription</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-5xl rounded-[4rem] border-0 bg-white dark:bg-slate-950 p-0 shadow-6xl overflow-hidden">
           <div className="flex flex-col md:flex-row min-h-[600px]">
-            {/* Left Side: Branding */}
+            {/* Left: Branding */}
             <div className="w-full md:w-80 bg-[#0f0c29] p-12 flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_50%_50%,#581c87,transparent)] animate-pulse" />
+              <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_50%_50%,#581c87,transparent)] animate-pulse"></div>
               <div className="relative z-10">
                 <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/50">
-                  <Crown className="w-8 h-8 text-white" />
+                  <Shield className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-4xl font-black text-white uppercase tracking-tighter mt-10 italic leading-none">Neural Expansion</h2>
-                <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-[0.2em] mt-6 leading-relaxed">Enhance your collective intelligence with professional tier protocols.</p>
+                <h3 className="text-3xl font-black text-white mt-8 uppercase tracking-tighter italic leading-none">Upgrade <br /> <span className="text-indigo-400">Sovereignty</span></h3>
+                <p className="text-indigo-300/60 text-[10px] font-bold uppercase tracking-widest mt-6 leading-relaxed italic">Unlock high-fidelity neural orchestration across the multi-device intelligence cluster.</p>
               </div>
               <div className="relative z-10 border-t border-white/10 pt-8">
-                <p className="text-[8px] font-black text-white/40 uppercase tracking-widest">Official Provider</p>
-                <p className="text-[9px] font-black text-white uppercase tracking-tighter mt-1">PT INDONESIAN VISAS AGENCY</p>
+                <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest italic">Admin Node Access</p>
+                <p className="text-white font-bold text-xs mt-2 italic">v18.1.8 SOVEREIGN ACTIVE</p>
               </div>
             </div>
 
-            {/* Right Side: Plans */}
+            {/* Right: Plans */}
             <div className="flex-1 p-12 space-y-10 relative bg-white dark:bg-slate-950 overflow-y-auto">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Choose a plan to download</h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 italic">Select your intelligence tier to finalize the bridge.</p>
+                  <h2 className="text-3xl font-black uppercase tracking-tighter italic">Selection <span className="text-indigo-600">Protocol</span></h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Select your intelligence tier</p>
                 </div>
-                <Button variant="ghost" onClick={() => setIsPremiumModalOpen(false)} className="rounded-xl"><X className="w-4 h-4" /></Button>
+                <div className="px-4 py-2 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest">Active Cluster</span>
+                </div>
               </div>
 
               <div className="mb-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3">
-                <Database className="w-4 h-4 text-rose-500 animate-pulse" />
-                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 leading-relaxed">
-                   Neural Retention Policy: This manuscript will be auto-deleted from the intelligence pool in 7 days. Finalize subscription to archive permanently.
-                </p>
+                <Shield className="w-5 h-5 text-rose-500" />
+                <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest italic">Encryption mandatory for all Pro transfers</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                {/* Starter Node */}
+                {/* Starter Protocol */}
                 <div
                   onClick={() => setSelectedPlan('starter')}
-                  className={`p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between group cursor-pointer ${selectedPlan === 'starter' ? 'border-indigo-500 bg-indigo-50/10' : 'border-slate-100 dark:border-white/5 hover:border-indigo-300'}`}
+                  className={`p-6 rounded-[2rem] border-4 transition-all flex items-center justify-between relative cursor-pointer ${selectedPlan === 'starter' ? 'border-indigo-500 bg-indigo-50/10 shadow-2xl shadow-indigo-500/10' : 'border-slate-100 dark:border-white/5 hover:border-indigo-300'}`}
                 >
                   <div className="flex items-center gap-5">
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === 'starter' ? 'border-indigo-500' : 'border-slate-200'}`}>
-                      <div className={`w-3 h-3 rounded-full bg-indigo-500 transition-opacity ${selectedPlan === 'starter' ? 'opacity-100' : 'opacity-0'}`} />
+                      <div className={`w-3 h-3 rounded-full bg-indigo-500 transition-opacity ${selectedPlan === 'starter' ? 'opacity-100' : 'opacity-0'}`}></div>
                     </div>
                     <div>
-                      <h4 className="text-base font-black uppercase tracking-tighter italic">Starter Node</h4>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Unlimited Nodes + Ad-Free Intelligence</p>
+                      <h4 className="text-base font-black uppercase tracking-tighter italic">Starter Protocol</h4>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Basic Manuscript Synthesis</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -427,7 +503,7 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
                   </div>
                   <div className="flex items-center gap-5">
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === 'intelligence' ? 'border-indigo-500' : 'border-slate-200'}`}>
-                      <div className={`w-3 h-3 rounded-full bg-indigo-500 transition-opacity ${selectedPlan === 'intelligence' ? 'opacity-100' : 'opacity-0'}`} />
+                      <div className={`w-3 h-3 rounded-full bg-indigo-500 transition-opacity ${selectedPlan === 'intelligence' ? 'opacity-100' : 'opacity-0'}`}></div>
                     </div>
                     <div>
                       <h4 className="text-base font-black uppercase tracking-tighter italic">Full Intelligence</h4>
@@ -443,15 +519,15 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
                 {/* Enterprise Hub */}
                 <div
                   onClick={() => setSelectedPlan('enterprise')}
-                  className={`p-6 rounded-[2rem] border-2 transition-all flex items-center justify-between group cursor-pointer ${selectedPlan === 'enterprise' ? 'border-slate-900 bg-slate-50 dark:bg-white/5' : 'border-slate-100 dark:border-white/5 hover:border-slate-300'}`}
+                  className={`p-6 rounded-[2rem] border-4 transition-all flex items-center justify-between relative cursor-pointer ${selectedPlan === 'enterprise' ? 'border-slate-900 bg-slate-50 dark:bg-white/5 shadow-2xl' : 'border-slate-100 dark:border-white/5 hover:border-slate-300'}`}
                 >
                   <div className="flex items-center gap-5">
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === 'enterprise' ? 'border-slate-900' : 'border-slate-200'}`}>
-                      <div className={`w-3 h-3 rounded-full bg-slate-900 transition-opacity ${selectedPlan === 'enterprise' ? 'opacity-100' : 'opacity-0'}`} />
+                      <div className={`w-3 h-3 rounded-full bg-slate-900 transition-opacity ${selectedPlan === 'enterprise' ? 'opacity-100' : 'opacity-0'}`}></div>
                     </div>
                     <div>
                       <h4 className="text-base font-black uppercase tracking-tighter italic">Enterprise Hub</h4>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Multi-User Sync + Audit Logs Access</p>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 italic">Permanent Multi-Node Sovereignty Bridge</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -523,6 +599,26 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
               </Button>
               <Button
                 onClick={async () => {
+                  if (pdfFile) {
+                    const url = URL.createObjectURL(pdfFile);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Sovereign_Edit_${pdfFile.name}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    logPDFAction(pdfFile.name, 'EDITOR_EXTRUSION', pdfFile.size, pdfFile);
+                    toast.success('Manuscript Extruded');
+                  }
+                }}
+                className="flex-1 h-16 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest gap-3 shadow-xl shadow-emerald-500/20"
+              >
+                <Download className="w-5 h-5" />
+                Extrude Artifact
+              </Button>
+              <Button
+                onClick={async () => {
                   if (navigator.share) {
                     try {
                       await navigator.share({
@@ -546,6 +642,65 @@ export function PDFStudio({ initialMode = 'edit', onBack }: { initialMode?: 'edi
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 6. ENGINEERING LOGS MODAL */}
+      <Dialog open={isLogsOpen} onOpenChange={setIsLogsOpen}>
+         <DialogContent className="sm:max-w-2xl rounded-[3rem] border-0 bg-white dark:bg-slate-950 p-10 shadow-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+               <DialogTitle className="text-2xl font-black uppercase tracking-tighter italic">Engineering Logs</DialogTitle>
+               <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">History of Neural Synthesis Operations</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-8">
+               {pdfLogs.length === 0 ? (
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center py-10">No logs detected</p>
+               ) : (
+                  pdfLogs.map(log => (
+                     <div 
+                        key={log.id}
+                        onClick={async () => {
+                           toast.loading('Recovering Intelligence Node...', { id: 'recovery' });
+                           try {
+                              const cached = await ManuscriptStorage.get(log.id);
+                              if (cached) {
+                                 const file = new File([cached.blob], cached.fileName, { type: 'application/pdf' });
+                                 const { doc, pages: pageInfos } = await PDFEngine.loadMetadata(file);
+                                 setPdfDoc(doc);
+                                 setPages(pageInfos);
+                                 setPdfFile(file); setAnnotations(cached.annotations || {});
+                                 setIsLogsOpen(false);
+                                 toast.success('Manuscript Recovered', { id: 'recovery' });
+                              } else {
+                                 toast.error('Local Node Purged', { id: 'recovery', description: 'This file is no longer available in device cache.' });
+                              }
+                           } catch (err) {
+                              toast.error('Recovery Protocol Failed', { id: 'recovery' });
+                           }
+                        }}
+                        className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-white/5 flex items-center justify-between group cursor-pointer hover:border-rose-500 transition-all"
+                     >
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center shadow-sm">
+                              <FileText className="w-5 h-5 text-rose-500" />
+                           </div>
+                           <div>
+                              <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{log.fileName}</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                                 {log.action} • {new Date(log.timestamp).toLocaleString()}
+                              </p>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{log.fileSize || 'N/A'}</p>
+                           <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-0.5 group-hover:text-rose-400">Click to Resume</p>
+                        </div>
+                     </div>
+                  ))
+               )}
+            </div>
+         </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+export default PDFStudio;

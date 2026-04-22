@@ -113,4 +113,80 @@ export class PDFEngine {
 
     return await pdfDoc.save();
   }
+
+  /**
+   * Merges multiple PDF files into a single document
+   */
+  static async mergePDFs(files: File[]): Promise<Uint8Array> {
+    const mergedPdf = await PDFDocument.create();
+    for (const file of files) {
+      const bytes = await file.arrayBuffer();
+      const pdf = await PDFDocument.load(bytes);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+    return await mergedPdf.save();
+  }
+
+  /**
+   * Splits a PDF into multiple documents based on page ranges
+   */
+  static async splitPDF(file: File, ranges: { start: number, end: number }[]): Promise<Uint8Array[]> {
+    const originalBytes = await file.arrayBuffer();
+    const results: Uint8Array[] = [];
+    
+    for (const range of ranges) {
+      const newPdf = await PDFDocument.create();
+      const originalPdf = await PDFDocument.load(originalBytes);
+      const indices = Array.from(
+        { length: range.end - range.start + 1 }, 
+        (_, i) => range.start - 1 + i
+      );
+      const copiedPages = await newPdf.copyPages(originalPdf, indices);
+      copiedPages.forEach(page => newPdf.addPage(page));
+      results.push(await newPdf.save());
+    }
+    return results;
+  }
+
+  /**
+   * Compresses a PDF by re-saving it with optimized settings
+   */
+  static async compressPDF(file: File): Promise<Uint8Array> {
+    const bytes = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(bytes);
+    // pdf-lib's save() with useObjectStreams: true provides basic compression
+    return await pdfDoc.save({ useObjectStreams: true });
+  }
+
+  /**
+   * Converts a collection of images into a single PDF document
+   */
+  static async imagesToPDF(images: File[], layout: string = 'A4'): Promise<Uint8Array> {
+    const pdfDoc = await PDFDocument.create();
+    const sizes: Record<string, [number, number]> = {
+      'A4': [595.28, 841.89],
+      'Letter': [612, 792],
+      'Legal': [612, 1008]
+    };
+    const [targetW, targetH] = sizes[layout] || sizes['A4'];
+
+    for (const imageFile of images) {
+      const imgBytes = await imageFile.arrayBuffer();
+      const img = imageFile.type === 'image/png' 
+        ? await pdfDoc.embedPng(imgBytes)
+        : await pdfDoc.embedJpg(imgBytes);
+      
+      const page = pdfDoc.addPage([targetW, targetH]);
+      const { width, height } = img.scaleToFit(targetW - 40, targetH - 40);
+      
+      page.drawImage(img, {
+        x: (targetW - width) / 2,
+        y: (targetH - height) / 2,
+        width,
+        height,
+      });
+    }
+    return await pdfDoc.save();
+  }
 }

@@ -10,6 +10,7 @@ import { NavIsland } from '@/components/dashboard/NavIsland'
 import { InfoPanel } from '@/components/dashboard/InfoPanel'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotes } from '@/hooks/useNotes'
+import { BridgeListener } from '@/components/dashboard/spy/BridgeListener'
 
 export default function DashboardLayout({
   children,
@@ -114,6 +115,7 @@ export default function DashboardLayout({
            </button>
         )}
       </main>
+      <BridgeListener />
     </div>
   )
 }

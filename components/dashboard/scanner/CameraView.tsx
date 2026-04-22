@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Camera, Scan } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CameraViewProps {
     onCapture: (imageSrc: string) => void;
@@ -54,6 +55,9 @@ export function CameraView({ onCapture }: CameraViewProps) {
                 className="absolute inset-0 w-full h-full object-cover"
                 onUserMediaError={(err) => {
                     console.error("Camera Hub Error:", err);
+                    toast.error('Optical Hub Offline', { 
+                        description: 'Please ensure camera permissions are granted in your browser settings.' 
+                    });
                     if (facingMode === 'environment') setFacingMode('user');
                 }}
             />

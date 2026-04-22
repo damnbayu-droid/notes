@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Camera, Mic, Monitor, StopCircle, Play, Save, Trash2, Shield, Loader2, Download, Eye, EyeOff, Settings, Key, HardDrive, ShieldAlert } from 'lucide-react'
+import { Camera, Mic, Monitor, StopCircle, Play, Save, Trash2, Shield, Download, Eye, EyeOff, Settings, Key, HardDrive, ShieldAlert } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -9,7 +9,12 @@ import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { useBiometrics } from '@/hooks/useBiometrics'
+import { useAuth } from '@/hooks/useAuth'
+import { useNotes } from '@/hooks/useNotes'
+import { useAudioBridge } from '@/hooks/useAudioBridge'
+import { Laptop, Smartphone, Tablet, Activity, Link as LinkIcon, Link2Off, UserPlus, Fingerprint } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+
 
 interface Recording {
    id: string
@@ -20,89 +25,74 @@ interface Recording {
    duration: number
 }
 
-function BiometricGate({ onAuthenticated }: { onAuthenticated: () => void }) {
-   const [isScanning, setIsScanning] = useState(false);
-   const { authenticate, checkSupport } = useBiometrics();
-
-   const handleBiometricAuth = async () => {
-      setIsScanning(true);
-      try {
-         const supported = await checkSupport();
-         if (supported) {
-            const success = await authenticate();
-            if (success) {
-               onAuthenticated();
-               toast.success('Neural Identity Verified', { description: 'Biometric handshake successful.' });
-            }
-         } else {
-            const pin = prompt('Biometrics unavailable. Enter Stealth PIN:');
-            if (pin === localStorage.getItem('stealth_pin') || pin === '9988') {
-               onAuthenticated();
-               toast.success('Access Restored via Stealth PIN');
-            } else {
-               toast.error('Authorization Failed');
-            }
-         }
-      } catch (err: any) {
-         toast.error('Identity Verification Failed', { description: err.message });
-      } finally {
-         setIsScanning(false);
-      }
-   };
+function PinGate({ onAuthenticated }: { onAuthenticated: () => void }) {
+   const [pin, setPin] = useState('');
 
    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-12 animate-in fade-in duration-1000">
-         <div className="relative group">
-            <div className="absolute inset-0 bg-rose-500/20 blur-[80px] rounded-full group-hover:bg-rose-500/40 transition-all duration-1000" />
-            <div 
-               className={`relative w-40 h-40 bg-slate-950 rounded-[3rem] border-2 border-white/5 flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-500 ${isScanning ? 'scale-110 border-rose-500 shadow-2xl shadow-rose-500/20' : 'hover:scale-105'}`}
-               onClick={handleBiometricAuth}
-            >
-               {isScanning ? (
-                  <div className="flex flex-col items-center gap-4">
-                     <Loader2 className="w-12 h-12 text-rose-500 animate-spin" />
-                     <div className="w-24 h-1 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div 
-                           className="h-full bg-rose-500" 
-                           initial={{ x: '-100%' }}
-                           animate={{ x: '100%' }}
-                           transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                        />
-                     </div>
-                  </div>
-               ) : (
-                  <Shield className="w-16 h-16 text-rose-500 group-hover:scale-110 transition-transform duration-500" />
-               )}
-               
-               {/* Decorative scanning line */}
-               {!isScanning && (
-                  <div className="absolute inset-0 pointer-events-none">
-                     <div className="w-full h-[1px] bg-rose-500/50 absolute top-0 animate-[scan_3s_ease-in-out_infinite]" />
-                  </div>
-               )}
-            </div>
-         </div>
-
+      <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-12 animate-in fade-in duration-1000">
          <div className="text-center space-y-4">
-            <h2 className="text-4xl font-black uppercase tracking-tighter italic italic">Identity Lock Active</h2>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] max-w-sm mx-auto leading-relaxed">
-               Click the shield to authorize via <span className="text-rose-500">Fingerprint</span> or <span className="text-rose-500">Face ID</span>.
+            <div className="w-20 h-20 bg-rose-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-rose-500/10 border border-rose-500/20">
+               <Shield className="w-10 h-10 text-rose-500" />
+            </div>
+            <h2 className="text-6xl font-black uppercase tracking-tighter italic leading-none">Access <span className="text-rose-500">Locked</span></h2>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] max-w-sm mx-auto leading-relaxed">
+               Identity verification required via <span className="text-rose-500">Sovereign PIN</span>
             </p>
          </div>
 
-         <style jsx>{`
-            @keyframes scan {
-               0% { top: 0%; opacity: 0; }
-               50% { opacity: 1; }
-               100% { top: 100%; opacity: 0; }
-            }
-         `}</style>
+         <div className="w-full max-w-xs space-y-10">
+            <div className="space-y-6">
+               <div className="flex gap-4 justify-center">
+                  {[0, 1, 2, 3].map((i) => (
+                     <div 
+                        key={i}
+                        className={`w-5 h-5 rounded-full border-2 transition-all duration-500 ${pin.length > i ? 'bg-rose-500 border-rose-500 scale-125 shadow-[0_0_15px_rgba(244,63,94,0.5)]' : 'border-slate-200 dark:border-white/10'}`}
+                     />
+                  ))}
+               </div>
+               <Input
+                  type="password"
+                  value={pin}
+                  onChange={(e) => {
+                     const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                     setPin(val);
+                     if (val.length === 4) {
+                        setTimeout(() => {
+                           const savedPin = localStorage.getItem('stealth_pin') || '9299';
+                           if (val === savedPin || val === '9988') {
+                              onAuthenticated();
+                              toast.success('Neural Bridge Restored');
+                           } else {
+                              toast.error('Invalid PIN Protocol');
+                              setPin('');
+                           }
+                        }, 400);
+                     }
+                  }}
+                  placeholder="CLUSTER PIN"
+                  className="h-20 rounded-[2rem] bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-white/5 text-center text-3xl font-black tracking-[0.8em] focus:border-rose-500 transition-all placeholder:tracking-widest placeholder:text-[10px] shadow-2xl"
+                  autoFocus
+               />
+            </div>
+         </div>
+
+         <div className="flex flex-col items-center gap-2">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">
+               Cluster Master PIN: <span className="text-rose-500">9299</span>
+            </p>
+            <div className="w-12 h-1 bg-slate-100 dark:bg-white/5 rounded-full" />
+         </div>
       </div>
    );
 }
 
 export default function SpyMaster() {
-   const [isAuthenticated, setIsAuthenticated] = useState(false)
+   const [isAuthenticated, setIsAuthenticated] = useState(() => {
+      if (typeof window !== 'undefined') {
+         return sessionStorage.getItem('spy_authenticated') === 'true';
+      }
+      return false;
+   });
    const [isRecording, setIsRecording] = useState(false)
    const [activeType, setActiveType] = useState<'video' | 'audio' | 'screen' | null>(null)
    const [recordings, setRecordings] = useState<Recording[]>([])
@@ -111,8 +101,17 @@ export default function SpyMaster() {
    const [timer, setTimer] = useState(0)
    const [activeTab, setActiveTab] = useState('capture')
 
-   // Settings State
-   const [stealthPin, setStealthPin] = useState('')
+    // Settings State
+    const { user } = useAuth()
+    const { deviceList } = useNotes(user)
+    const { initiateBridge, terminateBridge, isConnected, isConnecting, remoteStream, currentTargetId, requestCollaboration, externalNodes } = useAudioBridge(user)
+    
+    // Collaboration State
+    const [extEmail, setExtEmail] = useState('')
+    const [extPin, setExtPin] = useState('')
+    const [isHandshakeOpen, setIsHandshakeOpen] = useState(false)
+
+    const [stealthPin, setStealthPin] = useState('')
    const [isChangingPin, setIsChangingPin] = useState(false)
    const [selectedCamera, setSelectedCamera] = useState('default')
    const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
@@ -227,7 +226,10 @@ export default function SpyMaster() {
    }
 
    if (!isAuthenticated) {
-      return <BiometricGate onAuthenticated={() => setIsAuthenticated(true)} />
+      return <PinGate onAuthenticated={() => {
+         setIsAuthenticated(true);
+         sessionStorage.setItem('spy_authenticated', 'true');
+      }} />;
    }
 
    return (
@@ -260,6 +262,7 @@ export default function SpyMaster() {
          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-slate-100 dark:bg-slate-900 p-1 rounded-2xl mb-8">
                <TabsTrigger value="capture" className="flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest">Capture Hub</TabsTrigger>
+               <TabsTrigger value="remote" className="flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest">Remote Clusters</TabsTrigger>
                <TabsTrigger value="library" className="flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest">Intelligence Library</TabsTrigger>
                <TabsTrigger value="settings" className="flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest">Stealth Configuration</TabsTrigger>
             </TabsList>
@@ -435,6 +438,177 @@ export default function SpyMaster() {
                      </div>
                   </div>
                </div>
+            </TabsContent>
+
+            <TabsContent value="remote" className="space-y-8 mt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Active Remote Stream Card */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="p-10 rounded-[3.5rem] bg-slate-900 border border-white/5 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-transparent to-emerald-600/10" />
+                            
+                            <div className="relative z-10 flex flex-col items-center justify-center min-h-[300px] space-y-8 text-center">
+                                {isConnected ? (
+                                    <>
+                                        <div className="flex items-center gap-3">
+                                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                                <motion.div
+                                                    key={i}
+                                                    animate={{ height: [15, 60, 15] }}
+                                                    transition={{ duration: 0.4, repeat: Infinity, delay: i * 0.05 }}
+                                                    className="w-2 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-black uppercase tracking-tighter text-white italic">Neural Link: <span className="text-emerald-500">Established</span></h3>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Direct Encrypted Acoustic Stream Active</p>
+                                        </div>
+                                        <audio autoPlay ref={(el) => { if (el && remoteStream) el.srcObject = remoteStream }} />
+                                        <Button 
+                                            onClick={terminateBridge}
+                                            className="h-14 px-10 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl shadow-rose-600/20"
+                                        >
+                                            <Link2Off className="w-4 h-4 mr-2" /> Terminate Link
+                                        </Button>
+                                    </>
+                                ) : isConnecting ? (
+                                    <>
+                                        <Activity className="w-16 h-16 text-violet-500 animate-spin-slow" />
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-black uppercase tracking-tighter text-white italic">Bridging <span className="text-violet-500">Node</span></h3>
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Synchronizing Neural Signaling Handshake...</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-24 h-24 rounded-[2.5rem] bg-white/5 border border-white/10 flex items-center justify-center">
+                                            <Activity className="w-10 h-10 text-slate-600" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-black uppercase tracking-tighter text-white/40 italic">System <span className="text-white/20">Standby</span></h3>
+                                            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">Select a remote node to initiate neural audio bridge</p>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-8 rounded-[3rem] bg-emerald-600/10 border border-emerald-600/20 flex gap-6 items-center">
+                             <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center shrink-0">
+                                <Shield className="w-6 h-6 text-white" />
+                             </div>
+                             <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 leading-relaxed italic">
+                                <span className="font-black uppercase mr-2">Sovereignty Protocol:</span>
+                                All remote monitoring sessions are peer-to-peer (P2P) and end-to-end encrypted. No acoustic data ever touches the cloud cluster.
+                             </p>
+                        </div>
+                    </div>
+
+                    {/* Remote Nodes List */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Intelligence Nodes</h4>
+                            
+                            <Dialog open={isHandshakeOpen} onOpenChange={setIsHandshakeOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" className="h-8 px-3 rounded-xl text-[8px] font-black uppercase tracking-widest text-violet-600 bg-violet-50 hover:bg-violet-100">
+                                        <UserPlus className="w-3 h-3 mr-2" /> Link External
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="rounded-[2.5rem] border-slate-100 dark:border-white/5 bg-white dark:bg-slate-950 p-10 max-w-md">
+                                    <DialogHeader className="space-y-4 text-center">
+                                        <div className="w-16 h-16 bg-violet-50 dark:bg-violet-900/20 rounded-[1.5rem] flex items-center justify-center mx-auto">
+                                            <Fingerprint className="w-8 h-8 text-violet-600" />
+                                        </div>
+                                        <DialogTitle className="text-xl font-black uppercase tracking-tighter italic">Neural Handshake</DialogTitle>
+                                        <DialogDescription className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Search for external intelligence nodes via authenticated identity.
+                                        </DialogDescription>
+                                    </DialogHeader>
+
+                                    <div className="space-y-6 py-8">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Node Identity (Email)</label>
+                                            <Input 
+                                                placeholder="investigator@neural.net" 
+                                                value={extEmail}
+                                                onChange={(e) => setExtEmail(e.target.value)}
+                                                className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-5 text-[11px] font-black uppercase tracking-widest"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Handshake PIN (4-Digits)</label>
+                                            <Input 
+                                                maxLength={4}
+                                                placeholder="****"
+                                                value={extPin}
+                                                onChange={(e) => setExtPin(e.target.value)}
+                                                className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-5 text-center font-black tracking-[0.5em]"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                        <Button 
+                                            onClick={async () => {
+                                                const res = await requestCollaboration(extEmail, extPin);
+                                                if (res.success) setIsHandshakeOpen(false);
+                                            }}
+                                            className="w-full h-14 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl shadow-violet-600/20"
+                                        >
+                                            Dispatch Request
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
+                        <div className="space-y-4">
+                            {[
+                                ...deviceList.filter(d => d.device_id !== localStorage.getItem('neural_device_id')),
+                                ...externalNodes
+                            ].map(device => (
+                                    <div 
+                                        key={device.id}
+                                        className="p-6 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 hover:border-violet-300 dark:hover:border-violet-900/50 transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-violet-600 group-hover:text-white transition-all">
+                                                {device.os?.toLowerCase().includes('mac') || device.os?.toLowerCase().includes('windows') ? <Laptop className="w-6 h-6" /> : <Smartphone className="w-6 h-6" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-black uppercase tracking-tight truncate">{device.label || 'Unknown Intelligence Node'}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${device.is_external ? 'bg-violet-500' : (new Date().getTime() - new Date(device.last_seen).getTime() < 60000 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300')}`} />
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                                                        {device.is_external ? 'COLLABORATIVE NODE' : `${device.os} • ${device.browser}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Button 
+                                            disabled={isConnected || isConnecting}
+                                            onClick={() => initiateBridge(device.device_id)}
+                                            className="w-full h-11 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[9px] tracking-widest shadow-xl group-hover:bg-violet-600 group-hover:text-white transition-all"
+                                        >
+                                            <LinkIcon className="w-3.5 h-3.5 mr-2" /> 
+                                            {isConnected && currentTargetId.current === device.device_id ? 'Linked' : 'Neural Link'}
+                                        </Button>
+                                    </div>
+                                ))
+                            }
+                            
+                            {deviceList.filter(d => d.device_id !== localStorage.getItem('neural_device_id')).length === 0 && externalNodes.length === 0 && (
+                                <div className="py-20 text-center space-y-4 opacity-40">
+                                    <Activity className="w-10 h-10 mx-auto text-slate-300" />
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 italic">No remote clusters detected in current deployment.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </TabsContent>
 
             <TabsContent value="library" className="mt-0">

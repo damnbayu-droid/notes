@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 
 function useRealTimeClock() {
   const [time, setTime] = useState('')
@@ -93,6 +94,37 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
     }
   }, [user])
 
+  // System Permission Onboarding — Show after 30s
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const permissionsShown = sessionStorage.getItem('permissions_prompt_shown')
+      if (!permissionsShown) {
+        window.dispatchEvent(new CustomEvent('dcpi-notification', {
+          detail: {
+            title: 'Neural Permissions Required',
+            message: 'Camera and Notification access are needed for high-fidelity scanning.',
+            type: 'warning',
+            action: {
+                label: 'Authorize Now',
+                onClick: async () => {
+                    try {
+                        toast.loading('Requesting Neural Access...', { id: 'nav-permissions' });
+                        await navigator.mediaDevices.getUserMedia({ video: true });
+                        if ('Notification' in window) await Notification.requestPermission();
+                        toast.success('Permissions Authorized', { id: 'nav-permissions' });
+                    } catch (err) {
+                        toast.error('Access Restricted', { id: 'nav-permissions', description: 'Please enable camera access in your browser settings.' });
+                    }
+                }
+            }
+          }
+        }))
+        sessionStorage.setItem('permissions_prompt_shown', 'true')
+      }
+    }, 30000) // 30 second delay as requested
+    return () => clearTimeout(timer)
+  }, [])
+
   useEffect(() => {
     const handleNotification = (e: any) => {
       const newNotif = { ...e.detail, id: crypto.randomUUID(), time: new Date().toLocaleTimeString() };
@@ -130,12 +162,19 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
     if (newPin.length <= 4) {
       setPinInput(newPin);
       const targetPin = localStorage.getItem('stealth_pin') || '9299';
-      if (newPin === targetPin) { // The secret PIN
-        router.push('/?view=spymaster');
+      if (newPin === targetPin) {
+        sessionStorage.setItem('is_neural_unlocked', 'true');
         setIsPinMode(false);
         setPinInput('');
         setIsExpanded(false);
-        toast.success('Spy Master Interface Initialized');
+        toast.success('Neural Node Unlocked');
+        
+        // If we were trying to open settings, open it now
+        if (activeTab === 'settings') {
+           window.dispatchEvent(new CustomEvent('open-settings-modal'));
+        } else {
+           router.push('/?view=spymaster');
+        }
       } else if (newPin.length === 4) {
         setPinInput('');
         toast.error('Access Denied', { description: 'Incorrect authorization code.' });
@@ -227,7 +266,16 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('open-settings-modal')); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    if (sessionStorage.getItem('is_neural_unlocked') === 'true') {
+                      window.dispatchEvent(new CustomEvent('open-settings-modal')); 
+                    } else {
+                      setIsExpanded(true);
+                      setIsPinMode(true);
+                      setActiveTab('settings');
+                    }
+                  }}
                   className="hidden md:flex p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-violet-600 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
@@ -398,6 +446,18 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
                                    <span className="text-[7px] font-bold text-slate-400 uppercase shrink-0">{n.time}</span>
                                 </div>
                                 <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2 italic">{n.message}</p>
+                                {(n as any).action && (
+                                    <Button 
+                                       size="sm" 
+                                       onClick={(e) => {
+                                           e.stopPropagation();
+                                           (n as any).action.onClick();
+                                       }}
+                                       className="h-7 w-full mt-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[8px] font-black uppercase tracking-widest shadow-lg"
+                                    >
+                                        {(n as any).action.label}
+                                    </Button>
+                                )}
                              </motion.div>
                           ))
                        ) : (
@@ -467,7 +527,15 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
                     </button>
 
                     <button 
-                      onClick={() => { window.dispatchEvent(new CustomEvent('open-settings-modal')); setIsExpanded(false) }}
+                      onClick={() => { 
+                         if (sessionStorage.getItem('is_neural_unlocked') === 'true') {
+                            window.dispatchEvent(new CustomEvent('open-settings-modal')); 
+                            setIsExpanded(false);
+                         } else {
+                            setIsPinMode(true);
+                            setActiveTab('settings');
+                         }
+                      }}
                       className="w-full h-14 flex items-center gap-4 px-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-white/5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all group"
                     >
                       <ShieldCheck className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
