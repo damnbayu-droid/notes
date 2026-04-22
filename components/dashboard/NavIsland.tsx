@@ -572,7 +572,21 @@ export function NavIsland({ compact = false }: { compact?: boolean }) {
               {/* Bottom: Mobile Apps & Support */}
               <div className="px-6 pb-6 space-y-3">
                 <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-help-modal'))}
+                  onClick={() => {
+                    const ua = navigator.userAgent.toLowerCase();
+                    if (ua.includes('android')) {
+                        window.open('https://median.co/share/rdjmokn#apk', '_blank');
+                        toast.success('Dispatched Neural APK', { description: 'Initializing Android installation package...' });
+                    } else if (ua.includes('iphone') || ua.includes('ipad')) {
+                        toast.info('iOS Native Handshake Restricted', { 
+                            description: 'To install the Sovereign version: Tap Share (up arrow) -> "Add to Home Screen"',
+                            duration: 8000 
+                        });
+                    } else {
+                        window.open('https://median.co/share/rdjmokn#apk', '_blank');
+                        toast.success('Forwarding to Deployment Hub', { description: 'Opening Android APK repository.' });
+                    }
+                  }}
                   className="w-full h-12 flex items-center justify-center gap-3 bg-violet-600 text-white rounded-2xl shadow-lg shadow-violet-200 dark:shadow-none hover:bg-violet-700 transition-all active:scale-95"
                 >
                   <Download className="w-4 h-4" />
