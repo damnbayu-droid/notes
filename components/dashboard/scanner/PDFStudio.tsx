@@ -128,9 +128,11 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
       }
     }
 
-    const updated = [newLog, ...pdfLogs].slice(0, 50);
-    setPdfLogs(updated);
-    localStorage.setItem('pdf_engineering_logs', JSON.stringify(updated));
+    setPdfLogs(prev => {
+      const updated = [newLog, ...prev].slice(0, 50);
+      localStorage.setItem('pdf_engineering_logs', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -235,11 +237,16 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
 
       {/* 1. TOP TOOLBAR - FIXED/FROZEN */}
       {pdfDoc && (
-        <div className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 shadow-sm">
+        <div className="flex-none bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 shadow-sm z-[100]">
           <PDFToolbar
             activeTool={activeTool}
             onToolSelect={setActiveTool}
-            onDone={onBack || (() => {})}
+            onDone={() => {
+               if (pdfFile) {
+                 logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', pdfFile.size, pdfFile);
+               }
+               onBack?.();
+            }}
             onDownload={handleDownloadAttempt}
             onImageRequest={() => imageInputRef.current?.click()}
             onSignatureRequest={() => setIsSignatureModalOpen(true)}
@@ -249,7 +256,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
             isSidebarOpen={isSidebarOpen}
             onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
             signColor={signColor}
-            onSignColorToggle={() => setSignColor(s => s === 'colored' ? 'black' : 'colored')}
+            onSignColorSelect={setSignColor}
             canUndo={true}
             canRedo={true}
             onUndo={() => {
@@ -341,6 +348,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                       pageNumber={idx + 1}
                       zoom={zoom}
                       tool={activeTool}
+                      signColor={signColor}
                       ref={(el) => { canvasRefs.current[idx + 1] = el; }}
                       initialAnnotations={annotations[idx + 1]}
                       onAnnotationsChange={(anns) => {
@@ -600,16 +608,27 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
               <Button
                 onClick={async () => {
                   if (pdfFile) {
-                    const url = URL.createObjectURL(pdfFile);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `Sovereign_Edit_${pdfFile.name}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    logPDFAction(pdfFile.name, 'EDITOR_EXTRUSION', pdfFile.size, pdfFile);
-                    toast.success('Manuscript Extruded');
+                    setIsLoading(true);
+                    try {
+                      const originalBytes = await pdfFile.arrayBuffer();
+                      const editedBytes = await PDFEngine.applyAnnotations(new Uint8Array(originalBytes), annotations);
+                      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `Sovereign_Edit_${pdfFile.name}`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      logPDFAction(pdfFile.name, 'EDITOR_EXTRUSION', blob.size, blob);
+                      toast.success('Manuscript Extruded');
+                    } catch (err) {
+                      toast.error('Extrusion Protocol Failed');
+                      console.error(err);
+                    } finally {
+                      setIsLoading(false);
+                    }
                   }
                 }}
                 className="flex-1 h-16 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest gap-3 shadow-xl shadow-emerald-500/20"

@@ -286,11 +286,11 @@ export const PDFPageCanvas = forwardRef(({
       // Calculate movement distance to distinguish click from drag
       const dist = Math.sqrt(Math.pow(pointer.x - mouseDownPos.x, 2) + Math.pow(pointer.y - mouseDownPos.y, 2));
       
-      // If we are dragging an existing object or if the mouse moved too much, don't create new
-      if (target || dist > 5) return;
-
-      // DO NOT create if we are in select mode
+      // If we are in select mode, prioritize targeting existing objects
       if (tool === 'select') return;
+
+      // If we are dragging an existing object or if the mouse moved too much, don't create new
+      if (target && dist > 2) return;
 
       if (tool === 'text') {
         const text = new fabric.IText('', {

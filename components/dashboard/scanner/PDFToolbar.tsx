@@ -50,7 +50,7 @@ interface PDFToolbarProps {
   onSidebarToggle: () => void;
   isSidebarOpen: boolean;
   signColor: 'colored' | 'black';
-  onSignColorToggle: () => void;
+  onSignColorSelect: (color: 'colored' | 'black') => void;
 }
 
 export function PDFToolbar({ 
@@ -70,7 +70,7 @@ export function PDFToolbar({
   onSidebarToggle,
   isSidebarOpen,
   signColor,
-  onSignColorToggle
+  onSignColorSelect
 }: PDFToolbarProps) {
     
     const tools: { id: PDFTool; icon: any; label: string; group?: string }[] = [
@@ -208,7 +208,7 @@ export function PDFToolbar({
                       <Button 
                         variant={signColor === 'colored' ? 'secondary' : 'ghost'} 
                         size="icon" 
-                        onClick={() => onSignColorToggle()}
+                        onClick={() => onSignColorSelect('colored')}
                         className="h-8 w-8 rounded-md"
                       >
                          <div className="w-4 h-4 rounded-full bg-gradient-to-br from-emerald-400 to-rose-400" />
@@ -216,7 +216,7 @@ export function PDFToolbar({
                       <Button 
                         variant={signColor === 'black' ? 'secondary' : 'ghost'} 
                         size="icon" 
-                        onClick={() => onSignColorToggle()}
+                        onClick={() => onSignColorSelect('black')}
                         className="h-8 w-8 rounded-md"
                       >
                          <div className="w-4 h-4 rounded-full bg-black" />

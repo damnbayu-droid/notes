@@ -66,52 +66,86 @@ export class PDFEngine {
   /**
    * Applies annotations to the actual PDF bytes using pdf-lib
    */
-  static async applyAnnotations(originalBytes: Uint8Array, annotations: any[]): Promise<Uint8Array> {
+  static async applyAnnotations(originalBytes: Uint8Array, pageAnnotations: Record<number, any>): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.load(originalBytes);
     const pages = pdfDoc.getPages();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    for (const ann of annotations) {
-      const page = pages[ann.pageIndex];
-      if (!page) continue;
+    // Iterate through pages that have annotations
+    for (const [pageStr, json] of Object.entries(pageAnnotations)) {
+      const pageIdx = parseInt(pageStr) - 1;
+      const page = pages[pageIdx];
+      if (!page || !json.objects) continue;
 
       const { width, height } = page.getSize();
-
-      if (ann.type === 'text') {
-        // Simple text addition
-        page.drawText(ann.text, {
-          x: ann.x,
-          y: height - ann.y - ann.fontSize, // Flip coordinate system
-          size: ann.fontSize,
-          font: ann.isBold ? boldFont : font,
-          color: rgb(ann.color[0], ann.color[1], ann.color[2]),
-        });
-      } else if (ann.type === 'mask') {
-        // Opaque masking rectangle
-        page.drawRectangle({
-          x: ann.x,
-          y: height - ann.y - ann.height,
-          width: ann.width,
-          height: ann.height,
-          color: rgb(1, 1, 1), // White
-        });
-      } else if (ann.type === 'image') {
-        // Image injection
-        const img = ann.format === 'png' 
-          ? await pdfDoc.embedPng(ann.dataUrl) 
-          : await pdfDoc.embedJpg(ann.dataUrl);
-          
-        page.drawImage(img, {
-          x: ann.x,
-          y: height - ann.y - ann.height,
-          width: ann.width,
-          height: ann.height,
-        });
+      
+      // Fabric canvas was initialized at scale 1.0 relative to PDF points
+      for (const obj of json.objects) {
+        if (obj.type === 'i-text' || obj.type === 'text') {
+          const color = typeof obj.fill === 'string' ? this.hexToRgb(obj.fill) : { r: 0, g: 0, b: 0 };
+          page.drawText(obj.text, {
+            x: obj.left,
+            y: height - obj.top - (obj.fontSize * 0.8), // Adjust for baseline
+            size: obj.fontSize,
+            font: obj.fontWeight === 'bold' ? boldFont : font,
+            color: rgb(color.r, color.g, color.b),
+          });
+        } else if (obj.type === 'image') {
+          try {
+            const imgData = obj.src;
+            const isPng = imgData.includes('image/png');
+            const img = isPng 
+              ? await pdfDoc.embedPng(imgData) 
+              : await pdfDoc.embedJpg(imgData);
+            
+            page.drawImage(img, {
+              x: obj.left,
+              y: height - obj.top - (obj.height * (obj.scaleY || 1)),
+              width: obj.width * (obj.scaleX || 1),
+              height: obj.height * (obj.scaleY || 1),
+            });
+          } catch (e) { console.error('Failed to embed image:', e); }
+        } else if (obj.type === 'rect') {
+           const color = typeof obj.fill === 'string' ? this.hexToRgb(obj.fill) : { r: 1, g: 1, b: 1 };
+           page.drawRectangle({
+             x: obj.left,
+             y: height - obj.top - obj.height,
+             width: obj.width,
+             height: obj.height,
+             color: rgb(color.r, color.g, color.b),
+           });
+        } else if (obj.type === 'ellipse') {
+           const color = typeof obj.stroke === 'string' ? this.hexToRgb(obj.stroke) : { r: 1, g: 0, b: 0 };
+           page.drawEllipse({
+             x: obj.left + obj.rx,
+             y: height - obj.top - obj.ry,
+             xRadius: obj.rx,
+             yRadius: obj.ry,
+             borderColor: rgb(color.r, color.g, color.b),
+             borderWidth: obj.strokeWidth || 1,
+           } as any);
+        }
       }
     }
 
     return await pdfDoc.save();
+  }
+
+  private static hexToRgb(hex: string): { r: number, g: number, b: number } {
+    if (hex.startsWith('rgba')) {
+        const parts = hex.match(/[\d.]+/g);
+        if (parts) return { r: parseInt(parts[0])/255, g: parseInt(parts[1])/255, b: parseInt(parts[2])/255 };
+    }
+    if (hex.startsWith('#')) {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return { r, g, b };
+    }
+    if (hex === 'black') return { r: 0, g: 0, b: 0 };
+    if (hex === 'white') return { r: 1, g: 1, b: 1 };
+    return { r: 0, g: 0, b: 0 };
   }
 
   /**
