@@ -48,6 +48,7 @@ export interface Note {
   external_source_title?: string;
   category?: NoteCategory;
   parent_id?: string; // Reference to original node for 'Fork' tracking
+  fork_of?: string; // Reference to original node for 'Fork' tracking (v18.1.7)
   published_log_id?: string; // Reference to a specific Log entry that is publicly visible
   is_premium?: boolean; // Monetization Guard (v11.0.0)
   domain?: string; // Multi-Domain Knowledge Graph (v11.0.0)
