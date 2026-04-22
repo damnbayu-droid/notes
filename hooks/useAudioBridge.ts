@@ -12,6 +12,9 @@ interface AudioBridgeReturn {
     terminateBridge: () => void;
     currentTargetId: React.MutableRefObject<string | null>;
     requestCollaboration: (email: string, pin: string) => Promise<{ success: boolean; error?: string }>;
+    externalNodes: ExternalNode[];
+}
+
 interface ExternalNode {
     user_id: string;
     device_id: string;
