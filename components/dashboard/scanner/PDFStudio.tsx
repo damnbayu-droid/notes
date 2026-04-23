@@ -161,8 +161,11 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
     try {
       const extracted = await PDFEngine.extractAnnotations(canvasRefs);
       const mergedAnnotations = { ...annotations, ...extracted };
+
+      console.log(`[PDF Master] Initiating Download Synthesis: ${pdfFile.name} (${pdfFile.size} bytes)`);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), mergedAnnotations);
-      
+      console.log(`[PDF Master] Download Synthesis Complete: ${editedBytes.length} bytes.`);
+
       const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -217,7 +220,11 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
     try {
       const extracted = await PDFEngine.extractAnnotations(canvasRefs);
       const mergedAnnotations = { ...annotations, ...extracted };
+      
+      console.log(`[PDF Master] Initiating Sharing Synthesis: ${pdfFile.name} (${pdfFile.size} bytes)`);
       const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), mergedAnnotations);
+      console.log(`[PDF Master] Sharing Synthesis Complete: ${editedBytes.length} bytes.`);
+
       const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
       
       const { url, error } = await uploadSharedPDF(user.id, blob, pdfFile.name);
@@ -377,7 +384,10 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                         console.warn('[PDF Master] No annotations detected for final synthesis');
                      }
 
+                     console.log(`[PDF Master] Initiating Final Synthesis: ${pdfFile.name} (${pdfFile.size} bytes)`);
                      const editedBytes = await PDFEngine.applyAnnotations(await pdfFile.arrayBuffer(), mergedAnnotations);
+                     console.log(`[PDF Master] Final Synthesis Complete: ${editedBytes.length} bytes.`);
+
                      const blob = new Blob([editedBytes as any], { type: 'application/pdf' });
                      await logPDFAction(pdfFile.name, 'MANUSCRIPT_SYNTHESIS', editedBytes.length, blob);
                    } catch (err) {

@@ -95,10 +95,12 @@ export class PDFEngine {
         } else if (obj.type === 'image') {
           try {
             const imgData = obj.src;
-            const isPng = imgData.includes('image/png');
+            const buffer = this.dataUrlToBuffer(imgData);
+            const isPng = imgData.includes('image/png') || imgData.includes('data:image/png');
+            
             const img = isPng 
-              ? await pdfDoc.embedPng(imgData) 
-              : await pdfDoc.embedJpg(imgData);
+              ? await pdfDoc.embedPng(buffer) 
+              : await pdfDoc.embedJpg(buffer);
             
             page.drawImage(img, {
               x: obj.left,
@@ -107,7 +109,9 @@ export class PDFEngine {
               height: obj.height * (obj.scaleY || 1),
               opacity: obj.opacity || 1
             });
-          } catch (e) { console.error('Failed to embed image:', e); }
+          } catch (e) { 
+            console.error('[PDF Engine] Image Embedding Failure:', e); 
+          }
         } else if (obj.type === 'rect') {
            const color = this.hexToRgb(typeof obj.fill === 'string' ? obj.fill : '#ffffff');
            page.drawRectangle({
@@ -194,6 +198,17 @@ export class PDFEngine {
       }
     }
     return annotations;
+  }
+
+  private static dataUrlToBuffer(dataUrl: string): ArrayBuffer {
+    const base64 = dataUrl.split(',')[1];
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
   }
 
   private static hexToRgb(hex: string): { r: number, g: number, b: number, a?: number } {
