@@ -79,19 +79,41 @@ export class PDFEngine {
       if (!page || !json.objects) continue;
 
       const { width, height } = page.getSize();
+      const rotation = page.getRotation().angle;
       
       // Fabric canvas was initialized at scale 1.0 relative to PDF points
       for (const obj of json.objects) {
+        // Coordinate Transformation Logic for Rotation
+        let drawX = obj.left;
+        let drawY = height - (obj.top + (obj.height * (obj.scaleY || 1)));
+        let drawRotation = 0;
+
+        // Correct for page rotation
+        if (rotation === 90) {
+          drawX = obj.top;
+          drawY = obj.left;
+          drawRotation = 270;
+        } else if (rotation === 180) {
+          drawX = width - obj.left;
+          drawY = obj.top;
+          drawRotation = 180;
+        } else if (rotation === 270) {
+          drawX = width - obj.top;
+          drawY = height - obj.left;
+          drawRotation = 90;
+        }
+
         if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
           const color = this.hexToRgb(typeof obj.fill === 'string' ? obj.fill : '#000000');
           page.drawText(obj.text, {
-            x: obj.left,
+            x: drawX,
             y: height - (obj.top + (obj.fontSize * (obj.scaleY || 1)) * 0.8), 
             size: obj.fontSize * (obj.scaleY || 1),
             font: obj.fontWeight === 'bold' ? boldFont : font,
             color: rgb(color.r, color.g, color.b),
-            opacity: color.a ?? (obj.opacity || 1)
-          });
+            opacity: color.a ?? (obj.opacity || 1),
+            rotate: { angle: drawRotation, type: 'degrees' }
+          } as any);
         } else if (obj.type === 'image') {
           try {
             const imgData = obj.src;
@@ -103,43 +125,44 @@ export class PDFEngine {
               : await pdfDoc.embedJpg(buffer);
             
             page.drawImage(img, {
-              x: obj.left,
-              y: height - (obj.top + (obj.height * (obj.scaleY || 1))),
+              x: drawX,
+              y: drawY,
               width: obj.width * (obj.scaleX || 1),
               height: obj.height * (obj.scaleY || 1),
-              opacity: obj.opacity || 1
-            });
+              opacity: obj.opacity || 1,
+              rotate: { angle: drawRotation, type: 'degrees' }
+            } as any);
           } catch (e) { 
             console.error('[PDF Engine] Image Embedding Failure:', e); 
           }
         } else if (obj.type === 'rect') {
            const color = this.hexToRgb(typeof obj.fill === 'string' ? obj.fill : '#ffffff');
            page.drawRectangle({
-             x: obj.left,
-             y: height - (obj.top + (obj.height * (obj.scaleY || 1))),
+             x: drawX,
+             y: drawY,
              width: obj.width * (obj.scaleX || 1),
              height: obj.height * (obj.scaleY || 1),
              color: rgb(color.r, color.g, color.b),
-             opacity: color.a ?? (obj.opacity || 1)
-           });
+             opacity: color.a ?? (obj.opacity || 1),
+             rotate: { angle: drawRotation, type: 'degrees' }
+           } as any);
         } else if (obj.type === 'ellipse') {
            const color = this.hexToRgb(typeof obj.stroke === 'string' ? obj.stroke : '#ff0000');
            page.drawEllipse({
-             x: obj.left + (obj.rx * (obj.scaleX || 1)),
-             y: height - (obj.top + (obj.ry * (obj.scaleY || 1))),
+             x: drawX + (obj.rx * (obj.scaleX || 1)),
+             y: drawY + (obj.ry * (obj.scaleY || 1)),
              xRadius: obj.rx * (obj.scaleX || 1),
              yRadius: obj.ry * (obj.scaleY || 1),
              borderColor: rgb(color.r, color.g, color.b),
              borderWidth: (obj.strokeWidth || 1) * (obj.scaleX || 1),
-             opacity: color.a ?? (obj.opacity || 1)
+             opacity: color.a ?? (obj.opacity || 1),
+             rotate: { angle: drawRotation, type: 'degrees' }
            } as any);
         } else if (obj.type === 'path') {
            const color = this.hexToRgb(typeof obj.stroke === 'string' ? obj.stroke : '#ff0000');
            const strokeWidth = (obj.strokeWidth || 1) * (obj.scaleX || 1);
            const opacity = color.a ?? (obj.opacity || 1);
            
-           // Fabric paths are relative to their center by default
-           // We'll use the bounding box to offset
            const pathData = obj.path;
            if (Array.isArray(pathData)) {
              let lastX = 0;
@@ -165,7 +188,6 @@ export class PDFEngine {
                  lastX = nextX;
                  lastY = nextY;
                } else if (command === 'Q') {
-                 // Quadratic curve approximation
                  const nextX = segment[3] * (obj.scaleX || 1) + offsetX;
                  const nextY = offsetY - (segment[4] * (obj.scaleY || 1));
                  page.drawLine({
@@ -184,7 +206,7 @@ export class PDFEngine {
       }
     }
 
-    return await pdfDoc.save();
+    return await pdfDoc.save({ useObjectStreams: false });
   }
 
   /**
