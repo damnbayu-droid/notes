@@ -189,9 +189,15 @@ export const PDFPageCanvas = forwardRef(({
         fCanvas.sendObjectToBack(bgImage);
       }
       
+      // High-Fidelity Performance Tuning: Debounce updates to prevent UI blocking
+      let syncTimeout: any;
       const updateParent = () => {
-        const json = fCanvas.toJSON();
-        onAnnotationsChange(json);
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => {
+          if (!fCanvas) return;
+          const json = fCanvas.toJSON();
+          onAnnotationsChange(json);
+        }, 300); // 300ms buffer for stability
       };
 
       fCanvas.on('object:modified', () => {
@@ -201,10 +207,12 @@ export const PDFPageCanvas = forwardRef(({
 
       fCanvas.on('object:added', () => {
         updateParent();
+        saveHistory();
       });
 
       fCanvas.on('object:removed', () => {
         updateParent();
+        saveHistory();
       });
 
       setIsLoading(false);

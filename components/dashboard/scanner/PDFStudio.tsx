@@ -111,6 +111,11 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
+  // High-Fidelity Performance Tuning: Memoize sync to prevent global re-render chain
+  const handleAnnotationsChange = useCallback((pageNumber: number, data: any) => {
+    setAnnotations(prev => ({ ...prev, [pageNumber]: data }));
+  }, []);
+
   useEffect(() => {
     const cached = localStorage.getItem('pdf_engineering_logs');
     if (cached) setPdfLogs(JSON.parse(cached));
@@ -507,9 +512,7 @@ export function PDFStudio({ initialFile, pdf, initialMode = 'edit', onBack }: PD
                       signColor={signColor}
                       ref={(el) => { canvasRefs.current[idx + 1] = el; }}
                       initialAnnotations={annotations[idx + 1]}
-                      onAnnotationsChange={(anns) => {
-                        setAnnotations(prev => ({ ...prev, [idx + 1]: anns }));
-                      }}
+                      onAnnotationsChange={(anns) => handleAnnotationsChange(idx + 1, anns)}
                     />
                   </div>
                 </div>
