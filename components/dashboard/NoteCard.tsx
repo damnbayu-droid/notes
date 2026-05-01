@@ -103,9 +103,9 @@ export const NoteCard = memo(function NoteCard({
     <Card
       className={`group relative overflow-hidden transition-all duration-500 cursor-pointer
         ${colorOption.bg} ${colorOption.border} border
-        ${viewMode === 'grid' ? 'h-40 sm:h-56 flex flex-col' : 'flex flex-row items-stretch gap-4 min-h-[100px] h-auto'}
+        ${viewMode === 'grid' ? 'h-32 sm:h-44 flex flex-col' : 'flex flex-row items-stretch gap-3 min-h-[80px] h-auto'}
         ${isHovered ? 'shadow-2xl scale-[1.01] border-violet-400 dark:border-violet-600' : 'shadow-sm'}
-        rounded-2xl sm:rounded-[2rem]
+        rounded-xl sm:rounded-[1.5rem]
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -115,69 +115,61 @@ export const NoteCard = memo(function NoteCard({
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/5 to-transparent blur-2xl pointer-events-none" />
       
       {/* Indicators Layer */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
         {note.is_pinned && (
-           <div className="p-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-lg shadow-sm border border-violet-100 dark:border-violet-900">
-             <Pin className="w-3 h-3 text-violet-600 fill-violet-600" />
+           <div className="p-0.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded shadow-sm border border-violet-100 dark:border-violet-900">
+             <Pin className="w-2.5 h-2.5 text-violet-600 fill-violet-600" />
            </div>
         )}
         {note.is_shared && (
-           <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500 text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+           <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500 text-white rounded-full text-[6px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
              <Globe className="w-2 h-2" />
-             <span>Shared</span>
+             <span className="hidden xs:inline">Shared</span>
            </div>
         )}
       </div>
 
-        <div className={`p-3 sm:p-6 flex flex-col h-full ${viewMode === 'list' ? 'flex-1 justify-center' : ''}`}>
+        <div className={`p-2.5 sm:p-4 flex flex-col h-full ${viewMode === 'list' ? 'flex-1 justify-center' : ''}`}>
         {/* Timestamp & Metadata Hub (v11.0.0) */}
-        <div className="flex items-center gap-1.5 mb-2.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-            <span className="text-[7.5px] sm:text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+        <div className="flex items-center gap-1 mb-1.5">
+            <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <span className="text-[6.5px] sm:text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
                {new Date(note.updated_at).toLocaleDateString()}
             </span>
             
-            <div className="flex items-center gap-1.5 ml-auto">
+            <div className="flex items-center gap-1 ml-auto">
               {note.is_premium && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-md">
-                   <Sparkles className="w-2.5 h-2.5 text-amber-500" />
-                   <span className="text-[6.5px] font-black uppercase tracking-widest text-amber-500">Premium</span>
-                </div>
-              )}
-              {note.domain && note.domain !== 'default' && (
-                <div className="px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded-md">
-                   <span className="text-[6.5px] font-black uppercase tracking-widest text-violet-500">{note.domain}</span>
+                <div className="flex items-center gap-1 px-1 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-md">
+                   <Sparkles className="w-2 h-2 text-amber-500" />
+                   <span className="text-[5.5px] font-black uppercase tracking-widest text-amber-500">Premium</span>
                 </div>
               )}
             </div>
         </div>
 
         {/* Title — Optimized for High Visibility (Photo 1 Fix) */}
-        <h3 className={`font-black text-slate-900 dark:text-white mb-1.5 pr-16 leading-tight uppercase tracking-tighter italic break-words overflow-hidden ${viewMode === 'grid' ? 'text-[11px] sm:text-sm' : 'text-sm sm:text-lg'}`}>
+        <h3 className={`font-black text-slate-900 dark:text-white mb-1 pr-8 leading-tight uppercase tracking-tighter italic break-words overflow-hidden ${viewMode === 'grid' ? 'text-[9px] sm:text-[11px]' : 'text-xs sm:text-base'}`}>
           {note.title || 'Untitled Node'}
         </h3>
         
         {/* Content Preview — Enforced Contrast */}
-        <p className={`text-slate-600 dark:text-slate-400 leading-relaxed font-medium break-words overflow-hidden ${viewMode === 'grid' ? 'text-[9px] sm:text-[11px] line-clamp-2 sm:line-clamp-3' : 'text-[10px] sm:text-xs line-clamp-1 sm:line-clamp-2'}`}>
+        <p className={`text-slate-600 dark:text-slate-400 leading-relaxed font-medium break-words overflow-hidden ${viewMode === 'grid' ? 'text-[8px] sm:text-[10px] line-clamp-2 sm:line-clamp-3' : 'text-[9px] sm:text-xs line-clamp-1 sm:line-clamp-2'}`}>
           {truncatedContent || 'No intelligence captured yet...'}
         </p>
 
         {/* Tags Metadata */}
-        <div className="mt-auto pt-4 flex flex-wrap gap-1.5">
+        <div className="mt-auto pt-2 flex flex-wrap gap-1">
            {note.tags.length > 0 ? (
               note.tags.slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[7px] sm:text-[8px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-lg text-[6px] sm:text-[7px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
                 >
                   #{tag}
                 </span>
               ))
            ) : (
-              <span className="text-[8px] font-bold text-slate-400/50 uppercase tracking-widest italic">#</span>
-           )}
-           {note.tags.length > 3 && (
-              <span className="text-[9px] font-black text-slate-400 uppercase">+{note.tags.length - 3}</span>
+              <span className="text-[7px] font-bold text-slate-400/50 uppercase tracking-widest italic">#</span>
            )}
         </div>
 

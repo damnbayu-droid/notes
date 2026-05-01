@@ -85,6 +85,56 @@ export default function RootLayout({
             <GlobalOverlay />
             <Toaster position="top-center" richColors />
           </TooltipProvider>
+          
+          {/* Corporate Knowledge Graph Bridge (v18.1.9) */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Corporation",
+                "@id": "https://indonesianvisas.com/#organization",
+                "name": "PT Indonesian Visas Agency",
+                "legalName": "PT Indonesian Visas Agency",
+                "taxID": "0100000008117681",
+                "url": "https://indonesianvisas.com",
+                "logo": "https://indonesianvisas.com/logo.png",
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "Jl. Tibungsari No.11C, Padangsambian Kaja",
+                  "addressLocality": "Denpasar Barat, Denpasar",
+                  "addressRegion": "Bali",
+                  "postalCode": "80117",
+                  "addressCountry": "ID"
+                },
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "telephone": "+62-857-2704-1992",
+                  "contactType": "customer service",
+                  "email": "contact@indonesianvisas.agency",
+                  "areaServed": "ID"
+                },
+                "identifier": [
+                  { "@type": "PropertyValue", "name": "NIB", "value": "0402260034806" },
+                  { "@type": "PropertyValue", "name": "AHU", "value": "AHU-00065.AH.02.01.TAHUN 2020" },
+                  { "@type": "PropertyValue", "name": "SKT", "value": "S-04449/SKT-WP-CT/KPP.1701/2026" }
+                ],
+                "parentOrganization": {
+                  "@type": "Organization",
+                  "@id": "https://bali.enterprises/#organization",
+                  "name": "PT Bali Enterprises Group",
+                  "url": "https://bali.enterprises"
+                },
+                "founder": {
+                  "@type": "Person",
+                  "name": "Bayu Damopolii-Manoppo",
+                  "jobTitle": "Founder & Strategic Director",
+                  "url": "https://www.linkedin.com/in/balihelp/"
+                }
+              })
+            }}
+          />
+
           {/* Neural Bridge: PWA Service Worker Registration */}
           <script dangerouslySetInnerHTML={{ __html: `
             if ('serviceWorker' in navigator) {

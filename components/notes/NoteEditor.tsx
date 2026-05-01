@@ -9,7 +9,6 @@ import TextAlign from '@tiptap/extension-text-align'
 import Underline from '@tiptap/extension-underline'
 import { useDebounce } from '@/hooks/useDebounce'
 import { ResizableImage } from './extensions/ResizableImage'
-import { StickyNote } from './extensions/StickyNote'
 import { FloatingBox } from './extensions/FloatingBox'
 import type { Note, User, NoteCategory, NoteColor, NoteColorOption } from '@/types'
 import { NOTE_COLORS } from '@/types'
@@ -45,6 +44,7 @@ import {
     RefreshCw,
     Plus,
     Lock,
+    ShieldCheck,
     FileImage as ImageIcon,
 } from 'lucide-react'
 
@@ -130,6 +130,10 @@ export function NoteEditor({
   const [reminderDate, setReminderDate] = useState(note?.reminder_date || '')
   const [showMetadata, setShowMetadata] = useState(false)
   const [showLineage, setShowLineage] = useState(false)
+  
+  // Ingestion Shield States (v15.0.x)
+  const [isIngestionOpen, setIsIngestionOpen] = useState(false)
+  const [pastedContent, setPastedContent] = useState('')
   
   // Integration States
   const [isOutsourceOpen, setIsOutsourceOpen] = useState(false)
@@ -222,7 +226,6 @@ export function NoteEditor({
     }),
     Underline,
     ResizableImage,
-    StickyNote,
     FloatingBox,
   ], [])
 
@@ -235,7 +238,18 @@ export function NoteEditor({
     },
     immediatelyRender: false,
     editorProps: {
+      handlePaste: (view, event) => {
+        const text = event.clipboardData?.getData('text/plain') || ''
+        if (text.length > 1500) {
+          setPastedContent(text)
+          setIsIngestionOpen(true)
+          return true // Intercept: Neural Ingestion Shield active
+        }
+        return false
+      },
       attributes: {
+        'data-neural-editor': 'v15.0',
+        'data-node-type': 'intelligence',
         class: 'prose prose-sm sm:prose-base focus:outline-none w-full max-w-none text-slate-900 dark:text-slate-100 prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter prose-p:leading-relaxed',
       },
     },
@@ -431,6 +445,55 @@ export function NoteEditor({
     }
   }
 
+  const handleIngest = (mode: 'raw' | 'code' | 'smart') => {
+    if (!editor || !pastedContent) return
+    
+    let content = pastedContent
+    if (mode === 'code') {
+      content = `<pre class="bg-slate-900 text-slate-100 p-6 rounded-2xl overflow-auto font-mono text-xs border border-slate-800"><code>${pastedContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`
+    } else if (mode === 'smart') {
+      // Smart: Let Tiptap handle standard HTML if present, otherwise paragraph wrap
+      content = pastedContent.includes('<') ? pastedContent : pastedContent.split('\n').filter(l => l.trim()).map(line => `<p>${line}</p>`).join('')
+    } else {
+      // Raw: Basic line breaks
+      content = `<p>${pastedContent.replace(/\n/g, '<br>')}</p>`
+    }
+    
+    editor.chain().focus().insertContent(content).run()
+    setIsIngestionOpen(false)
+    setPastedContent('')
+    toast.success('Intelligence Ingested', { description: `Successfully processed ${mode} payload.` })
+  }
+
+  const handleAddNodeLink = () => {
+    const url = window.prompt('Enter Node URL (.md or shared link):')
+    if (!url || !editor) return
+    
+    const isInternal = url.includes('/s/')
+    const fileName = url.split('/').pop() || 'Unnamed Node'
+    
+    const nodeCard = `
+      <div class="my-6 p-6 rounded-[2rem] border border-violet-500/20 bg-violet-600/5 backdrop-blur-xl group cursor-pointer transition-all hover:border-violet-500" onclick="window.open('${url}', '_blank')">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+             <div class="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+             </div>
+             <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">${isInternal ? 'Internal Intelligence' : 'External Resource'}</p>
+                <p class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter truncate max-w-[200px]">${fileName}</p>
+             </div>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="rotate-45"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest truncate">${url}</p>
+      </div>
+    `
+    editor.chain().focus().insertContent(nodeCard).run()
+  }
+
   // 15.0.9: Neural Asset Ingress Hardening
   useEffect(() => {
     const handleGlobalUpload = (e: any) => {
@@ -579,6 +642,27 @@ export function NoteEditor({
                   <Button variant="ghost" size="sm" onClick={() => { setOutsourceMode('resource'); setIsOutsourceOpen(true); }} className="h-8 sm:h-9 px-2 rounded-lg gap-2 font-black uppercase text-[8px] tracking-widest transition-all text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-emerald-600">
                      <Github className="w-3.5 h-3.5" /> <span className="hidden xs:inline">GitHub</span>
                   </Button>
+                  
+                  {/* Neural Actions Trigger (v15.0.x) */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 sm:h-9 w-8 sm:w-9 rounded-lg text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-violet-600 transition-all">
+                         <Plus className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 rounded-2xl border-slate-100 dark:border-white/5 z-[5000]">
+                      <DropdownMenuItem onClick={() => editor?.commands.setBox()} className="rounded-xl text-[9px] font-black uppercase gap-3">
+                        <Plus className="w-3.5 h-3.5" /> Add Logic Frame
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleAddNodeLink} className="rounded-xl text-[9px] font-black uppercase gap-3">
+                        <Share2 className="w-3.5 h-3.5" /> Insert Node Link
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setIsOutsourceOpen(true)} className="rounded-xl text-[9px] font-black uppercase gap-3">
+                        <Database className="w-3.5 h-3.5" /> Remote Resource
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
               </div>
 
               <div className="flex items-center gap-1">
@@ -595,16 +679,10 @@ export function NoteEditor({
                              <Switch checked={isPremium} onCheckedChange={(val) => { setIsPremium(val); onUpdate({ is_premium: val }); }} />
                           </div>
                        </div>
-                       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Workspace Controls</p>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => editor?.chain().focus().setBox().run()} 
-                            className="w-full h-10 rounded-xl justify-start gap-3 border-slate-100 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-violet-600 hover:bg-violet-50"
-                          >
-                             <Plus className="w-4 h-4" /> Add Logic Frame
-                          </Button>
-                       </div>
+                        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Workspace Management</p>
+                          <p className="text-[9px] text-slate-400">Controls moved to header for rapid access.</p>
+                        </div>
                        <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Knowledge Domain</p>
                           <Select value={domain} onValueChange={(val) => { setDomain(val); onUpdate({ domain: val }); }}>
@@ -669,10 +747,14 @@ export function NoteEditor({
          {/* Editor Body + Lineage Panel */}
          <div className="flex-1 flex overflow-hidden min-h-0 bg-white/30 dark:bg-slate-950/30">
             <div className="flex-1 overflow-y-auto p-8 sm:p-12 custom-scrollbar relative cursor-text outline-none" onClick={() => editor?.commands.focus()}>
-               {/* Padding Fix for High-Density Editor */}
-               <div className={`min-h-[70vh] transition-all duration-500 ${!showToolbar ? 'pt-8 sm:pt-12' : 'pt-0'}`}>
+               {/* Main Editor Surface */}
+              <div 
+                className="flex-1 relative"
+                data-neural-editor="v15.0.x"
+                data-neural-node-id={note?.id}
+              >
                   <EditorContent editor={editor} className="min-h-full pb-12" />
-               </div>
+              </div>
             </div>
 
             {showLineage && note && (
@@ -951,6 +1033,86 @@ export function NoteEditor({
                   </Button>
                )}
            </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Neural Ingestion Shield (v15.0.x) */}
+      <Dialog open={isIngestionOpen} onOpenChange={setIsIngestionOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-[3.5rem] p-10 border-0 shadow-2xl overflow-hidden">
+          <DialogDescription className="sr-only">Neural Ingestion Shield protocol for handling large text payloads.</DialogDescription>
+          <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] bg-violet-600/5 blur-[100px] rounded-full pointer-events-none" />
+          
+          <DialogHeader className="relative z-10 flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 bg-slate-900 dark:bg-white rounded-[2.5rem] flex items-center justify-center shadow-2xl rotate-12">
+              <ShieldCheck className="w-10 h-10 text-white dark:text-slate-900" />
+            </div>
+            <div className="space-y-2">
+              <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">
+                Ingestion Shield
+              </DialogTitle>
+              <DialogDescription className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">
+                Massive data payload detected ({pastedContent.length} chars)
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+
+          <div className="relative z-10 mt-8 space-y-4">
+             <p className="text-[10px] font-bold text-center text-slate-500 uppercase tracking-widest px-8">
+               Large text blocks can impact knowledge graph stability. Please select an ingestion protocol to maintain intelligence integrity.
+             </p>
+             
+             <div className="grid grid-cols-1 gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleIngest('smart')}
+                  className="h-16 rounded-[1.5rem] justify-start px-6 gap-4 border-slate-100 dark:border-white/5 hover:border-violet-500 group transition-all"
+                >
+                   <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500 group-hover:text-white transition-colors">
+                      <Sparkles className="w-4 h-4" />
+                   </div>
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 dark:text-white">Smart Ingress</p>
+                      <p className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Auto-format as Markdown/HTML</p>
+                   </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleIngest('code')}
+                  className="h-16 rounded-[1.5rem] justify-start px-6 gap-4 border-slate-100 dark:border-white/5 hover:border-emerald-500 group transition-all"
+                >
+                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                      <PenTool className="w-4 h-4" />
+                   </div>
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 dark:text-white">Technical Ingress</p>
+                      <p className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Wrap in optimized Code Block</p>
+                   </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleIngest('raw')}
+                  className="h-16 rounded-[1.5rem] justify-start px-6 gap-4 border-slate-100 dark:border-white/5 hover:border-slate-900 group transition-all"
+                >
+                   <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                      <Database className="w-4 h-4" />
+                   </div>
+                   <div className="text-left">
+                      <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 dark:text-white">Raw Ingress</p>
+                      <p className="text-[8px] font-medium text-slate-400 uppercase tracking-widest">Plain text with preserved breaks</p>
+                   </div>
+                </Button>
+             </div>
+
+             <Button 
+                variant="ghost" 
+                onClick={() => { setIsIngestionOpen(false); setPastedContent(''); }}
+                className="w-full text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500"
+             >
+               Abort Ingestion
+             </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Dialog>

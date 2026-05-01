@@ -177,43 +177,41 @@ function extractStructuredData(graph: Note, offloadedFile?: any) {
 }
 
 function JsonLd({ graph, slug }: { graph: any; slug: string }) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://notes.biz.id'
   const flattened = flattenGraph(graph)
   
-  const jsonLd = {
+  // Corporate Identity: Template E (Tech/Partner Division)
+  const organizationJsonLd = {
     "@context": "https://schema.org",
-    "@type": ["TechArticle", "Dataset"],
-    "headline": graph.title || 'Untitled Intelligence Node',
-    "articleBody": renderRecursiveText(graph),
+    "@type": "TechArticle",
+    "@id": `https://notes.biz.id/s/${slug}#intelligence`,
+    "headline": graph.title,
     "description": graph.content?.replace(/<[^>]*>?/gm, '').substring(0, 160),
-    "author": {
-      "@type": "Person",
-      "name": "Smart Notes AI Hub"
-    },
+    "articleBody": renderRecursiveText(graph),
     "datePublished": graph.created_at,
     "dateModified": graph.updated_at,
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `${baseUrl}/s/${slug}`
+    "author": {
+      "@type": "Person",
+      "name": graph.profiles?.full_name || 'Neural Hub',
+      "url": `https://notes.biz.id/u/${graph.user_id}`
     },
-    "keywords": graph.tags?.join(', ') || 'intelligence, notes, neural, content graph',
-    "interactionStatistic": [
-      {
-        "@type": "InteractionCounter",
-        "interactionType": "https://schema.org/ViewAction",
-        "userInteractionCount": graph.view_count || 0
-      },
-      {
-        "@type": "InteractionCounter",
-        "interactionType": "https://schema.org/CommentAction",
-        "userInteractionCount": graph.comment_count || 0
+    "publisher": {
+      "@type": "Corporation",
+      "@id": "https://indonesianvisas.com/#organization",
+      "name": "PT Indonesian Visas Agency",
+      "legalName": "PT Indonesian Visas Agency",
+      "taxID": "0100000008117681",
+      "url": "https://indonesianvisas.com",
+      "parentOrganization": {
+        "@type": "Organization",
+        "@id": "https://bali.enterprises/#organization",
+        "name": "PT Bali Enterprises Group"
       }
-    ],
+    },
     "hasPart": flattened.slice(1).map(node => ({
-      "@type": "TechArticle",
-      "headline": node.title,
-      "url": `${baseUrl}/s/${node.share_slug}`,
-      "description": node.content?.replace(/<[^>]*>?/gm, '').substring(0, 160)
+      "@type": "CreativeWork",
+      "name": node.title,
+      "url": `https://notes.biz.id/s/${node.share_slug}`,
+      "description": node.content?.replace(/<[^>]*>?/gm, '').substring(0, 100)
     }))
   };
 
@@ -221,7 +219,7 @@ function JsonLd({ graph, slug }: { graph: any; slug: string }) {
     <script
       id="shared-node-jsonld"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
     />
   )
 }

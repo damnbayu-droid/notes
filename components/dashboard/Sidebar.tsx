@@ -138,11 +138,10 @@ export function Sidebar({
     window.dispatchEvent(new CustomEvent('open-contact-modal'));
   };
 
-  const navItems = [
+  const navItems: { id: string; label: string; icon: any; path?: string; action?: () => void }[] = [
     { id: 'notes', label: 'Dashboard', icon: LayoutGrid, path: '/' },
     { id: 'discovery', label: 'Discovery', icon: Compass, path: '/discovery' },
     { id: 'books', label: 'Book Mode', icon: Book, path: '/?view=books' },
-    { id: 'stickynotes', label: 'Sticky Notes', icon: Pin, action: () => window.dispatchEvent(new CustomEvent('add-sticky-note')) },
     { id: 'archive', label: 'Archive', icon: Archive, path: '/?view=archive' },
     { id: 'trash', label: 'Trash', icon: Trash2, path: '/?view=trash' },
     { id: 'scanner', label: 'PDF Master', icon: FileStack, path: '/?view=scanner' },

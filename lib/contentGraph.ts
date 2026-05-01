@@ -5,8 +5,41 @@ const MAX_DEPTH = 3
 const MAX_NODES = 50
 
 // Infrastructure: Recursive Knowledge Fetcher (v11.0.0-PROD)
+// Infrastructure: Recursive Knowledge Fetcher (v11.0.0-PROD)
 export async function buildGraph(slug: string, versionId?: string, currentDomain: string = 'default', userAccess: 'free' | 'pro' = 'free') {
   const supabase = await createClient()
+  
+  // Phase 1: High-Performance RPC Fetch (Recursive CTE)
+  const { data: flatGraph, error: rpcError } = await supabase
+    .rpc('get_note_graph', { p_slug: slug, p_max_depth: MAX_DEPTH })
+  
+  if (flatGraph && Array.isArray(flatGraph) && flatGraph.length > 0) {
+    // Process flattened results into a nested tree structure
+    const nodeMap = new Map<string, any>()
+    flatGraph.forEach(node => nodeMap.set(node.id, { ...node, children: [] }))
+    
+    let root = null
+    flatGraph.forEach(node => {
+      const mappedNode = nodeMap.get(node.id)
+      
+      // Monetization & Version Lock (v11.0.0)
+      if (node.depth > 1 && node.is_premium && userAccess === 'free') {
+        mappedNode.content = "🔒 **Premium Intelligence Cluster**: Please upgrade to PRO to unlock this layer of the knowledge graph."
+        mappedNode.locked = true
+      }
+
+      if (node.parent_id && nodeMap.has(node.parent_id)) {
+        nodeMap.get(node.parent_id).children.push(mappedNode)
+      } else if (node.share_slug === slug) {
+        root = mappedNode
+      }
+    })
+
+    if (root) return root
+  }
+
+  // Phase 2: Legacy Oracle Fallback (JS Recursion)
+  // Used if RPC is not yet deployed or fails due to schema mismatch
   const visited = new Set<string>()
   let nodeCount = 0
 
@@ -25,81 +58,43 @@ export async function buildGraph(slug: string, versionId?: string, currentDomain
       .eq('is_shared', true)
       .single()
 
-    // Oracle Fallback: If standard select fails (RLS or Edge restriction), use the security-hardened RPC
     if (error || !node) {
-      const { data: rpcNode } = await supabase
-        .rpc('get_shared_note_by_slug', { p_slug: targetSlug })
-        .single()
-      
+      const { data: rpcNode } = await supabase.rpc('get_shared_note_by_slug', { p_slug: targetSlug }).single()
       if (rpcNode) {
         const castedNode = rpcNode as any
-        // Manual profile fetch for bots
         if (castedNode.user_id) {
           const { data: profile } = await supabase.from('profiles').select('full_name, avatar_url, email').eq('id', castedNode.user_id).single()
           castedNode.profiles = profile
         }
         node = castedNode
-      } else {
-        return null
-      }
+      } else { return null }
     }
     
-    // Safety check for TS compiler
     if (!node) return null
 
-    // DOMAIN GUARD: Strictly enforce boundary ONLY for non-shared paths (internal navigation)
-    // For shared content graphs, we allow multi-domain aggregation to ensure full knowledge ingress.
-    
-    // MONETIZATION LOCK: Depth-based intelligence guard
     let content = node.content
     let isLocked = false
-
     if (depth > 1 && node.is_premium && userAccess === 'free') {
        content = "🔒 **Premium Intelligence Cluster**: Please upgrade to PRO to unlock this layer of the knowledge graph."
        isLocked = true
     }
 
-    // Version Control Hub (v11.0.0)
     const targetVersion = versionId || (depth === 0 ? node.published_log_id : null)
     if (targetVersion && !isLocked) {
-      const { data: logData } = await supabase
-        .from('note_logs')
-        .select('snapshot_content')
-        .eq('id', targetVersion)
-        .single()
-      
-      if (logData?.snapshot_content) {
-        content = logData.snapshot_content
-      }
+      const { data: logData } = await supabase.from('note_logs').select('snapshot_content').eq('id', targetVersion).single()
+      if (logData?.snapshot_content) content = logData.snapshot_content
     }
 
-    // Fetch children (Layered Discovery)
-    const { data: childrenData } = await supabase
-      .from('notes')
-      .select('share_slug')
-      .eq('parent_id', node.id)
-      .eq('is_shared', true)
-      .eq('domain', currentDomain) // Maintain domain continuity
-      .limit(5)
-
-    // Parse implicit links in content
+    const { data: childrenData } = await supabase.from('notes').select('share_slug').eq('parent_id', node.id).eq('is_shared', true).eq('domain', currentDomain).limit(5)
     const implicitSlugs = extractInternalLinks(content || '')
-    
     const combinedSlugs = Array.from(new Set([
       ...(childrenData?.map(c => c.share_slug).filter(Boolean) as string[]) || [],
       ...implicitSlugs
     ])).filter(s => s !== targetSlug)
 
-    const children = !isLocked ? await Promise.all(
-      combinedSlugs.map(s => recursive(s, depth + 1))
-    ) : []
+    const children = !isLocked ? await Promise.all(combinedSlugs.map(s => recursive(s, depth + 1))) : []
 
-    return {
-      ...node,
-      content,
-      locked: isLocked,
-      children: children.filter(Boolean)
-    }
+    return { ...node, content, locked: isLocked, children: children.filter(Boolean) }
   }
 
   return recursive(slug, 0)

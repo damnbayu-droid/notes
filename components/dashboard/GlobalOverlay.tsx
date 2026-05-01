@@ -11,7 +11,6 @@ import { HelpModal } from './HelpModal'
 import { ContactModal } from './ContactModal'
 import { AdGuard } from '@/components/auth/AdGuard'
 import { InfoPanel } from './InfoPanel'
-import { StickyNoteManager } from './StickyNoteManager'
 import { SmartWorldTime } from './SmartWorldTime'
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -141,7 +140,6 @@ export function GlobalOverlay() {
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       <PrivacyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
       <InfoPanel />
-      <StickyNoteManager />
       <SmartWorldTime />
       <HelpModal />
       <ContactModal />

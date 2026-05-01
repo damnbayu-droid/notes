@@ -271,12 +271,30 @@ export function useNotes(user: User | null): UseNotesReturn {
   }, [user, supabase]);
 
   const fetchForks = useCallback(async (noteId: string) => {
-    const { data } = await supabase
+    // Phase: Resilient Lineage Discovery (v18.1.9)
+    // Try primary fetch with profile data (Auth Context)
+    const { data, error } = await supabase
       .from('notes')
       .select('id, title, share_slug, user_id, updated_at, profiles:user_id(full_name, avatar_url)')
       .eq('fork_of', noteId)
       .order('updated_at', { ascending: false });
-    if (data) setForks(data);
+    
+    if (!error && data) {
+      setForks(data);
+      return;
+    }
+
+    // Fallback: Fetch without profile joins (Public/RLS Restricted Context)
+    // This prevents 400 Bad Request on shared lineage pages
+    if (error) {
+      const { data: publicData } = await supabase
+        .from('notes')
+        .select('id, title, share_slug, user_id, updated_at')
+        .eq('fork_of', noteId)
+        .order('updated_at', { ascending: false });
+      
+      if (publicData) setForks(publicData);
+    }
   }, [supabase]);
 
   useEffect(() => {

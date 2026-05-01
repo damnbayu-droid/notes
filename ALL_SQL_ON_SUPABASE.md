@@ -104,3 +104,68 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 -- 6. GRANT PERMISSIONS
 GRANT EXECUTE ON FUNCTION public.is_admin_check() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.increment_note_metric(UUID, TEXT) TO authenticated, anon;
+
+-- 7. RECURSIVE KNOWLEDGE GRAPH FETCHER (v20.0.0-PROD)
+-- Target: High-performance single-query cluster traversal for AI agents and SSR.
+CREATE OR REPLACE FUNCTION public.get_note_graph(p_slug TEXT, p_max_depth INT DEFAULT 3)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    result JSONB;
+BEGIN
+    WITH RECURSIVE note_tree AS (
+        -- Anchor: Find the root note
+        SELECT 
+            id, title, content, share_slug, tags, color, updated_at, is_shared, 
+            published_log_id, is_premium, domain, user_id, parent_id,
+            0 as depth
+        FROM public.notes
+        WHERE share_slug = p_slug AND is_shared = true
+
+        UNION ALL
+
+        -- Recursive Step: Find children
+        SELECT 
+            n.id, n.title, n.content, n.share_slug, n.tags, n.color, n.updated_at, n.is_shared, 
+            n.published_log_id, n.is_premium, n.domain, n.user_id, n.parent_id,
+            nt.depth + 1
+        FROM public.notes n
+        INNER JOIN note_tree nt ON n.parent_id = nt.id
+        WHERE n.is_shared = true AND nt.depth < p_max_depth
+    )
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'id', nt.id,
+            'title', nt.title,
+            'content', nt.content,
+            'share_slug', nt.share_slug,
+            'tags', nt.tags,
+            'color', nt.color,
+            'updated_at', nt.updated_at,
+            'is_shared', nt.is_shared,
+            'published_log_id', nt.published_log_id,
+            'is_premium', nt.is_premium,
+            'domain', nt.domain,
+            'user_id', nt.user_id,
+            'parent_id', nt.parent_id,
+            'depth', nt.depth,
+            'profiles', (
+                SELECT jsonb_build_object(
+                    'full_name', p.full_name,
+                    'avatar_url', p.avatar_url
+                )
+                FROM public.profiles p
+                WHERE p.id = nt.user_id
+            )
+        )
+    ) INTO result
+    FROM note_tree nt;
+
+    RETURN COALESCE(result, '[]'::jsonb);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_note_graph(TEXT, INT) TO authenticated, anon;

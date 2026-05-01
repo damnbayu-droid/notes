@@ -80,6 +80,7 @@ export function HelpModal() {
                     </p>
                  </div>
               </div>
+              <DialogDescription className="sr-only">Comprehensive documentation for the Smart Notes Intelligence Suite, covering navigation, sharing, and security protocols.</DialogDescription>
            </div>
 
            {/* Content Section */}
